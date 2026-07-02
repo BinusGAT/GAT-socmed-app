@@ -175,15 +175,8 @@ export default function MeetingsTab({ onOpenDatePicker }) {
 
         let memoId = selectedMeetingId;
         if (memoId === 'NEW' || !memoId) {
-            // Calculate sequence ID
-            let maxId = 0;
-            meetingsData.forEach(m => {
-                if (String(m.id).startsWith('MEET')) {
-                    const num = parseInt(m.id.replace('MEET', '')) || 0;
-                    if (num > maxId) maxId = num;
-                }
-            });
-            memoId = `MEET${maxId + 1}`;
+            // Use timestamp-based ID to match the original HTML dashboard format
+            memoId = `M${Date.now()}`;
         }
 
         const memoPayload = {

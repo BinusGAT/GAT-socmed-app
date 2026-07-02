@@ -31,10 +31,13 @@ export async function POST(request) {
       headers: {
         'Content-Type': 'text/plain'
       },
-      body: JSON.stringify(gasPayload)
+      body: JSON.stringify(gasPayload),
+      redirect: 'follow'
     });
 
     if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      console.error(`GAS Error: HTTP ${response.status}, URL: ${response.url}, Body: ${errorText.substring(0, 500)}`);
       return NextResponse.json(
         { success: false, error: `Apps Script returned HTTP ${response.status}` },
         { status: response.status }
