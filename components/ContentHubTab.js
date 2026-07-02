@@ -379,7 +379,7 @@ export default function ContentHubTab() {
 
                             <div className="form-row">
                                 <div className="form-group full">
-                                    <label>Draft Title <span class="required">*</span></label>
+                                    <label>Draft Title <span className="required">*</span></label>
                                     <input 
                                         type="text" 
                                         className="form-control"
@@ -394,7 +394,7 @@ export default function ContentHubTab() {
 
                             <div className="form-row">
                                 <div className="form-group half">
-                                    <label>Category <span class="required">*</span></label>
+                                    <label>Category <span className="required">*</span></label>
                                     <select 
                                         className="form-control"
                                         value={formCategory}
@@ -407,7 +407,7 @@ export default function ContentHubTab() {
                                     </select>
                                 </div>
                                 <div className="form-group half">
-                                    <label>Status <span class="required">*</span></label>
+                                    <label>Status <span className="required">*</span></label>
                                     <input 
                                         type="text" 
                                         className="form-control" 
@@ -454,7 +454,7 @@ export default function ContentHubTab() {
 
                             <div className="form-row">
                                 <div className="form-group full">
-                                    <label>Hashtags <span class="required">*</span></label>
+                                    <label>Hashtags <span className="required">*</span></label>
                                     <input 
                                         type="text" 
                                         className="form-control"
@@ -483,7 +483,7 @@ export default function ContentHubTab() {
 
                             <div className="form-row">
                                 <div className="form-group full">
-                                    <label>Reference Links (one URL per line) <span class="required">*</span></label>
+                                    <label>Reference Links (one URL per line) <span className="required">*</span></label>
                                     <textarea 
                                         className="form-control"
                                         rows={2}
