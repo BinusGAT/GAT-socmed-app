@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { db } from '../../../../utils/db';
+import { dbExecute, dbBatch } from '../../../../utils/db';
+
+const db = {
+  execute: dbExecute,
+  batch: dbBatch
+};
 
 const PASSCODE_SALT = process.env.PASSCODE_SALT || '';
 const PASSCODE_HASH_ADMIN = process.env.PASSCODE_HASH_ADMIN || '';
@@ -62,137 +67,68 @@ function getIndonesianMonth(dateStr) {
   ];
   return months[monthNum - 1] || '';
 }
+async function getNextId() {
+  const res = await db.execute("SELECT ID FROM schedule WHERE ID LIKE 'CT%'");
+  let maxNum = 0;
+  for (const row of res.rows) {
+    const idStr = String(row.ID || '');
+    const num = parseInt(idStr.replace('CT', ''), 10);
+    if (!isNaN(num) && num > maxNum) {
+      maxNum = num;
+    }
+  }
+  return 'CT' + (maxNum + 1);
+}
 
-// Re-sorts, reassigns IDs, and aggregates KPI Score inside Turso
-async function sortAndReassignDb() {
-  const laporanRes = await db.execute("SELECT * FROM laporan");
-  let rows = [...laporanRes.rows];
+async function syncGroupById(id) {
+  if (!id) return;
 
+  // 1. Get all platform rows for this ID
+  const rowsRes = await db.execute({
+    sql: "SELECT * FROM laporan WHERE ID = ?",
+    args: [id]
+  });
+  const rows = rowsRes.rows;
+
+  // 2. If no rows exist for this ID, clean up the schedule table
   if (rows.length === 0) {
-    await db.execute("DELETE FROM schedule");
+    await db.execute({
+      sql: "DELETE FROM schedule WHERE ID = ?",
+      args: [id]
+    });
     return;
   }
 
-  // Sort rows chronologically by Date, PIC, Category, Platform, Title
-  rows.sort((a, b) => {
-    const dateA = getIsoDateString(a.Date);
-    const dateB = getIsoDateString(b.Date);
-    if (dateA !== dateB) return dateA.localeCompare(dateB);
+  // 3. Compute KPI Summary and Status
+  let maxKpi = 3;
+  let isCompleted = 0;
+  for (const r of rows) {
+    const kpiVal = parseInt(r["KPI Score"]) || 0;
+    if (kpiVal > maxKpi) maxKpi = kpiVal;
+    if (String(r.URL || '').trim() !== '') {
+      isCompleted = 1;
+    }
+  }
 
-    const picA = String(a.PIC || '').trim().toLowerCase();
-    const picB = String(b.PIC || '').trim().toLowerCase();
-    if (picA !== picB) return picA.localeCompare(picB);
-
-    const catA = String(a.Category || '').trim().toLowerCase();
-    const catB = String(b.Category || '').trim().toLowerCase();
-    if (catA !== catB) return catA.localeCompare(catB);
-
-    const platA = String(a.Platform || '').trim().toLowerCase();
-    const platB = String(b.Platform || '').trim().toLowerCase();
-    if (platA !== platB) return platA.localeCompare(platB);
-
-    const titleA = String(a["Content Title"] || '').trim().toLowerCase();
-    const titleB = String(b["Content Title"] || '').trim().toLowerCase();
-    return titleA.localeCompare(titleB);
+  // 4. Update all platform rows with the new KPI Summary
+  await db.execute({
+    sql: 'UPDATE laporan SET "KPI Summary" = ? WHERE ID = ?',
+    args: [maxKpi, id]
   });
 
-  let idCounter = 0;
-  let lastKey = null;
-  const idGroups = {};
+  // 5. Upsert schedule row
+  const firstRow = rows[0];
+  const dateStr = firstRow.Date;
+  const pic = firstRow.PIC;
+  const title = firstRow["Content Title"];
+  const category = firstRow.Category;
+  const month = getIndonesianMonth(dateStr);
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const dateStr = getIsoDateString(row.Date);
-    const pic = String(row.PIC || '').trim().toLowerCase();
-    const cat = String(row.Category || '').trim().toLowerCase();
-    const key = `${dateStr}|${pic}|${cat}`;
-
-    if (key !== lastKey) {
-      idCounter++;
-      lastKey = key;
-    }
-
-    const newId = "CT" + idCounter;
-    row.ID = newId;
-
-    if (!idGroups[newId]) {
-      idGroups[newId] = [];
-    }
-    idGroups[newId].push(row);
-  }
-
-  const batchQueries = [];
-  batchQueries.push({ sql: "DELETE FROM laporan", args: [] });
-  batchQueries.push({ sql: "DELETE FROM schedule", args: [] });
-
-  const scheduleItems = [];
-
-  for (const newId in idGroups) {
-    const groupRows = idGroups[newId];
-    
-    let maxKpi = 3;
-    let isCompleted = 0;
-    for (const r of groupRows) {
-      const kpiVal = parseInt(r["KPI Score"]) || 0;
-      if (kpiVal > maxKpi) maxKpi = kpiVal;
-      if (String(r.URL || '').trim() !== '') {
-        isCompleted = 1;
-      }
-    }
-
-    const firstRow = groupRows[0];
-    const dateStr = firstRow.Date;
-    const pic = firstRow.PIC;
-    const title = firstRow["Content Title"];
-    const category = firstRow.Category;
-    const month = getIndonesianMonth(dateStr);
-
-    scheduleItems.push({
-      ID: newId,
-      Date: dateStr,
-      PIC: pic,
-      "Content Title": title,
-      Category: category,
-      Status: isCompleted,
-      Month: month
-    });
-
-    for (const r of groupRows) {
-      r["KPI Summary"] = maxKpi;
-      
-      // Format Date to mm/dd/yyyy if it's in yyyy-mm-dd
-      let dateOutput = r.Date;
-      const iso = getIsoDateString(r.Date);
-      if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
-        dateOutput = iso.substring(5, 7) + "/" + iso.substring(8, 10) + "/" + iso.substring(0, 4);
-      }
-
-      batchQueries.push({
-        sql: `INSERT INTO laporan (
-          Date, ID, "Content Title", PIC, Category, Platform, 
-          Views, "Account Reach", Likes, Comments, Follows, Repost, Shares, 
-          "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text"
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [
-          dateOutput, r.ID, r["Content Title"], r.PIC, r.Category, r.Platform,
-          parseInt(r.Views) || 0, parseInt(r["Account Reach"]) || 0, parseInt(r.Likes) || 0,
-          parseInt(r.Comments) || 0, parseInt(r.Follows) || 0, parseInt(r.Repost) || 0,
-          parseInt(r.Shares) || 0, parseInt(r["Total Engagement"]) || 0,
-          parseFloat(r["Engagement Rate (%)"]) || 0.0, parseInt(r["KPI Score"]) || 3,
-          parseInt(r["KPI Summary"]) || 3, r.URL || '', r["Comment Text"] || ''
-        ]
-      });
-    }
-  }
-
-  for (const s of scheduleItems) {
-    batchQueries.push({
-      sql: `INSERT INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [s.ID, s.Date, s.PIC, s["Content Title"], s.Category, s.Status, s.Month]
-    });
-  }
-
-  await db.batch(batchQueries);
+  await db.execute({
+    sql: `INSERT OR REPLACE INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: [id, dateStr, pic, title, category, isCompleted, month]
+  });
 }
 
 export async function POST(request) {
@@ -268,6 +204,8 @@ export async function POST(request) {
         const totalEngagement = likes + comments + shares + reposts + follows;
         const engagementRate = views > 0 ? (totalEngagement / views) * 100 : 0.0;
 
+        const newId = await getNextId();
+
         for (const plat of platforms) {
           const isSelected = plat.toLowerCase() === selectedPlatform;
           
@@ -291,13 +229,13 @@ export async function POST(request) {
               "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text"
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
-              params.Date, 'TEMP', params['Content Title'], params.PIC, params.Category, plat,
+              params.Date, newId, params['Content Title'], params.PIC, params.Category, plat,
               viewsVal, reachVal, likesVal, commentsVal, followsVal, repostVal, sharesVal,
               totalEngVal, rateVal, kpiVal, 3, urlVal, commentVal
             ]
           });
         }
-        await sortAndReassignDb();
+        await syncGroupById(newId);
         result = { success: true, message: 'All 3 platform rows created successfully' };
         break;
       }
@@ -318,56 +256,96 @@ export async function POST(request) {
         const totalEngagement = likes + comments + shares + reposts + follows;
         const engagementRate = views > 0 ? (totalEngagement / views) * 100 : 0.0;
 
-        await db.execute({
-          sql: `UPDATE laporan SET 
-            Date = ?,
-            "Content Title" = ?,
-            PIC = ?,
-            Category = ?,
-            Platform = ?,
-            Views = ?,
-            "Account Reach" = ?,
-            Likes = ?,
-            Comments = ?,
-            Follows = ?,
-            Repost = ?,
-            Shares = ?,
-            "Total Engagement" = ?,
-            "Engagement Rate (%)" = ?,
-            "KPI Score" = ?,
-            URL = ?,
-            "Comment Text" = ?
-          WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ?`,
-          args: [
-            params.Date, params['Content Title'], params.PIC, params.Category, params.Platform,
-            views, parseInt(params['Account Reach']) || 0, likes, comments, follows, reposts, shares,
-            totalEngagement, engagementRate, parseInt(params['KPI Score']) || 3, params.URL || '', params['Comment Text'] || '',
-            matchDate, matchTitle, matchPic, matchCategory, matchPlatform
-          ]
+        // Find the ID of the row being updated
+        const idRes = await db.execute({
+          sql: `SELECT ID FROM laporan WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ? LIMIT 1`,
+          args: [matchDate, matchTitle, matchPic, matchCategory, matchPlatform]
         });
+        const id = idRes.rows[0]?.ID;
 
-        await sortAndReassignDb();
+        if (id) {
+          await db.execute({
+            sql: `UPDATE laporan SET 
+              Date = ?,
+              "Content Title" = ?,
+              PIC = ?,
+              Category = ?,
+              Platform = ?,
+              Views = ?,
+              "Account Reach" = ?,
+              Likes = ?,
+              Comments = ?,
+              Follows = ?,
+              Repost = ?,
+              Shares = ?,
+              "Total Engagement" = ?,
+              "Engagement Rate (%)" = ?,
+              "KPI Score" = ?,
+              URL = ?,
+              "Comment Text" = ?
+            WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ?`,
+            args: [
+              params.Date, params['Content Title'], params.PIC, params.Category, params.Platform,
+              views, parseInt(params['Account Reach']) || 0, likes, comments, follows, reposts, shares,
+              totalEngagement, engagementRate, parseInt(params['KPI Score']) || 3, params.URL || '', params['Comment Text'] || '',
+              matchDate, matchTitle, matchPic, matchCategory, matchPlatform
+            ]
+          });
+
+          // Update main details for all other rows sharing this ID
+          await db.execute({
+            sql: `UPDATE laporan SET Date = ?, "Content Title" = ?, PIC = ?, Category = ? WHERE ID = ?`,
+            args: [params.Date, params['Content Title'], params.PIC, params.Category, id]
+          });
+
+          await syncGroupById(id);
+        }
         result = { success: true, message: 'Data updated successfully' };
         break;
       }
 
       case 'delete': {
+        // Find the ID first
+        const idRes = await db.execute({
+          sql: `SELECT ID FROM laporan WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ? LIMIT 1`,
+          args: [params.Date, params['Content Title'], params.PIC, params.Category, params.Platform]
+        });
+        const id = idRes.rows[0]?.ID;
+
         await db.execute({
           sql: `DELETE FROM laporan WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ?`,
           args: [params.Date, params['Content Title'], params.PIC, params.Category, params.Platform]
         });
-        await sortAndReassignDb();
+
+        if (id) {
+          await syncGroupById(id);
+        }
         result = { success: true, message: 'Data deleted successfully' };
         break;
       }
 
       case 'delete_batch': {
+        // Find all IDs affected
+        const affectedIds = new Set();
+        for (const row of params.rows) {
+          const idRes = await db.execute({
+            sql: `SELECT ID FROM laporan WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ? LIMIT 1`,
+            args: [row.Date, row['Content Title'], row.PIC, row.Category, row.Platform]
+          });
+          if (idRes.rows[0]?.ID) {
+            affectedIds.add(idRes.rows[0].ID);
+          }
+        }
+
         const deleteQueries = params.rows.map(row => ({
           sql: `DELETE FROM laporan WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ?`,
           args: [row.Date, row['Content Title'], row.PIC, row.Category, row.Platform]
         }));
         await db.batch(deleteQueries);
-        await sortAndReassignDb();
+
+        for (const id of affectedIds) {
+          await syncGroupById(id);
+        }
         result = { success: true, message: `Successfully deleted ${params.rows.length} rows` };
         break;
       }
@@ -384,7 +362,9 @@ export async function POST(request) {
             sql: `UPDATE laporan SET Date = ?, "Content Title" = ?, PIC = ?, Category = ? WHERE ID = ?`,
             args: [dateStr, title, pic, category, id]
           });
+          await syncGroupById(id);
         } else {
+          const newId = await getNextId();
           const platforms = ['Instagram', 'TikTok', 'Youtube'];
           for (const plat of platforms) {
             await db.execute({
@@ -393,11 +373,11 @@ export async function POST(request) {
                 Views, "Account Reach", Likes, Comments, Follows, Repost, Shares, 
                 "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text"
               ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 3, 3, '', 'Planned from WebApp')`,
-              args: [dateStr, 'TEMP', title, pic, category, plat]
+              args: [dateStr, newId, title, pic, category, plat]
             });
           }
+          await syncGroupById(newId);
         }
-        await sortAndReassignDb();
         result = { success: true, message: id ? 'Schedule updated successfully' : 'Schedule created successfully' };
         break;
       }
@@ -408,7 +388,10 @@ export async function POST(request) {
           sql: "DELETE FROM laporan WHERE ID = ?",
           args: [id]
         });
-        await sortAndReassignDb();
+        await db.execute({
+          sql: "DELETE FROM schedule WHERE ID = ?",
+          args: [id]
+        });
         result = { success: true, message: 'Schedule deleted successfully' };
         break;
       }
