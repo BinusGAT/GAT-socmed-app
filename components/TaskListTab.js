@@ -207,7 +207,12 @@ export default function TaskListTab({ onOpenDatePicker }) {
         <section className="panel panel-tasklist" style={{ display: 'block' }}>
             <div className="panel-header">
                 <h2><span className="panel-icon"><i className="fa-solid fa-list-check"></i></span> Scheduled Task Directory</h2>
-                <div className="panel-actions">
+                <div className="panel-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {!actionsDisabled && (
+                        <button type="button" className="btn btn-primary btn-sm" onClick={openAddModal}>
+                            <i className="fa-solid fa-plus"></i> Add Scheduled Task
+                        </button>
+                    )}
                     <span className="data-count">{processedTasks.length} items</span>
                 </div>
             </div>
@@ -215,11 +220,6 @@ export default function TaskListTab({ onOpenDatePicker }) {
             {/* Bulk Actions & Filters Wrapper */}
             <div className="bulk-actions" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div className="bulk-actions-left">
-                    {!actionsDisabled && (
-                        <button type="button" className="btn btn-primary btn-sm" onClick={openAddModal}>
-                            <i className="fa-solid fa-plus"></i> Add Scheduled Task
-                        </button>
-                    )}
                 </div>
 
                 <div className="bulk-actions-right" style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', width: 'auto', flex: 1 }}>

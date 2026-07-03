@@ -3970,14 +3970,14 @@ body.dark-mode .nav-item:hover {
 }
 
 .nav-item.active {
-    background-color: var(--primary-bg);
-    color: var(--primary) !important;
-    box-shadow: none !important;
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(94, 106, 210, 0.25) !important;
     font-weight: 600;
 }
 
 body.dark-mode .nav-item.active {
-    background-color: var(--primary);
+    background-color: var(--primary) !important;
     color: var(--on-primary) !important;
     box-shadow: 0 2px 8px rgba(94, 106, 210, 0.25) !important;
 }
@@ -4820,19 +4820,19 @@ body.dark-mode .custom-datepicker-popover {
    CC INTERNAL GATE MODAL SPECIFIC STYLES
    ============================================ */
 .gate-modal-card {
-    background-color: #121212 !important;
-    border: 1px solid #27272a !important;
+    background-color: var(--surface) !important;
+    border: 1px solid var(--hairline) !important;
     border-radius: 12px !important;
     max-width: 440px !important;
     width: 100% !important;
-    color: #e4e4e7 !important;
+    color: var(--ink) !important;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: var(--shadow-overlay) !important;
 }
 
 .gate-modal-header {
     padding: 16px 20px !important;
-    border-bottom: 1px solid #27272a !important;
+    border-bottom: 1px solid var(--hairline) !important;
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
@@ -4841,7 +4841,7 @@ body.dark-mode .custom-datepicker-popover {
 .gate-modal-header h2 {
     font-size: 1.1rem !important;
     font-weight: 700 !important;
-    color: #ffffff !important;
+    color: var(--ink) !important;
     display: flex !important;
     align-items: center !important;
     gap: 10px !important;
@@ -4849,14 +4849,14 @@ body.dark-mode .custom-datepicker-popover {
 }
 
 .gate-modal-header h2 i {
-    color: #5e6ad2 !important; /* purple / indigo color */
+    color: var(--primary) !important;
     font-size: 1.2rem !important;
 }
 
 .gate-modal-close {
     background: none !important;
     border: none !important;
-    color: #a1a1aa !important;
+    color: var(--ink-muted) !important;
     font-size: 1.2rem !important;
     cursor: pointer !important;
     padding: 4px !important;
@@ -4867,14 +4867,14 @@ body.dark-mode .custom-datepicker-popover {
 }
 
 .gate-modal-close:hover {
-    color: #ffffff !important;
+    color: var(--ink) !important;
 }
 
 .gate-label {
     display: block !important;
     font-size: 11px !important;
     font-weight: 600 !important;
-    color: #71717a !important;
+    color: var(--ink-muted) !important;
     text-transform: uppercase !important;
     letter-spacing: 0.05em !important;
     margin-bottom: 10px !important;
@@ -4888,7 +4888,7 @@ body.dark-mode .custom-datepicker-popover {
 }
 
 .gate-role-card {
-    border: 1px solid #27272a !important;
+    border: 1px solid var(--hairline) !important;
     border-radius: 8px !important;
     padding: 20px 16px !important;
     display: flex !important;
@@ -4896,53 +4896,54 @@ body.dark-mode .custom-datepicker-popover {
     align-items: center !important;
     justify-content: center !important;
     gap: 12px !important;
-    background-color: #18181b !important;
+    background-color: var(--canvas) !important;
     cursor: pointer !important;
     transition: all 0.2s ease-in-out !important;
     user-select: none !important;
+    color: var(--ink) !important;
 }
 
 .gate-role-card:hover {
-    border-color: #3f3f46 !important;
-    background-color: #202024 !important;
+    border-color: var(--hairline-strong) !important;
+    background-color: var(--primary-bg) !important;
 }
 
 .gate-role-card.active {
-    border-color: #5e6ad2 !important;
-    background-color: rgba(94, 106, 210, 0.08) !important;
-    box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.2) !important;
+    border-color: var(--primary) !important;
+    background-color: var(--primary-bg-strong) !important;
+    box-shadow: 0 0 0 2px var(--primary-focus) !important;
 }
 
 .gate-role-icon-box {
     width: 48px !important;
     height: 48px !important;
     border-radius: 6px !important;
-    background-color: #121212 !important;
-    border: 1px solid #27272a !important;
+    background-color: var(--surface) !important;
+    border: 1px solid var(--hairline) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     font-size: 1.25rem !important;
-    color: #71717a !important;
+    color: var(--ink-muted) !important;
     transition: all 0.2s !important;
 }
 
 .gate-role-card.active .gate-role-icon-box {
-    border-color: #5e6ad2 !important;
-    color: #5e6ad2 !important;
-    background-color: rgba(94, 106, 210, 0.05) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    background-color: var(--primary-bg) !important;
 }
 
 .gate-role-title {
     font-size: 12px !important;
     font-weight: 700 !important;
-    color: #a1a1aa !important;
+    color: var(--ink-muted) !important;
     letter-spacing: 0.02em !important;
     transition: color 0.2s !important;
 }
 
 .gate-role-card.active .gate-role-title {
-    color: #ffffff !important;
+    color: var(--ink) !important;
 }
 
 .gate-input-wrapper {
@@ -4955,23 +4956,23 @@ body.dark-mode .custom-datepicker-popover {
     width: 100% !important;
     height: 44px !important;
     padding: 0 40px 0 16px !important;
-    background-color: #121212 !important;
-    border: 1px solid #27272a !important;
+    background-color: var(--canvas) !important;
+    border: 1px solid var(--hairline) !important;
     border-radius: 6px !important;
-    color: #ffffff !important;
+    color: var(--ink) !important;
     font-size: 13px !important;
     font-family: inherit !important;
     transition: all 0.2s !important;
 }
 
 .gate-input::placeholder {
-    color: #52525b !important;
+    color: var(--ink-faint) !important;
 }
 
 .gate-input:focus {
     outline: none !important;
-    border-color: #5e6ad2 !important;
-    box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.2) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 2px var(--primary-focus) !important;
 }
 
 .gate-input-toggle {
@@ -4980,7 +4981,7 @@ body.dark-mode .custom-datepicker-popover {
     background: none !important;
     border: none !important;
     cursor: pointer !important;
-    color: #52525b !important;
+    color: var(--ink-faint) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -4990,7 +4991,7 @@ body.dark-mode .custom-datepicker-popover {
 }
 
 .gate-input-toggle:hover {
-    color: #a1a1aa !important;
+    color: var(--ink) !important;
 }
 
 .gate-modal-footer {
@@ -4999,13 +5000,13 @@ body.dark-mode .custom-datepicker-popover {
     gap: 8px !important;
     margin-top: 24px !important;
     padding: 16px 20px !important;
-    border-top: 1px solid #27272a !important;
+    border-top: 1px solid var(--hairline) !important;
 }
 
 .gate-btn-cancel {
-    background-color: #121212 !important;
-    border: 1px solid #27272a !important;
-    color: #e4e4e7 !important;
+    background-color: var(--canvas) !important;
+    border: 1px solid var(--hairline) !important;
+    color: var(--ink-secondary) !important;
     border-radius: 6px !important;
     padding: 8px 16px !important;
     font-size: 13px !important;
@@ -5016,14 +5017,14 @@ body.dark-mode .custom-datepicker-popover {
 }
 
 .gate-btn-cancel:hover {
-    background-color: #18181b !important;
-    border-color: #3f3f46 !important;
+    background-color: var(--hairline) !important;
+    border-color: var(--hairline-strong) !important;
 }
 
 .gate-btn-submit {
-    background-color: #5e6ad2 !important;
+    background-color: var(--primary) !important;
     border: none !important;
-    color: #ffffff !important;
+    color: var(--on-primary) !important;
     border-radius: 6px !important;
     padding: 8px 16px !important;
     font-size: 13px !important;
@@ -5034,19 +5035,26 @@ body.dark-mode .custom-datepicker-popover {
 }
 
 .gate-btn-submit:hover {
-    background-color: #4f5bbf !important;
+    background-color: var(--primary-hover) !important;
 }
 
 .gate-btn-submit:disabled {
-    background-color: #27272a !important;
-    color: #71717a !important;
+    background-color: var(--canvas) !important;
+    color: var(--ink-faint) !important;
+    border: 1px solid var(--hairline) !important;
     cursor: not-allowed !important;
 }
 
 .gate-modal-bottom-text {
     font-size: 10px !important;
-    color: #52525b !important;
+    color: var(--ink-faint) !important;
     text-align: center !important;
     padding: 0 20px 16px 20px !important;
     letter-spacing: 0.02em !important;
+}
+
+/* Align merged table cells to the top for cleaner visual hierarchy */
+table td[rowspan] {
+    vertical-align: top !important;
+    padding-top: 14px !important;
 }

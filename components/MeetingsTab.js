@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
-import { DeleteConfirmModal } from './Modals';
+import { DeleteConfirmModal, LinkModal } from './Modals';
 import { 
     normalizePicName, 
     getPicBadgeClass,
@@ -53,6 +53,49 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     const [formDate, setFormDate] = useState('');
     const [formAttendees, setFormAttendees] = useState([]); // array of selected attendee names
     const [formRecap, setFormRecap] = useState('');
+
+    const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+    const savedSelectionRef = useRef(null);
+    const [activeStyles, setActiveStyles] = useState({
+        bold: false,
+        italic: false,
+        underline: false,
+        insertUnorderedList: false,
+        insertOrderedList: false,
+        justifyLeft: false,
+        justifyCenter: false,
+        justifyRight: false
+    });
+
+    const updateActiveStyles = () => {
+        if (typeof document === 'undefined') return;
+        setActiveStyles({
+            bold: document.queryCommandState('bold'),
+            italic: document.queryCommandState('italic'),
+            underline: document.queryCommandState('underline'),
+            insertUnorderedList: document.queryCommandState('insertUnorderedList'),
+            insertOrderedList: document.queryCommandState('insertOrderedList'),
+            justifyLeft: document.queryCommandState('justifyLeft'),
+            justifyCenter: document.queryCommandState('justifyCenter'),
+            justifyRight: document.queryCommandState('justifyRight')
+        });
+    };
+
+    const getToolbarBtnStyle = (isActive) => {
+        return isActive ? { backgroundColor: 'var(--primary-bg)', color: 'var(--primary)', fontWeight: 'bold' } : {};
+    };
+
+    // Ensure all links in the viewing recap container target _blank (new tab)
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        const container = document.querySelector('.meeting-recap-text-container');
+        if (container) {
+            container.querySelectorAll('a').forEach(a => {
+                a.setAttribute('target', '_blank');
+                a.setAttribute('rel', 'noopener noreferrer');
+            });
+        }
+    }, [formRecap, isEditing]);
 
     // Reset editor fields when selection changes
     useEffect(() => {
@@ -471,7 +514,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                         </div>
                     ) : (
                         /* EDIT MODE */
-                        <form onSubmit={handleFormSubmit} className="meeting-detail-card" autoComplete="off">
+                        <form onSubmit={handleSaveMemo} className="meeting-detail-card" autoComplete="off">
                             <div className="meeting-details-header" style={{ borderBottom: '1px solid var(--hairline)', paddingBottom: '12px', marginBottom: '20px' }}>
                                 <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <i className="fa-solid fa-file-pen" style={{ color: 'var(--primary)' }}></i> {selectedMeetingId === 'NEW' ? 'Create Meeting Memo' : 'Edit Meeting Memo'}

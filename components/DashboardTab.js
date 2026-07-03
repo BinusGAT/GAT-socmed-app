@@ -59,7 +59,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
     const [formDate, setFormDate] = useState('');
     const [formTitle, setFormTitle] = useState('');
     const [formPic, setFormPic] = useState('');
-    const [formCategory, setFormCategory] = useState('Story Telling');
+    const [formCategory, setFormCategory] = useState('');
     const [formPlatform, setFormPlatform] = useState('Instagram');
     const [formViews, setFormViews] = useState('');
     const [formReach, setFormReach] = useState('');
@@ -88,7 +88,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
         setFormDate(getLocalDateInputValue());
         setFormTitle('');
         setFormPic('');
-        setFormCategory('Story Telling');
+        setFormCategory('');
         setFormPlatform('Instagram');
         setFormViews('');
         setFormReach('');

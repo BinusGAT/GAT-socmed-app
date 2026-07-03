@@ -61,7 +61,9 @@ export default function Topbar({
                         className="btn btn-outline" 
                         id="authBtn" 
                         onClick={handleAuthClick}
-                        title={isUnlocked ? `Lock Workspace (${userRole})` : "Unlock editing permissions"}
+                        title={isUnlocked ? `Lock Workspace (${userRole})` : "Workspace is locked. Enter PIN below."}
+                        disabled={!isUnlocked}
+                        style={!isUnlocked ? { cursor: 'default', opacity: 0.8 } : undefined}
                     >
                         <span className="btn-icon">
                             <i className={`fa-solid ${isUnlocked ? 'fa-lock-open text-success' : 'fa-lock text-danger'}`}></i>

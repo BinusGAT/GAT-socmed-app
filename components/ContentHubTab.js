@@ -235,7 +235,12 @@ export default function ContentHubTab() {
                 <h2>
                     <span className="panel-icon"><i className="fa-solid fa-pen-to-square"></i></span> Content Hub
                 </h2>
-                <div className="panel-actions">
+                <div className="panel-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {isUnlocked && userRole !== 'Creator' && (
+                        <button type="button" className="btn btn-primary btn-sm" onClick={handleCreateDraft}>
+                            <i className="fa-solid fa-plus"></i> New Draft
+                        </button>
+                    )}
                     <span className="data-count">{(draftsData || []).length} drafts</span>
                 </div>
             </div>
@@ -267,11 +272,6 @@ export default function ContentHubTab() {
                                 <option value="Ruliyanto">Ruliyanto</option>
                                 <option value="Rafael">Rafael</option>
                             </select>
-                            {isUnlocked && (
-                                <button type="button" className="btn btn-primary btn-sm" onClick={handleCreateDraft}>
-                                    <i className="fa-solid fa-plus"></i> New Draft
-                                </button>
-                            )}
                         </div>
                     </div>
 
