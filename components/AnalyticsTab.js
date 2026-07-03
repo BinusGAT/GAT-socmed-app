@@ -45,45 +45,9 @@ export default function AnalyticsTab() {
     const picChartRef = useRef(null);
     const categoryChartRef = useRef(null);
 
-    // Filter data locally for analytics view based on date range and presets
+    // Use the complete unfiltered database for global analytics distributions
     const getFilteredData = () => {
-        let data = [...currentData];
-
-        // Search Query
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase().trim();
-            data = data.filter(row => 
-                String(row['Content Title'] || '').toLowerCase().includes(query) ||
-                String(row.ID || '').toLowerCase().includes(query) ||
-                String(row.PIC || '').toLowerCase().includes(query) ||
-                String(row.Platform || '').toLowerCase().includes(query)
-            );
-        }
-
-        // PIC Filter
-        if (mainFilterPic) {
-            data = data.filter(row => normalizePicName(row.PIC) === normalizePicName(mainFilterPic));
-        }
-
-        // Category Filter
-        if (mainFilterCategory) {
-            data = data.filter(row => String(row.Category).trim().toLowerCase() === String(mainFilterCategory).trim().toLowerCase());
-        }
-
-        // Platform Filter
-        if (mainFilterPlatform) {
-            data = data.filter(row => String(row.Platform).trim().toLowerCase() === String(mainFilterPlatform).trim().toLowerCase());
-        }
-
-        // Date Range Filter
-        if (dateRange.start) {
-            data = data.filter(row => parseDate(row.Date) >= dateRange.start);
-        }
-        if (dateRange.end) {
-            data = data.filter(row => parseDate(row.Date) <= dateRange.end);
-        }
-
-        return data;
+        return [...currentData];
     };
 
     const activeData = getFilteredData();
@@ -468,7 +432,7 @@ export default function AnalyticsTab() {
                     <i className="fa-solid fa-chart-simple" style={{ fontSize: '40px', marginBottom: '12px', color: 'var(--primary)' }}></i>
                     <h4 style={{ fontWeight: 600, color: 'var(--ink-primary)', marginBottom: '4px' }}>No Data Available for Analytics</h4>
                     <p style={{ fontSize: '12px', margin: 0, textAlign: 'center' }}>
-                        No records match the current filters. Please adjust or reset your date ranges and keyword searches to display statistical distributions.
+                        No records found in the database. Please add data to display statistical distributions.
                     </p>
                 </div>
             ) : (
