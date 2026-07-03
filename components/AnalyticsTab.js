@@ -17,6 +17,14 @@ import {
 } from '../utils/helpers';
 
 export default function AnalyticsTab() {
+    // Helper to render sanitised HTML securely
+    const createSafeHtml = (htmlContent) => {
+        if (typeof window !== 'undefined' && window.DOMPurify) {
+            return { __html: window.DOMPurify.sanitize(htmlContent) };
+        }
+        return { __html: htmlContent };
+    };
+
     const {
         currentData,
         dateRange,
@@ -535,7 +543,7 @@ export default function AnalyticsTab() {
                                                             </td>
                                                             <td><strong>{row['Content Title'] || 'Untitled'}</strong></td>
                                                             <td><span className={`badge ${getPicBadgeClass(row.PIC)}`}>{normalizePicName(row.PIC)}</span></td>
-                                                            <td><span dangerouslySetInnerHTML={{ __html: getPlatformBadgeHtml(row.Platform) }}></span></td>
+                                                            <td><span dangerouslySetInnerHTML={createSafeHtml(getPlatformBadgeHtml(row.Platform))}></span></td>
                                                             <td><strong>{formatNumber(row.Views)}</strong></td>
                                                             <td>{rate.toFixed(2)}%</td>
                                                         </tr>
@@ -640,7 +648,7 @@ export default function AnalyticsTab() {
                                                     <td><strong>{row['Content Title'] || 'Untitled'}</strong></td>
                                                     <td>{row.Category || '-'}</td>
                                                     <td><span className={`badge ${getPicBadgeClass(row.PIC)}`}>{normalizePicName(row.PIC)}</span></td>
-                                                    <td><span dangerouslySetInnerHTML={{ __html: getPlatformBadgeHtml(row.Platform) }}></span></td>
+                                                    <td><span dangerouslySetInnerHTML={createSafeHtml(getPlatformBadgeHtml(row.Platform))}></span></td>
                                                     <td><strong>{formatNumber(row.Views)}</strong></td>
                                                 </tr>
                                             ))

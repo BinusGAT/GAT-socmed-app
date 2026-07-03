@@ -21,6 +21,14 @@ const parseCleanInt = (val) => {
 };
 
 export default function DashboardTab({ onOpenDatePicker }) {
+    // Helper to render sanitised HTML securely
+    const createSafeHtml = (htmlContent) => {
+        if (typeof window !== 'undefined' && window.DOMPurify) {
+            return { __html: window.DOMPurify.sanitize(htmlContent) };
+        }
+        return { __html: htmlContent };
+    };
+
     const {
         currentData,
         isUnlocked,
@@ -1057,7 +1065,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
 
                                                 {/* Platform */}
                                                 <td>
-                                                    <span dangerouslySetInnerHTML={{ __html: getPlatformBadgeHtml(row.Platform) }}></span>
+                                                    <span dangerouslySetInnerHTML={createSafeHtml(getPlatformBadgeHtml(row.Platform))}></span>
                                                 </td>
 
                                                 {/* Metric columns */}
