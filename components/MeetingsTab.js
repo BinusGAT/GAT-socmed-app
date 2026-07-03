@@ -173,6 +173,11 @@ export default function MeetingsTab({ onOpenDatePicker }) {
             return;
         }
 
+        if (userRole === 'Creator') {
+            showAlert('Creators are not authorized to save meeting memos.', 'error');
+            return;
+        }
+
         let memoId = selectedMeetingId;
         if (memoId === 'NEW' || !memoId) {
             // Use timestamp-based ID to match the original HTML dashboard format
@@ -245,7 +250,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         return { __html: htmlContent };
     };
 
-    const actionsDisabled = !isUnlocked;
+    const actionsDisabled = !isUnlocked || userRole === 'Creator';
 
     if (!isUnlocked) {
         return <LockScreen sectionName="Meetings" />;
@@ -258,7 +263,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                     <span className="panel-icon"><i className="fa-solid fa-handshake"></i></span> Meeting Memos
                 </h2>
                 <div className="panel-actions">
-                    {isUnlocked && (
+                    {isUnlocked && userRole !== 'Creator' && (
                         <button type="button" className="btn btn-primary" onClick={handleCreateNewMemo}>
                             <i className="fa-solid fa-plus"></i> Create Meeting Memo
                         </button>
@@ -355,9 +360,11 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                     <i className="fa-solid fa-calendar-day" style={{ color: 'var(--primary)' }}></i> Date: {parseDate(formDate)}
                                 </h3>
                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button type="button" className="btn btn-outline btn-sm" onClick={() => setIsEditing(true)}>
-                                        <i className="fa-solid fa-pen"></i> Edit
-                                    </button>
+                                    {userRole !== 'Creator' && (
+                                        <button type="button" className="btn btn-outline btn-sm" onClick={() => setIsEditing(true)}>
+                                            <i className="fa-solid fa-pen"></i> Edit
+                                        </button>
+                                    )}
                                     {userRole !== 'Creator' && (
                                         <button type="button" className="btn btn-danger btn-sm" onClick={() => setIsDeleteConfirmOpen(true)}>
                                             <i className="fa-solid fa-trash-can"></i> Delete

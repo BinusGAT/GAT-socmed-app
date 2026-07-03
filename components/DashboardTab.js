@@ -386,6 +386,11 @@ export default function DashboardTab({ onOpenDatePicker }) {
             return;
         }
 
+        if (userRole === 'Creator') {
+            showAlert('Creators are not authorized to save database entries.', 'error');
+            return;
+        }
+
         if (!formTitle || !formPic) {
             showAlert('Content Title and PIC are required fields.', 'error');
             return;
@@ -600,9 +605,9 @@ export default function DashboardTab({ onOpenDatePicker }) {
             )}
 
             {/* 2. CONTENT AREA */}
-            <div className={`content-area ${!isFormVisible ? 'form-collapsed' : ''}`}>
+            <div className={`content-area ${(!isFormVisible || userRole === 'Creator') ? 'form-collapsed' : ''}`}>
                 {/* Form Panel */}
-                {isUnlocked && (
+                {isUnlocked && userRole !== 'Creator' && (
                     <section className="panel panel-form" id="formPanel" style={{ display: isFormVisible ? 'block' : 'none' }}>
                         <div className="panel-header">
                             <h2 id="formTitle">
@@ -899,7 +904,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                     <div className="panel-header">
                         <h2><span className="panel-icon"><i className="fa-solid fa-table"></i></span> Content Data</h2>
                         <div className="panel-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            {isUnlocked && (
+                            {isUnlocked && userRole !== 'Creator' && (
                                 <button 
                                     type="button" 
                                     className="btn btn-outline btn-sm" 
