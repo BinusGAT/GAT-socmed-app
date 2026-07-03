@@ -111,14 +111,16 @@ export function formatDisplayDate(dateInput) {
     return `${day}/${month}/${year}`;
 }
 
-export function parseDate(dateStr) {
-    if (!dateStr) return '';
-    const str = String(dateStr).trim();
+function parseIsoFormat(str) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
     const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (isoMatch) {
         return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
     }
+    return null;
+}
+
+function parseTextMonthFormat(str) {
     const displayMatch = str.match(/^(\d{1,2})[-\/ ]([A-Za-z]{3,9})[-\/ ](\d{4})$/);
     if (displayMatch) {
         const monthMap = {
@@ -141,6 +143,10 @@ export function parseDate(dateStr) {
             return `${displayMatch[3]}-${month}-${displayMatch[1].padStart(2, '0')}`;
         }
     }
+    return null;
+}
+
+function parseSlashFormat(str) {
     if (str.includes('/')) {
         const parts = str.split('/');
         if (parts.length === 3) {
@@ -159,6 +165,10 @@ export function parseDate(dateStr) {
             return `${year}-${month}-${day}`;
         }
     }
+    return null;
+}
+
+function parseFallbackDate(str) {
     const date = new Date(str);
     if (!isNaN(date.getTime())) {
         const day = String(date.getDate()).padStart(2, '0');
@@ -167,6 +177,22 @@ export function parseDate(dateStr) {
         return `${year}-${month}-${day}`;
     }
     return str;
+}
+
+export function parseDate(dateStr) {
+    if (!dateStr) return '';
+    const str = String(dateStr).trim();
+
+    const isoDate = parseIsoFormat(str);
+    if (isoDate) return isoDate;
+
+    const textMonthDate = parseTextMonthFormat(str);
+    if (textMonthDate) return textMonthDate;
+
+    const slashDate = parseSlashFormat(str);
+    if (slashDate) return slashDate;
+
+    return parseFallbackDate(str);
 }
 
 export function formatNumber(num) {
@@ -309,6 +335,30 @@ export const formatMonthlyLabel = (date) => {
     return `${months[date.getMonth()]} ${date.getFullYear()}`;
 };
 
+function getGroupTrendInfo(item, groupMode) {
+    if (groupMode === 'monthly') {
+        const mStart = getMonthStart(item.dateObj);
+        return {
+            groupKey: mStart.getTime().toString(),
+            displayLabel: formatMonthlyLabel(mStart),
+            sortVal: mStart.getTime()
+        };
+    } else if (groupMode === 'weekly') {
+        const monday = getMonday(item.dateObj);
+        return {
+            groupKey: monday.getTime().toString(),
+            displayLabel: formatWeeklyLabel(monday),
+            sortVal: monday.getTime()
+        };
+    } else {
+        return {
+            groupKey: item.dateStr,
+            displayLabel: item.dateStr,
+            sortVal: item.dateObj.getTime()
+        };
+    }
+}
+
 export function aggregateTrendData(activeData) {
     const dataWithDates = activeData.map(row => {
         const dateStr = formatDisplayDate(row.Date);
@@ -332,25 +382,7 @@ export function aggregateTrendData(activeData) {
 
     const dateGroups = {};
     dataWithDates.forEach(item => {
-        let groupKey;
-        let displayLabel;
-        let sortVal;
-
-        if (groupMode === 'monthly') {
-            const mStart = getMonthStart(item.dateObj);
-            groupKey = mStart.getTime().toString();
-            displayLabel = formatMonthlyLabel(mStart);
-            sortVal = mStart.getTime();
-        } else if (groupMode === 'weekly') {
-            const monday = getMonday(item.dateObj);
-            groupKey = monday.getTime().toString();
-            displayLabel = formatWeeklyLabel(monday);
-            sortVal = monday.getTime();
-        } else {
-            groupKey = item.dateStr;
-            displayLabel = item.dateStr;
-            sortVal = item.dateObj.getTime();
-        }
+        const { groupKey, displayLabel, sortVal } = getGroupTrendInfo(item, groupMode);
 
         if (!dateGroups[groupKey]) {
             dateGroups[groupKey] = {

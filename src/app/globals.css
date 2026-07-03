@@ -4215,6 +4215,11 @@ body.dark-mode .meeting-item {
     box-shadow: var(--shadow-soft);
 }
 
+.meeting-item:focus,
+.meeting-item:focus-visible {
+    outline: none;
+}
+
 .meeting-item.active {
     background-color: var(--primary-bg);
     border-color: var(--primary);

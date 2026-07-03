@@ -228,7 +228,6 @@ export function DashboardProvider({ children }) {
             try {
                 const data = JSON.parse(localDrafts);
                 setDraftsData(data || []);
-                console.log('Loaded drafts from cache, count:', (data || []).length);
             } catch (e) {}
         }
         const localMeetings = localStorage.getItem('GAT_meeting_memos');
@@ -236,7 +235,6 @@ export function DashboardProvider({ children }) {
             try {
                 const data = JSON.parse(localMeetings);
                 setMeetingsData(data || []);
-                console.log('Loaded meetings from cache, count:', (data || []).length);
                 if (!data || data.length === 0) {
                     // Fallback sample meeting memo data when none present
                     const sampleMeetings = [
@@ -256,7 +254,6 @@ export function DashboardProvider({ children }) {
                         }
                     ];
                     setMeetingsData(sampleMeetings);
-                    console.log('Loaded sample meetings as fallback');
                 }
             } catch (e) {}
         }
@@ -319,7 +316,6 @@ export function DashboardProvider({ children }) {
                         }
                     ];
                     setMeetingsData(sampleMeetings);
-                    console.log('Loaded sample meetings as fallback from remote');
                 } else {
                     setMeetingsData(meetings);
                 }
