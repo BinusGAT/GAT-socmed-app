@@ -5053,8 +5053,7 @@ body.dark-mode .custom-datepicker-popover {
     letter-spacing: 0.02em !important;
 }
 
-/* Align merged table cells to the top for cleaner visual hierarchy */
+/* Align merged table cells to the middle for cleaner visual hierarchy */
 table td[rowspan] {
-    vertical-align: top !important;
-    padding-top: 14px !important;
+    vertical-align: middle !important;
 }
