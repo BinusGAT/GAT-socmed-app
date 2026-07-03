@@ -20,7 +20,7 @@ export default function ContentHubTab() {
         showAlert
     } = useDashboard();
 
-    const [selectedDraftIndex, setSelectedDraftIndex] = useState(null);
+    const [selectedDraftTitle, setSelectedDraftTitle] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [picFilter, setPicFilter] = useState('');
@@ -37,8 +37,8 @@ export default function ContentHubTab() {
 
     // Load active draft fields when selection changes
     useEffect(() => {
-        if (selectedDraftIndex !== null && draftsData[selectedDraftIndex]) {
-            const draft = draftsData[selectedDraftIndex];
+        const draft = (draftsData || []).find(d => d.title === selectedDraftTitle);
+        if (draft) {
             setFormTitle(draft.title || '');
             setFormCategory(draft.category || 'Story Telling');
             setFormStatus(draft.status || 'Idea');
@@ -57,7 +57,7 @@ export default function ContentHubTab() {
             setFormCaption('');
             setFormReferences('');
         }
-    }, [selectedDraftIndex, draftsData]);
+    }, [selectedDraftTitle, draftsData]);
 
     // Resolve PIC and Date from scheduleData
     const getResolvedSchedule = (title) => {
@@ -135,8 +135,7 @@ export default function ContentHubTab() {
 
         const success = await saveScriptDraft(newDraft);
         if (success) {
-            // Find index of newly added draft
-            setSelectedDraftIndex(draftsData.length); // since it's pushed to draftsData
+            setSelectedDraftTitle(newDraft.title);
         }
     };
 
@@ -160,13 +159,14 @@ export default function ContentHubTab() {
 
         const success = await saveScriptDraft(updatedDraft);
         if (success) {
+            setSelectedDraftTitle(updatedDraft.title);
             showAlert('💾 Storyboard draft updated!', 'success');
         }
     };
 
     const handleDeleteDraft = async () => {
-        if (selectedDraftIndex === null) return;
-        const draft = draftsData[selectedDraftIndex];
+        if (!selectedDraftTitle) return;
+        const draft = (draftsData || []).find(d => d.title === selectedDraftTitle);
         if (!draft) return;
 
         if (userRole === 'Creator') {
@@ -178,7 +178,7 @@ export default function ContentHubTab() {
 
         const success = await deleteScriptDraft(draft.title);
         if (success) {
-            setSelectedDraftIndex(null);
+            setSelectedDraftTitle(null);
         }
     };
 
@@ -297,7 +297,7 @@ export default function ContentHubTab() {
                         ) : (
                             filteredDrafts.map(({ d, index }) => {
                                 const sched = getResolvedSchedule(d.title);
-                                const isSelected = selectedDraftIndex === index;
+                                const isSelected = selectedDraftTitle === d.title;
                                 let badgeClass = 'badge-status-progress';
                                 if (d.status === 'Scripting') {
                                     badgeClass = 'badge-status-today';
@@ -307,7 +307,7 @@ export default function ContentHubTab() {
                                     <button 
                                         key={index}
                                         type="button" 
-                                        onClick={() => setSelectedDraftIndex(index)}
+                                        onClick={() => setSelectedDraftTitle(d.title)}
                                         className={`draft-item ${isSelected ? 'active' : ''}`}
                                     >
                                         <div className="draft-item-title">{d.title || 'Untitled Draft'}</div>
@@ -342,7 +342,7 @@ export default function ContentHubTab() {
 
                 {/* Right Column: Creative Editor */}
                 <div className="creative-editor">
-                    {selectedDraftIndex === null ? (
+                    {!selectedDraftTitle ? (
                         <div className="editor-placeholder">
                             <div className="empty-state">
                                 <div className="empty-icon">📝</div>
@@ -371,7 +371,7 @@ export default function ContentHubTab() {
                                             <i className="fa-solid fa-trash-can"></i> Delete
                                         </button>
                                     )}
-                                    <button type="button" className="btn btn-outline btn-sm" onClick={() => setSelectedDraftIndex(null)}>
+                                    <button type="button" className="btn btn-outline btn-sm" onClick={() => setSelectedDraftTitle(null)}>
                                         Close
                                     </button>
                                 </div>

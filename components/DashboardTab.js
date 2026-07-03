@@ -1125,7 +1125,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                                 {/* Actions column */}
                                                 {showActions && (
                                                     <td style={{ textAlign: 'center' }}>
-                                                        <div className="action-buttons">
+                                                        <div className="action-buttons" style={{ justifyContent: 'center' }}>
                                                             <button 
                                                                 type="button" 
                                                                 className="action-btn edit"
@@ -1133,14 +1133,6 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                                                 title="Edit"
                                                             >
                                                                 <i className="fa-solid fa-pen"></i>
-                                                            </button>
-                                                            <button 
-                                                                type="button" 
-                                                                className="action-btn delete"
-                                                                onClick={() => handleDeleteRow(row, mainIndex)}
-                                                                title="Delete"
-                                                            >
-                                                                <i className="fa-solid fa-trash animate-pulse"></i>
                                                             </button>
                                                         </div>
                                                     </td>
