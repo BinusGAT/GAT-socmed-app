@@ -160,8 +160,9 @@ export function DashboardProvider({ children }) {
         let lastTitle = "";
         let lastPIC = "";
         let lastCategory = "";
+        const maxKpiMap = new Map();
 
-        // First pass: fill in missing values from merged rows, and calculate exact KPI Score based on views
+        // Pass 1: fill in missing values, calculate KPI Score, and collect max KPI Scores
         list.forEach(row => {
             if (row.Date) {
                 lastDate = row.Date;
@@ -181,16 +182,13 @@ export function DashboardProvider({ children }) {
                 if (!row.Category) row.Category = lastCategory;
             }
 
-            // Calculate KPI Score dynamically based on views (Views >= 100,000 is 6, >= 10,000 is 5, >= 1,000 is 4, else 3)
+            // Calculate KPI Score dynamically
             const viewsVal = parseInt(String(row.Views || '').replace(/[,.\s]/g, ''), 10) || 0;
-            row['KPI Score'] = (viewsVal >= 100000) ? 6 : (viewsVal >= 10000) ? 5 : (viewsVal >= 1000) ? 4 : 3;
-        });
+            const score = (viewsVal >= 100000) ? 6 : (viewsVal >= 10000) ? 5 : (viewsVal >= 1000) ? 4 : 3;
+            row['KPI Score'] = score;
 
-        // Second pass: group max KPI Score by content title (case-insensitive)
-        const maxKpiMap = new Map();
-        list.forEach(row => {
+            // Collect max KPI Score
             const titleKey = String(row['Content Title'] || '').trim().toLowerCase();
-            const score = parseInt(row['KPI Score']) || 3;
             if (titleKey) {
                 if (!maxKpiMap.has(titleKey) || score > maxKpiMap.get(titleKey)) {
                     maxKpiMap.set(titleKey, score);
@@ -198,7 +196,7 @@ export function DashboardProvider({ children }) {
             }
         });
 
-        // Third pass: apply the pre-calculated KPI Summary to all rows
+        // Pass 2: apply the pre-calculated KPI Summary to all rows
         list.forEach(row => {
             const titleKey = String(row['Content Title'] || '').trim().toLowerCase();
             row['KPI Summary'] = titleKey ? (maxKpiMap.get(titleKey) || 3) : (parseInt(row['KPI Score']) || 3);
