@@ -421,3 +421,42 @@ export function aggregateCategoryData(activeData) {
     };
 }
 
+export function aggregateAllChartsData(activeData) {
+    const platformGroups = {};
+    const picGroups = {};
+    const catGroups = {};
+
+    activeData.forEach(row => {
+        // Platform
+        const platform = normalizePlatformName(row.Platform) || 'Unknown';
+        platformGroups[platform] = (platformGroups[platform] || 0) + (parseInt(row.Views) || 0);
+
+        // PIC
+        const pic = normalizePicName(row.PIC) || 'Unknown';
+        picGroups[pic] = (picGroups[pic] || 0) + (parseInt(row.Views) || 0);
+
+        // Category
+        const cat = row.Category || 'Unknown';
+        catGroups[cat] = (catGroups[cat] || 0) + (parseInt(row.Views) || 0);
+    });
+
+    const platformData = {
+        platforms: Object.keys(platformGroups),
+        platformViews: Object.values(platformGroups)
+    };
+
+    const picData = {
+        picLabels: Object.keys(picGroups),
+        picViews: Object.values(picGroups)
+    };
+
+    const categoryData = {
+        catLabels: Object.keys(catGroups),
+        catViews: Object.values(catGroups)
+    };
+
+    const trendData = aggregateTrendData(activeData);
+
+    return { trendData, platformData, picData, categoryData };
+}
+

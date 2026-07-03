@@ -250,6 +250,8 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         return { __html: htmlContent };
     };
 
+    const meetingMembers = getMeetingMembers();
+    const absentees = meetingMembers.filter(name => !formAttendees.includes(name));
     const actionsDisabled = !isUnlocked || userRole === 'Creator';
 
     if (!isUnlocked) {
@@ -389,10 +391,10 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                 <div className="meta-block" style={{ flex: 1, minWidth: '200px' }}>
                                     <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Absentees</label>
                                     <div className="meeting-badge-list" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                        {getMeetingMembers().filter(name => !formAttendees.includes(name)).length === 0 ? (
+                                        {absentees.length === 0 ? (
                                             <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>None absent</span>
                                         ) : (
-                                            getMeetingMembers().filter(name => !formAttendees.includes(name)).map(name => (
+                                            absentees.map(name => (
                                                 <span key={name} className="badge badge-pic-default" style={{ fontSize: '10px', padding: '2px 6px', opacity: 0.7 }}>{normalizePicName(name)}</span>
                                             ))
                                         )}
@@ -446,7 +448,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                             <div className="form-group">
                                 <label style={{ display: 'block', marginBottom: '8px' }}>Attendees (Check who attended the meeting)</label>
                                 <div className="member-checkbox-grid">
-                                    {getMeetingMembers().map(name => {
+                                    {meetingMembers.map(name => {
                                         const isChecked = formAttendees.includes(name);
                                         return (
                                             <label 

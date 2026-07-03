@@ -10,10 +10,7 @@ import {
     getPlatformLogoHtml,
     formatNumber,
     parseDate,
-    aggregateTrendData,
-    aggregatePlatformData,
-    aggregatePicData,
-    aggregateCategoryData
+    aggregateAllChartsData
 } from '../utils/helpers';
 
 export default function AnalyticsTab() {
@@ -222,11 +219,7 @@ export default function AnalyticsTab() {
 
             const Chart = window.Chart;
 
-            // 1. Data Aggregation
-            const trendData = aggregateTrendData(activeData);
-            const platformData = aggregatePlatformData(activeData);
-            const picData = aggregatePicData(activeData);
-            const categoryData = aggregateCategoryData(activeData);
+            const { trendData, platformData, picData, categoryData } = aggregateAllChartsData(activeData);
 
             // Clean up old charts before rendering new ones
             if (trendChartRef.current) trendChartRef.current.destroy();
