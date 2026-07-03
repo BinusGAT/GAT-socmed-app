@@ -182,7 +182,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
             Date: formattedDate,
             PIC: modalPic,
             Category: modalCategory,
-            'Content Title': modalTitle,
+            'Content Title': modalTitle.trim() || 'Untitled',
             Status: modalStatus
         };
 
@@ -208,62 +208,71 @@ export default function TaskListTab({ onOpenDatePicker }) {
             <div className="panel-header">
                 <h2><span className="panel-icon"><i className="fa-solid fa-list-check"></i></span> Scheduled Task Directory</h2>
                 <div className="panel-actions">
+                    <span className="data-count">{processedTasks.length} items</span>
+                </div>
+            </div>
+
+            {/* Bulk Actions & Filters Wrapper */}
+            <div className="bulk-actions" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div className="bulk-actions-left">
                     {!actionsDisabled && (
-                        <button type="button" className="btn btn-primary" onClick={openAddModal}>
+                        <button type="button" className="btn btn-primary btn-sm" onClick={openAddModal}>
                             <i className="fa-solid fa-plus"></i> Add Scheduled Task
                         </button>
                     )}
                 </div>
-            </div>
 
-            {/* Filter controls */}
-            <div className="tasklist-filters" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', margin: '16px 0' }}>
-                <div style={{ flex: 1, minWidth: '220px' }}>
-                    <input 
-                        type="text" 
-                        className="form-control" 
-                        placeholder="Search tasks..."
-                        value={tasklistSearch}
-                        onChange={(e) => setTasklistSearch(e.target.value)}
-                    />
+                <div className="bulk-actions-right" style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', width: 'auto', flex: 1 }}>
+                    {(tasklistSearch || tasklistFilterPic || tasklistFilterStatus) && (
+                        <button 
+                            className="btn btn-outline btn-sm"
+                            onClick={() => {
+                                setTasklistSearch('');
+                                setTasklistFilterPic('');
+                                setTasklistFilterStatus('');
+                            }}
+                        >
+                            <i className="fa-solid fa-arrow-rotate-left"></i> Set to Default
+                        </button>
+                    )}
+                    <div className="search-wrapper">
+                        <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
+                        <input 
+                            type="text" 
+                            className="search-input" 
+                            placeholder="Search tasks..."
+                            value={tasklistSearch}
+                            onChange={(e) => setTasklistSearch(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <select 
+                            className="form-control"
+                            style={{ height: '36px', padding: '0 12px', fontSize: '13px', width: '130px' }}
+                            value={tasklistFilterPic}
+                            onChange={(e) => setTasklistFilterPic(e.target.value)}
+                        >
+                            <option value="">All PICs</option>
+                            {memberListData.map(m => (
+                                <option key={m.NAMA} value={m.NAMA}>{m.NAMA}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <select 
+                            className="form-control"
+                            style={{ height: '36px', padding: '0 12px', fontSize: '13px', width: '130px' }}
+                            value={tasklistFilterStatus}
+                            onChange={(e) => setTasklistFilterStatus(e.target.value)}
+                        >
+                            <option value="">All Statuses</option>
+                            <option value="On Progress">🔵 On Progress</option>
+                            <option value="Due Today">🔴 Due Today</option>
+                            <option value="Overdue">⚠️ Overdue</option>
+                            <option value="Done">✅ Done</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <select 
-                        className="form-control"
-                        value={tasklistFilterPic}
-                        onChange={(e) => setTasklistFilterPic(e.target.value)}
-                    >
-                        <option value="">All PICs</option>
-                        {memberListData.map(m => (
-                            <option key={m.NAMA} value={m.NAMA}>{m.NAMA}</option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <select 
-                        className="form-control"
-                        value={tasklistFilterStatus}
-                        onChange={(e) => setTasklistFilterStatus(e.target.value)}
-                    >
-                        <option value="">All Statuses</option>
-                        <option value="On Progress">🔵 On Progress</option>
-                        <option value="Due Today">🔴 Due Today</option>
-                        <option value="Overdue">⚠️ Overdue</option>
-                        <option value="Done">✅ Done</option>
-                    </select>
-                </div>
-                {(tasklistSearch || tasklistFilterPic || tasklistFilterStatus) && (
-                    <button 
-                        className="btn btn-outline"
-                        onClick={() => {
-                            setTasklistSearch('');
-                            setTasklistFilterPic('');
-                            setTasklistFilterStatus('');
-                        }}
-                    >
-                        Clear
-                    </button>
-                )}
             </div>
 
             {/* Directory table */}
@@ -364,12 +373,11 @@ export default function TaskListTab({ onOpenDatePicker }) {
                         <form onSubmit={handleModalSubmit} autoComplete="off">
                             <div className="modal-card-body">
                                 <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                    <label>Content Title / Topic <span className="required">*</span></label>
+                                    <label>Content Title / Topic</label>
                                     <input 
                                         type="text" 
                                         className="form-control" 
-                                        placeholder="Enter title"
-                                        required
+                                        placeholder="Enter title (optional)"
                                         value={modalTitle}
                                         onChange={(e) => setModalTitle(e.target.value)}
                                         style={{ width: '100%' }}

@@ -87,7 +87,14 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     // Update contenteditable element content when isEditing becomes true or when switching to editable view
     useEffect(() => {
         if (isEditing && editorRef.current) {
-            editorRef.current.innerHTML = formRecap;
+            const currentText = editorRef.current.innerHTML;
+            if (selectedMeetingId === 'NEW') {
+                if (currentText !== '') {
+                    editorRef.current.innerHTML = '';
+                }
+            } else if (currentText !== formRecap) {
+                editorRef.current.innerHTML = formRecap;
+            }
         }
     }, [isEditing, selectedMeetingId]);
 
@@ -129,19 +136,14 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     const filteredMeetings = getFilteredMeetings();
 
     const getMeetingMembers = () => {
-        // Start with the dynamic list from memberListData
         const list = (memberListData || []).map(m => m.NAMA).filter(Boolean);
-        
-        // Ensure "Pak Fajar" is present
         const hasPakFajar = list.some(name => name.toLowerCase() === 'pak fajar');
         if (!hasPakFajar) {
             list.unshift('Pak Fajar');
         }
-        
         return list;
     };
 
-    // Toggle attendee checkbox
     const handleAttendeeToggle = (name) => {
         if (formAttendees.includes(name)) {
             setFormAttendees(formAttendees.filter(a => a !== name));
@@ -149,46 +151,48 @@ export default function MeetingsTab({ onOpenDatePicker }) {
             setFormAttendees([...formAttendees, name]);
         }
     };
-
+    
     const handleCreateNewMemo = () => {
-        if (!isUnlocked) {
-            showAlert('Workspace is locked. Please unlock to edit.', 'error');
-            return;
-        }
-        setSelectedMeetingId('NEW'); // Marker for new memo
+        if (!isUnlocked || userRole === 'Creator') return;
+        setSelectedMeetingId('NEW');
         setIsEditing(true);
     };
 
     const handleCancelEdit = () => {
+        setIsEditing(false);
         if (selectedMeetingId === 'NEW') {
             setSelectedMeetingId(null);
         }
-        setIsEditing(false);
     };
 
-    const handleFormSubmit = async (e) => {
+    const handleSaveMemo = async (e) => {
         e.preventDefault();
-        if (!isUnlocked) {
-            showAlert('Workspace is locked. Please unlock to edit.', 'error');
+        if (!isUnlocked || userRole === 'Creator') {
+            showAlert('Permission denied. Editing is locked.', 'error');
             return;
         }
 
-        if (userRole === 'Creator') {
-            showAlert('Creators are not authorized to save meeting memos.', 'error');
+        if (!formRecap || String(formRecap).trim() === '' || formRecap === '<br>') {
+            showAlert('Please enter meeting recap details.', 'error');
             return;
         }
 
         let memoId = selectedMeetingId;
-        if (memoId === 'NEW' || !memoId) {
-            // Use timestamp-based ID to match the original HTML dashboard format
-            memoId = `M${Date.now()}`;
+        if (!memoId || memoId === 'NEW') {
+            let maxNum = 0;
+            (meetingsData || []).forEach(m => {
+                if (String(m.id).startsWith('MM')) {
+                    const num = parseInt(m.id.replace('MM', '')) || 0;
+                    if (num > maxNum) maxNum = num;
+                }
+            });
+            memoId = `MM${maxNum + 1}`;
         }
 
         const memoPayload = {
             id: memoId,
             date: formDate,
-            attendees: formAttendees.join(', '),
-            agenda: '',
+            attendees: formAttendees,
             recap: formRecap
         };
 
@@ -221,10 +225,35 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         if (editorRef.current) {
             setFormRecap(editorRef.current.innerHTML);
         }
+        updateActiveStyles();
     };
 
-    const applyLink = () => {
-        const url = prompt('Enter link URL:', 'https://');
+    const saveSelection = () => {
+        if (typeof window !== 'undefined' && window.getSelection) {
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0) {
+                savedSelectionRef.current = sel.getRangeAt(0);
+            }
+        }
+    };
+
+    const restoreSelection = () => {
+        if (savedSelectionRef.current && typeof window !== 'undefined' && window.getSelection) {
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(savedSelectionRef.current);
+        }
+    };
+
+    const handleLinkClick = (e) => {
+        e.preventDefault();
+        saveSelection();
+        setIsLinkModalOpen(true);
+    };
+
+    const handleLinkConfirm = (url) => {
+        setIsLinkModalOpen(false);
+        restoreSelection();
         if (url) {
             let formattedUrl = url.trim();
             if (formattedUrl && !/^https?:\/\//i.test(formattedUrl)) {
@@ -242,7 +271,35 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         }
     };
 
-    // Helper to render sanitised HTML securely
+    const handleEditorKeyUp = (e) => {
+        if (e.key === ' ' || e.code === 'Space') {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const textNode = range.startContainer;
+                if (textNode.nodeType === Node.TEXT_NODE) {
+                    const text = textNode.textContent;
+                    const offset = range.startOffset;
+                    const typedText = text.substring(0, offset);
+                    if (typedText === '1. ') {
+                        textNode.textContent = text.substring(offset);
+                        document.execCommand('insertOrderedList', false, null);
+                        if (editorRef.current) {
+                            setFormRecap(editorRef.current.innerHTML);
+                        }
+                    } else if (typedText === '* ' || typedText === '- ') {
+                        textNode.textContent = text.substring(offset);
+                        document.execCommand('insertUnorderedList', false, null);
+                        if (editorRef.current) {
+                            setFormRecap(editorRef.current.innerHTML);
+                        }
+                    }
+                }
+            }
+        }
+        updateActiveStyles();
+    };
+
     const createSafeHtml = (htmlContent) => {
         if (typeof window !== 'undefined' && window.DOMPurify) {
             return { __html: window.DOMPurify.sanitize(htmlContent) };
@@ -281,19 +338,12 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                     </div>
 
                     <div className="meeting-search-wrapper" style={{ marginBottom: '12px', display: 'flex', gap: '8px' }}>
-                        <input 
-                            type="text" 
-                            className="form-control" 
-                            placeholder="Search..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        <div style={{ display: 'flex', gap: '6px' }}>
+                        <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
                             <input 
                                 type="text" 
                                 className="form-control custom-date-input" 
-                                style={{ width: '130px' }}
-                                placeholder="YYYY-MM-DD" 
+                                style={{ flex: 1 }}
+                                placeholder="Filter by date..." 
                                 readOnly
                                 value={dateFilter}
                                 onClick={handleFilterDateClick}
@@ -312,7 +362,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                         ) : (
                             filteredMeetings.map((memo) => {
                                 const isSelected = selectedMeetingId === memo.id;
-                                const countAtt = memo.attendees ? memo.attendees.split(',').filter(Boolean).length : 0;
+                                const countAtt = Array.isArray(memo.attendees) ? memo.attendees.length : (memo.attendees ? memo.attendees.split(',').filter(Boolean).length : 0);
                                 const plainRecap = (memo.recap || '').replace(/<[^>]*>/g, '').trim();
                                 const snippet = plainRecap.length > 80 ? plainRecap.substring(0, 80) + '...' : plainRecap;
 
@@ -490,18 +540,18 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                 <div className="form-group full">
                                     <label>Meeting Recap <span className="required">*</span></label>
                                     <div className="rich-text-toolbar" style={{ marginBottom: '6px' }}>
-                                        <button type="button" className="btn btn-sm" onMouseDown={(e) => { e.preventDefault(); applyFormatting('bold'); }} title="Bold"><i className="fa-solid fa-bold"></i></button>
-                                        <button type="button" className="btn btn-sm" onMouseDown={(e) => { e.preventDefault(); applyFormatting('italic'); }} title="Italic"><i className="fa-solid fa-italic"></i></button>
-                                        <button type="button" className="btn btn-sm" onMouseDown={(e) => { e.preventDefault(); applyFormatting('underline'); }} title="Underline"><i className="fa-solid fa-underline"></i></button>
+                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.bold)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('bold'); }} title="Bold"><i className="fa-solid fa-bold"></i></button>
+                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.italic)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('italic'); }} title="Italic"><i className="fa-solid fa-italic"></i></button>
+                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.underline)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('underline'); }} title="Underline"><i className="fa-solid fa-underline"></i></button>
                                         <div className="toolbar-separator"></div>
-                                        <button type="button" className="btn btn-sm" onMouseDown={(e) => { e.preventDefault(); applyFormatting('insertUnorderedList'); }} title="Bulleted List"><i className="fa-solid fa-list-ul"></i></button>
-                                        <button type="button" className="btn btn-sm" onMouseDown={(e) => { e.preventDefault(); applyFormatting('insertOrderedList'); }} title="Numbered List"><i className="fa-solid fa-list-ol"></i></button>
+                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.insertUnorderedList)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('insertUnorderedList'); }} title="Bulleted List"><i className="fa-solid fa-list-ul"></i></button>
+                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.insertOrderedList)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('insertOrderedList'); }} title="Numbered List"><i className="fa-solid fa-list-ol"></i></button>
                                         <div className="toolbar-separator"></div>
-                                        <button type="button" className="btn btn-sm" onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyLeft'); }} title="Align Left"><i className="fa-solid fa-align-left"></i></button>
-                                        <button type="button" className="btn btn-sm" onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyCenter'); }} title="Align Center"><i className="fa-solid fa-align-center"></i></button>
-                                        <button type="button" className="btn btn-sm" onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyRight'); }} title="Align Right"><i className="fa-solid fa-align-right"></i></button>
+                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.justifyLeft)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyLeft'); }} title="Align Left"><i className="fa-solid fa-align-left"></i></button>
+                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.justifyCenter)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyCenter'); }} title="Align Center"><i className="fa-solid fa-align-center"></i></button>
+                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.justifyRight)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyRight'); }} title="Align Right"><i className="fa-solid fa-align-right"></i></button>
                                         <div className="toolbar-separator"></div>
-                                        <button type="button" className="btn btn-sm" onMouseDown={(e) => { e.preventDefault(); applyLink(); }} title="Insert Link"><i className="fa-solid fa-link"></i></button>
+                                        <button type="button" className="btn btn-sm" onMouseDown={handleLinkClick} title="Insert Link"><i className="fa-solid fa-link"></i></button>
                                     </div>
                                     <div 
                                         ref={editorRef}
@@ -509,6 +559,8 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                         className="form-control rich-text-editor" 
                                         contentEditable={!actionsDisabled} 
                                         onBlur={(e) => setFormRecap(e.currentTarget.innerHTML)}
+                                        onKeyUp={handleEditorKeyUp}
+                                        onMouseUp={updateActiveStyles}
                                         style={{ minHeight: '200px', fontFamily: 'inherit', resize: 'vertical', padding: '12px' }}
                                         placeholder="Write down the details of what was discussed, action items, next steps..."
                                         data-placeholder="Write down the details of what was discussed, action items, next steps..."
@@ -537,6 +589,12 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                 onClose={() => setIsDeleteConfirmOpen(false)} 
                 onConfirm={handleDeleteMemo} 
                 message="Are you sure you want to delete this meeting memo?"
+            />
+
+            <LinkModal
+                isOpen={isLinkModalOpen}
+                onClose={() => setIsLinkModalOpen(false)}
+                onConfirm={handleLinkConfirm}
             />
         </section>
     );

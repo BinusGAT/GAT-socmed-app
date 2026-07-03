@@ -432,7 +432,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
         const payload = {
             ID: rowId,
             Date: formDate,
-            'Content Title': formTitle,
+            'Content Title': formTitle.trim() || 'Untitled',
             PIC: formPic,
             Category: formCategory,
             Platform: formPlatform,
@@ -675,15 +675,14 @@ export default function DashboardTab({ onOpenDatePicker }) {
 
                                             <div className="form-row">
                                                 <div className="form-group full">
-                                                    <label>Content Title <span className="required">*</span></label>
+                                                    <label>Content Title</label>
                                                     <input 
                                                         type="text" 
                                                         className="form-control"
-                                                        placeholder="Enter content title"
+                                                        placeholder="Enter content title (optional)"
                                                         value={formTitle}
                                                         onChange={(e) => setFormTitle(e.target.value)}
                                                         disabled={editIndex !== null}
-                                                        required
                                                     />
                                                 </div>
                                             </div>
@@ -844,7 +843,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                                                 <label>Total Engagement</label>
                                                                 <div className="metric-value">{formCalculated.totalEngagement}</div>
                                                             </div>
-                                                            <div className="metric-box">
+                                                            <div className="metric-box" title="Engagement Rate is calculated from: Views, Reach, Likes, Comments, Follows, Repost, Shares">
                                                                 <label>Engagement Rate</label>
                                                                 <div className="metric-value">{formCalculated.engagementRate}%</div>
                                                             </div>
@@ -1008,7 +1007,11 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                         <th style={{ textAlign: 'right' }}>Repost</th>
                                         <th style={{ textAlign: 'right' }}>Shares</th>
                                         <th style={{ textAlign: 'right' }}>Total Eng</th>
-                                        <th onClick={() => handleHeaderSort('Engagement Rate (%)')} style={{ cursor: 'pointer', textAlign: 'right' }}>
+                                        <th 
+                                            onClick={() => handleHeaderSort('Engagement Rate (%)')} 
+                                            style={{ cursor: 'pointer', textAlign: 'right' }}
+                                            title="Engagement Rate is calculated from: Views, Reach, Likes, Comments, Follows, Repost, Shares"
+                                        >
                                             Rate % <i className={`fa-solid ${sortColumn === 'Engagement Rate (%)' ? (sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort'}`}></i>
                                         </th>
                                         <th onClick={() => handleHeaderSort('KPI Score')} style={{ cursor: 'pointer', textAlign: 'center' }}>

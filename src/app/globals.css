@@ -2306,6 +2306,16 @@ body.dark-mode .calendar-weekdays {
     color: #2a9d99 !important;
 }
 
+.badge-pic-fajar {
+    background-color: #e0f2f1 !important;
+    color: #00695c !important;
+}
+
+.badge-pic-andre {
+    background-color: #fff3e0 !important;
+    color: #e65100 !important;
+}
+
 /* Platform Badges */
 .badge-platform-default {
     background-color: #f1f1ef !important;
@@ -2333,19 +2343,23 @@ body.dark-mode .calendar-weekdays {
 }
 
 .platform-badge-with-logo {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 3px 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 3px 8px !important;
     border-radius: var(--radius-sm) !important;
     font-weight: 500;
+    vertical-align: middle !important;
+    line-height: 1.2 !important;
 }
 
 .platform-logo-img {
-    width: 14px;
-    height: 14px;
-    object-fit: contain;
-    border-radius: 2px;
+    width: 14px !important;
+    height: 14px !important;
+    object-fit: contain !important;
+    border-radius: 2px !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
 }
 
 body.dark-mode .platform-badge-with-logo::before {
@@ -2461,6 +2475,14 @@ body.dark-mode .badge-pic-leonardi::before {
 
 body.dark-mode .badge-pic-rafael::before {
     background-color: #2dd4bf;
+}
+
+body.dark-mode .badge-pic-fajar::before {
+    background-color: #06b6d4;
+}
+
+body.dark-mode .badge-pic-andre::before {
+    background-color: #f97316;
 }
 
 /* Dark Mode Platform Dot Colors */
@@ -4988,6 +5010,7 @@ body.dark-mode .custom-datepicker-popover {
     padding: 8px 16px !important;
     font-size: 13px !important;
     font-weight: 600 !important;
+    font-family: inherit !important;
     cursor: pointer !important;
     transition: all 0.2s !important;
 }
@@ -5005,6 +5028,7 @@ body.dark-mode .custom-datepicker-popover {
     padding: 8px 16px !important;
     font-size: 13px !important;
     font-weight: 600 !important;
+    font-family: inherit !important;
     cursor: pointer !important;
     transition: background-color 0.2s !important;
 }

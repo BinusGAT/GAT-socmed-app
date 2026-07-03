@@ -23,7 +23,9 @@ export const PIC_BADGE_CLASS_MAP = {
     Felix: 'badge-pic-felix',
     Ruliyanto: 'badge-pic-ruliyanto',
     Leonardi: 'badge-pic-leonardi',
-    Rafael: 'badge-pic-rafael'
+    Rafael: 'badge-pic-rafael',
+    'Pak Fajar': 'badge-pic-fajar',
+    Andre: 'badge-pic-andre'
 };
 
 export const PLATFORM_NAME_MAP = {
@@ -266,7 +268,7 @@ export function getPlatformLogoHtml(platformName) {
     const logoUrl = PLATFORM_LOGO_MAP[norm];
     const badgeClass = getPlatformBadgeClass(platformName);
     if (logoUrl) {
-        return `<span class="badge ${badgeClass} platform-badge-with-logo" style="display:inline-flex; align-items:center; gap:4px;"><img src="${logoUrl}" alt="${norm}" class="platform-logo-img" style="width:12px; height:12px; object-fit:contain;" />${norm}</span>`;
+        return `<span class="badge ${badgeClass} platform-badge-with-logo" style="display:inline-flex; align-items:center; gap:6px; vertical-align:middle; line-height:1.2; padding:3px 8px;"><img src="${logoUrl}" alt="${norm}" class="platform-logo-img" style="width:14px; height:14px; object-fit:contain; flex-shrink:0; display:inline-block;" />${norm}</span>`;
     }
     return `<span class="badge ${badgeClass}">${norm}</span>`;
 }

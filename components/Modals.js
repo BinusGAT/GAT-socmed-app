@@ -568,14 +568,28 @@ export function CalendarExportModal({ isOpen, onClose }) {
     const [previewUrl, setPreviewUrl] = useState('');
     const [imageBlob, setImageBlob] = useState(null);
 
+    // Filter checkbox states
+    const [showMeetings, setShowMeetings] = useState(true);
+    const [showPic, setShowPic] = useState(true);
+    const [showCategory, setShowCategory] = useState(true);
+    const [hasMeetings, setHasMeetings] = useState(false);
+
     // Regenerate preview whenever the modal opens or theme changes
     useEffect(() => {
         if (isOpen) {
-            // Default theme to body dark-mode
             const isBodyDark = document.body.classList.contains('dark-mode');
             setExportTheme(isBodyDark ? 'dark' : 'light');
+            
+            const target = document.querySelector('.calendar-shell');
+            if (target) {
+                const meetingCount = target.querySelectorAll('.calendar-day-task-item[data-is-meeting="true"]').length;
+                setHasMeetings(meetingCount > 0);
+            }
+            
+            setShowMeetings(true);
+            setShowPic(true);
+            setShowCategory(true);
         } else {
-            // Cleanup
             if (previewUrl) {
                 URL.revokeObjectURL(previewUrl);
             }
@@ -589,7 +603,7 @@ export function CalendarExportModal({ isOpen, onClose }) {
         if (isOpen) {
             generatePreview();
         }
-    }, [isOpen, exportTheme]);
+    }, [isOpen, exportTheme, showMeetings, showPic, showCategory]);
 
     const generatePreview = async () => {
         const target = document.querySelector('.calendar-shell');
@@ -730,6 +744,17 @@ export function CalendarExportModal({ isOpen, onClose }) {
                 editorEl.style.display = 'none';
             }
             clone.removeAttribute('style');
+
+            // Filter elements based on user options
+            if (!showMeetings) {
+                clone.querySelectorAll('.calendar-day-task-item[data-is-meeting="true"]').forEach(el => el.remove());
+            }
+            if (!showPic) {
+                clone.querySelectorAll('[data-is-pic="true"]').forEach(el => el.remove());
+            }
+            if (!showCategory) {
+                clone.querySelectorAll('.calendar-day-task-category').forEach(el => el.remove());
+            }
 
             // Remove active highlights
             clone.querySelectorAll('.calendar-day').forEach(el => {
@@ -876,6 +901,47 @@ export function CalendarExportModal({ isOpen, onClose }) {
                         <i className="fa-solid fa-xmark"></i>
                     </button>
                 </div>
+                {/* Export filter settings */}
+                <div className="calendar-export-settings" style={{
+                    padding: '12px 20px',
+                    borderBottom: '1px solid var(--hairline)',
+                    display: 'flex',
+                    gap: '20px',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    backgroundColor: 'var(--surface)'
+                }}>
+                    <span style={{ fontSize: '11px', color: 'var(--ink-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Include:</span>
+                    {hasMeetings && (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', userSelect: 'none', margin: 0, color: 'var(--ink)' }}>
+                            <input 
+                                type="checkbox" 
+                                checked={showMeetings} 
+                                onChange={(e) => setShowMeetings(e.target.checked)} 
+                                style={{ cursor: 'pointer', margin: 0 }} 
+                            />
+                            <span>Meetings</span>
+                        </label>
+                    )}
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', userSelect: 'none', margin: 0, color: 'var(--ink)' }}>
+                        <input 
+                            type="checkbox" 
+                            checked={showPic} 
+                            onChange={(e) => setShowPic(e.target.checked)} 
+                            style={{ cursor: 'pointer', margin: 0 }} 
+                        />
+                        <span>PIC</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', userSelect: 'none', margin: 0, color: 'var(--ink)' }}>
+                        <input 
+                            type="checkbox" 
+                            checked={showCategory} 
+                            onChange={(e) => setShowCategory(e.target.checked)} 
+                            style={{ cursor: 'pointer', margin: 0 }} 
+                        />
+                        <span>Category</span>
+                    </label>
+                </div>
                 <div className="calendar-export-body" style={{
                     padding: '20px',
                     backgroundColor: 'var(--canvas-subtle)',
@@ -1019,3 +1085,79 @@ export function DeleteConfirmModal({ isOpen, onClose, onConfirm, message }) {
         document.body
     );
 }
+
+export function LinkModal({ isOpen, onClose, onConfirm }) {
+    const [url, setUrl] = useState('https://');
+
+    useEffect(() => {
+        if (isOpen) {
+            setUrl('https://');
+        }
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onConfirm(url);
+    };
+
+    return createPortal(
+        <div className="modal-overlay" style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 15000,
+            backdropFilter: 'blur(4px)'
+        }}>
+            <div className="modal-card" style={{
+                width: '100%',
+                maxWidth: '400px',
+                background: 'var(--surface-elevated, #18181b)',
+                border: '1px solid var(--hairline, #27272a)',
+                borderRadius: '12px',
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                boxShadow: 'var(--shadow-lg, 0 10px 25px -5px rgba(0, 0, 0, 0.3))'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--hairline)', paddingBottom: '12px' }}>
+                    <i className="fa-solid fa-link" style={{ color: 'var(--primary)', fontSize: '18px' }}></i>
+                    <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--ink)' }}>Insert Link</h3>
+                </div>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-muted)' }}>Link URL</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={url}
+                            onChange={(e) => setUrl(e.target.value)}
+                            placeholder="https://example.com"
+                            required
+                            autoFocus
+                            style={{ width: '100%', fontFamily: 'inherit' }}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                        <button type="button" className="btn btn-outline" onClick={onClose} style={{ minWidth: '80px' }}>
+                            Cancel
+                        </button>
+                        <button type="submit" className="btn btn-primary" style={{ minWidth: '80px' }}>
+                            Insert
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>,
+        document.body
+    );
+}
+

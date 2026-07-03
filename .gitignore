@@ -44,6 +44,3 @@ next-env.d.ts
 *.db
 *.db-journal
 local.db
-
-# google apps script source
-GoogleAppsScript.js

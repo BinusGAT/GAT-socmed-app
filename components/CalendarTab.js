@@ -194,8 +194,8 @@ export default function CalendarTab({ onOpenExport }) {
             return;
         }
 
-        if (!formPic || !formCategory || !formTitle) {
-            showAlert('Please fill in PIC, Category, and Title.', 'error');
+        if (!formPic || !formCategory) {
+            showAlert('Please fill in PIC and Category.', 'error');
             return;
         }
 
@@ -219,7 +219,7 @@ export default function CalendarTab({ onOpenExport }) {
             Date: formattedDate,
             PIC: formPic,
             Category: formCategory,
-            'Content Title': formTitle,
+            'Content Title': formTitle.trim() || 'Untitled',
             Status: false // Initially false (On Progress)
         };
 
@@ -355,14 +355,14 @@ export default function CalendarTab({ onOpenExport }) {
                                 <span className="calendar-day-number">{dayNumber}</span>
                                 <div className="calendar-day-tasks-container">
                                     {uniqueRenderTasks.map((task, idx) => (
-                                        <div key={idx} className="calendar-day-task-item" style={task.isMeeting ? { borderLeft: '2px solid var(--warning)' } : undefined}>
+                                        <div key={idx} className="calendar-day-task-item" data-is-meeting={task.isMeeting ? "true" : "false"} style={task.isMeeting ? { borderLeft: '2px solid var(--warning)' } : undefined}>
                                             {task.isMeeting ? (
                                                 <span className="calendar-day-task-pill" style={{ backgroundColor: 'var(--warning-bg)', color: 'var(--warning)' }}>
                                                     <i className="fa-solid fa-handshake"></i> Meeting
                                                 </span>
                                             ) : (
                                                 <>
-                                                    <span className={`calendar-day-task-pill ${getPicBadgeClass(task.pic)}`}>
+                                                    <span className={`calendar-day-task-pill ${getPicBadgeClass(task.pic)}`} data-is-pic="true">
                                                         {normalizePicName(task.pic)}
                                                     </span>
                                                     <span className="calendar-day-task-category">{task.category}</span>
@@ -505,10 +505,9 @@ export default function CalendarTab({ onOpenExport }) {
                                     <input 
                                         type="text" 
                                         className="form-control"
-                                        placeholder="Enter scheduled title"
+                                        placeholder="Enter scheduled title (optional)"
                                         value={formTitle}
                                         onChange={(e) => setFormTitle(e.target.value)}
-                                        required
                                     />
                                 </div>
                             </div>
