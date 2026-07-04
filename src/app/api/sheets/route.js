@@ -17,8 +17,6 @@ const failedAttempts = new Map();
 const MAX_ATTEMPTS = 5;
 const LOCKDOWN_DURATION = 6 * 60 * 60 * 1000; // 6 hours
 
-// Server-side active sessions store (in-memory)
-const activeSessions = new Map(); // key: token, value: { role: string, expiresAt: number }
 
 function sha256(text) {
   return crypto.createHash('sha256').update(text).digest('hex');
@@ -30,22 +28,33 @@ function safeCompare(a, b) {
   return crypto.timingSafeEqual(hashA, hashB);
 }
 
-function validateAuth(token, requiredLevel) {
+async function validateAuth(token, requiredLevel) {
   if (!token || typeof token !== 'string') return { valid: false, role: null };
 
-  const session = activeSessions.get(token);
-  if (!session) return { valid: false, role: null };
+  try {
+    const res = await db.execute({
+      sql: "SELECT role, expiresAt FROM sessions WHERE token = ? LIMIT 1",
+      args: [token]
+    });
+    const session = res.rows[0];
+    if (!session) return { valid: false, role: null };
 
-  if (session.expiresAt < Date.now()) {
-    activeSessions.delete(token); // Clean up expired session
-    return { valid: false, role: null };
-  }
+    if (session.expiresAt < Date.now()) {
+      await db.execute({
+        sql: "DELETE FROM sessions WHERE token = ?",
+        args: [token]
+      });
+      return { valid: false, role: null };
+    }
 
-  if (session.role === 'Admin') {
-    return { valid: true, role: 'Admin' };
-  }
-  if (requiredLevel === 'any' && session.role === 'Creator') {
-    return { valid: true, role: 'Creator' };
+    if (session.role === 'Admin') {
+      return { valid: true, role: 'Admin' };
+    }
+    if (requiredLevel === 'any' && session.role === 'Creator') {
+      return { valid: true, role: 'Creator' };
+    }
+  } catch (err) {
+    console.error('Session validation error:', err);
   }
   return { valid: false, role: null };
 }
@@ -171,6 +180,15 @@ async function syncGroupById(id) {
 
 export async function POST(request) {
   try {
+    // Ensure sessions table exists
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        token TEXT PRIMARY KEY,
+        role TEXT NOT NULL,
+        expiresAt INTEGER NOT NULL
+      )
+    `);
+
     const payload = await request.json();
     const action = payload.action;
     const token = payload.token;
@@ -210,9 +228,15 @@ export async function POST(request) {
         
         // Generate secure random session token
         const sessionToken = crypto.randomBytes(32).toString('hex');
-        activeSessions.set(sessionToken, {
-          role: matchedRole,
-          expiresAt: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+        
+        // Clean up expired sessions and insert the new one
+        await db.execute({
+          sql: "DELETE FROM sessions WHERE expiresAt < ?",
+          args: [Date.now()]
+        });
+        await db.execute({
+          sql: "INSERT OR REPLACE INTO sessions (token, role, expiresAt) VALUES (?, ?, ?)",
+          args: [sessionToken, matchedRole, Date.now() + 24 * 60 * 60 * 1000]
         });
 
         return NextResponse.json({ 
@@ -243,7 +267,7 @@ export async function POST(request) {
 
     // 2. Validate token for all other actions
     const requiredLevel = ['read_all', 'save_script', 'save_schedule'].includes(action) ? 'any' : 'admin';
-    const auth = validateAuth(token, requiredLevel);
+    const auth = await validateAuth(token, requiredLevel);
     if (!auth.valid) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized: Access token required or invalid' },

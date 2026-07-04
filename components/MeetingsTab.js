@@ -556,19 +556,25 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                 </div>
                                 <div className="meta-block" style={{ flex: 1, minWidth: '200px' }}>
                                     <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Video Recap</label>
-                                    <div className="meeting-badge-list" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                        {formVideoRecap ? (
-                                            <a 
-                                                href={formVideoRecap} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer" 
-                                                style={{ fontSize: '12px', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'underline' }}
-                                            >
-                                                <i className="fa-solid fa-video"></i> Watch Video Recap
-                                            </a>
-                                        ) : (
-                                            <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>None provided</span>
-                                        )}
+                                    <div className="meeting-badge-list" style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                                        {(() => {
+                                            const links = formVideoRecap ? formVideoRecap.split(/[\s,]+/).map(l => l.trim()).filter(Boolean) : [];
+                                            return links.length > 0 ? (
+                                                links.map((link, idx) => (
+                                                    <a 
+                                                        key={idx}
+                                                        href={link} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        style={{ fontSize: '12px', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'underline' }}
+                                                    >
+                                                        <i className="fa-solid fa-video"></i> Watch Video Recap {links.length > 1 ? `#${idx + 1}` : ''}
+                                                    </a>
+                                                ))
+                                            ) : (
+                                                <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>None provided</span>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </div>
@@ -617,11 +623,11 @@ export default function MeetingsTab({ onOpenDatePicker }) {
 
                             <div className="form-row">
                                 <div className="form-group full">
-                                    <label>Video Recap URL <span style={{ color: 'var(--ink-muted)', fontSize: '11px', fontWeight: 'normal' }}>(Optional)</span></label>
+                                    <label>Video Recap URL(s) <span style={{ color: 'var(--ink-muted)', fontSize: '11px', fontWeight: 'normal' }}>(Optional, separate multiple links with commas)</span></label>
                                     <input 
-                                        type="url" 
+                                        type="text" 
                                         className="form-control" 
-                                        placeholder="https://example.com/video-link" 
+                                        placeholder="e.g. https://link1.com, https://link2.com" 
                                         value={formVideoRecap}
                                         onChange={(e) => setFormVideoRecap(e.target.value)}
                                         disabled={actionsDisabled}
