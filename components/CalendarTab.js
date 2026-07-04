@@ -355,7 +355,14 @@ export default function CalendarTab({ onOpenExport }) {
                                 <span className="calendar-day-number">{dayNumber}</span>
                                 <div className="calendar-day-tasks-container">
                                     {uniqueRenderTasks.map((task, idx) => (
-                                        <div key={idx} className="calendar-day-task-item" data-is-meeting={task.isMeeting ? "true" : "false"} style={task.isMeeting ? { borderLeft: '2px solid var(--warning)' } : undefined}>
+                                        <div 
+                                            key={idx} 
+                                            className="calendar-day-task-item" 
+                                            data-is-meeting={task.isMeeting ? "true" : "false"}
+                                            data-pic={task.isMeeting ? "Meeting" : normalizePicName(task.pic)}
+                                            data-category={task.isMeeting ? "Recap" : task.category}
+                                            style={task.isMeeting ? { borderLeft: '2px solid var(--warning)' } : undefined}
+                                        >
                                             {task.isMeeting ? (
                                                 <span className="calendar-day-task-pill" style={{ backgroundColor: 'var(--warning-bg)', color: 'var(--warning)' }}>
                                                     <i className="fa-solid fa-handshake"></i> Meeting

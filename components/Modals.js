@@ -568,10 +568,10 @@ export function CalendarExportModal({ isOpen, onClose }) {
     const [previewUrl, setPreviewUrl] = useState('');
     const [imageBlob, setImageBlob] = useState(null);
 
-    // Filter checkbox states
+    // Filter states
     const [showMeetings, setShowMeetings] = useState(true);
-    const [showPic, setShowPic] = useState(true);
-    const [showCategory, setShowCategory] = useState(true);
+    const [selectedPic, setSelectedPic] = useState('All');
+    const [selectedCategory, setSelectedCategory] = useState('All');
     const [hasMeetings, setHasMeetings] = useState(false);
 
     // Regenerate preview whenever the modal opens or theme changes
@@ -587,8 +587,8 @@ export function CalendarExportModal({ isOpen, onClose }) {
             }
             
             setShowMeetings(true);
-            setShowPic(true);
-            setShowCategory(true);
+            setSelectedPic('All');
+            setSelectedCategory('All');
         } else {
             if (previewUrl) {
                 URL.revokeObjectURL(previewUrl);
@@ -603,7 +603,7 @@ export function CalendarExportModal({ isOpen, onClose }) {
         if (isOpen) {
             generatePreview();
         }
-    }, [isOpen, exportTheme, showMeetings, showPic, showCategory]);
+    }, [isOpen, exportTheme, showMeetings, selectedPic, selectedCategory]);
 
     const generatePreview = async () => {
         const target = document.querySelector('.calendar-shell');
@@ -749,11 +749,23 @@ export function CalendarExportModal({ isOpen, onClose }) {
             if (!showMeetings) {
                 clone.querySelectorAll('.calendar-day-task-item[data-is-meeting="true"]').forEach(el => el.remove());
             }
-            if (!showPic) {
-                clone.querySelectorAll('[data-is-pic="true"]').forEach(el => el.remove());
+            if (selectedPic !== 'All') {
+                clone.querySelectorAll('.calendar-day-task-item').forEach(el => {
+                    const isMeeting = el.getAttribute('data-is-meeting') === 'true';
+                    const pic = el.getAttribute('data-pic');
+                    if (!isMeeting && pic !== selectedPic) {
+                        el.remove();
+                    }
+                });
             }
-            if (!showCategory) {
-                clone.querySelectorAll('.calendar-day-task-category').forEach(el => el.remove());
+            if (selectedCategory !== 'All') {
+                clone.querySelectorAll('.calendar-day-task-item').forEach(el => {
+                    const isMeeting = el.getAttribute('data-is-meeting') === 'true';
+                    const category = el.getAttribute('data-category');
+                    if (!isMeeting && category !== selectedCategory) {
+                        el.remove();
+                    }
+                });
             }
 
             // Remove active highlights
@@ -906,41 +918,77 @@ export function CalendarExportModal({ isOpen, onClose }) {
                     padding: '12px 20px',
                     borderBottom: '1px solid var(--hairline)',
                     display: 'flex',
-                    gap: '20px',
+                    gap: '16px',
                     alignItems: 'center',
                     flexWrap: 'wrap',
                     backgroundColor: 'var(--surface)'
                 }}>
-                    <span style={{ fontSize: '11px', color: 'var(--ink-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Include:</span>
                     {hasMeetings && (
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', userSelect: 'none', margin: 0, color: 'var(--ink)' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', userSelect: 'none', margin: 0, color: 'var(--ink)', marginRight: '8px' }}>
                             <input 
                                 type="checkbox" 
                                 checked={showMeetings} 
                                 onChange={(e) => setShowMeetings(e.target.checked)} 
                                 style={{ cursor: 'pointer', margin: 0 }} 
                             />
-                            <span>Meetings</span>
+                            <span>Include Meetings</span>
                         </label>
                     )}
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', userSelect: 'none', margin: 0, color: 'var(--ink)' }}>
-                        <input 
-                            type="checkbox" 
-                            checked={showPic} 
-                            onChange={(e) => setShowPic(e.target.checked)} 
-                            style={{ cursor: 'pointer', margin: 0 }} 
-                        />
-                        <span>PIC</span>
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', userSelect: 'none', margin: 0, color: 'var(--ink)' }}>
-                        <input 
-                            type="checkbox" 
-                            checked={showCategory} 
-                            onChange={(e) => setShowCategory(e.target.checked)} 
-                            style={{ cursor: 'pointer', margin: 0 }} 
-                        />
-                        <span>Category</span>
-                    </label>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-muted)', margin: 0 }}>PIC:</label>
+                        <select 
+                            className="form-control" 
+                            value={selectedPic} 
+                            onChange={(e) => setSelectedPic(e.target.value)}
+                            style={{ 
+                                padding: '4px 8px', 
+                                fontSize: '12px', 
+                                height: 'auto', 
+                                width: '120px', 
+                                borderRadius: 'var(--radius-sm)', 
+                                border: '1px solid var(--hairline)',
+                                background: 'var(--surface)',
+                                color: 'var(--ink)'
+                            }}
+                        >
+                            <option value="All">All PICs</option>
+                            <option value="Kelvin">Kelvin</option>
+                            <option value="Felix">Felix</option>
+                            <option value="Eduard">Eduard</option>
+                            <option value="Anthoni">Anthoni</option>
+                            <option value="Leonardi">Leonardi</option>
+                            <option value="Ruliyanto">Ruliyanto</option>
+                            <option value="Rafael">Rafael</option>
+                        </select>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-muted)', margin: 0 }}>Category:</label>
+                        <select 
+                            className="form-control" 
+                            value={selectedCategory} 
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            style={{ 
+                                padding: '4px 8px', 
+                                fontSize: '12px', 
+                                height: 'auto', 
+                                width: '140px', 
+                                borderRadius: 'var(--radius-sm)', 
+                                border: '1px solid var(--hairline)',
+                                background: 'var(--surface)',
+                                color: 'var(--ink)'
+                            }}
+                        >
+                            <option value="All">All Categories</option>
+                            <option value="Article Reels">Article Reels</option>
+                            <option value="Story Telling">Story Telling</option>
+                            <option value="News">News</option>
+                            <option value="Talking Head">Talking Head</option>
+                            <option value="Clipper">Clipper</option>
+                            <option value="Motion">Motion</option>
+                        </select>
+                    </div>
                 </div>
                 <div className="calendar-export-body" style={{
                     padding: '20px',

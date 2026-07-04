@@ -53,6 +53,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     const [formDate, setFormDate] = useState('');
     const [formAttendees, setFormAttendees] = useState([]); // array of selected attendee names
     const [formRecap, setFormRecap] = useState('');
+    const [formVideoRecap, setFormVideoRecap] = useState('');
 
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
     const savedSelectionRef = useRef(null);
@@ -109,6 +110,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                 const attList = Array.from(new Set(rawAttList));
                 setFormAttendees(attList);
                 setFormRecap(meeting.recap || '');
+                setFormVideoRecap(meeting.videoRecap || '');
                 setIsEditing(false); // Default to view mode when switching memos
                 return;
             }
@@ -117,6 +119,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
             setFormDate(getLocalDateInputValue());
             setFormAttendees([]);
             setFormRecap('');
+            setFormVideoRecap('');
             setIsEditing(true);
             return;
         }
@@ -124,6 +127,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         setFormDate(getLocalDateInputValue());
         setFormAttendees([]);
         setFormRecap('');
+        setFormVideoRecap('');
         setIsEditing(false);
     }, [selectedMeetingId, meetingsData]);
 
@@ -236,7 +240,8 @@ export default function MeetingsTab({ onOpenDatePicker }) {
             id: memoId,
             date: formDate,
             attendees: formAttendees,
-            recap: formRecap
+            recap: formRecap,
+            videoRecap: formVideoRecap
         };
 
         const success = await saveMeetingMemo(memoPayload);
@@ -512,6 +517,23 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                         )}
                                     </div>
                                 </div>
+                                <div className="meta-block" style={{ flex: 1, minWidth: '200px' }}>
+                                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Video Recap</label>
+                                    <div className="meeting-badge-list" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                        {formVideoRecap ? (
+                                            <a 
+                                                href={formVideoRecap} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                style={{ fontSize: '12px', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'underline' }}
+                                            >
+                                                <i className="fa-solid fa-video"></i> Watch Video Recap
+                                            </a>
+                                        ) : (
+                                            <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>None provided</span>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="meeting-recap-section">
@@ -552,6 +574,21 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                         value={formDate}
                                         onClick={handleDatePickerClick}
                                         disabled={actionsDisabled}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-row">
+                                <div className="form-group full">
+                                    <label>Video Recap URL <span style={{ color: 'var(--ink-muted)', fontSize: '11px', fontWeight: 'normal' }}>(Optional)</span></label>
+                                    <input 
+                                        type="url" 
+                                        className="form-control" 
+                                        placeholder="https://example.com/video-link" 
+                                        value={formVideoRecap}
+                                        onChange={(e) => setFormVideoRecap(e.target.value)}
+                                        disabled={actionsDisabled}
+                                        style={{ width: '100%' }}
                                     />
                                 </div>
                             </div>

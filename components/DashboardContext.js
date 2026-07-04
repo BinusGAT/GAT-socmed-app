@@ -290,7 +290,8 @@ export function DashboardProvider({ children }) {
                     date: m.Date ?? m.date ?? '',
                     agenda: m.Agenda ?? m.agenda ?? '',
                     attendees: m.Attendees ?? m.attendees ?? '',
-                    recap: m.Recap ?? m.recap ?? ''
+                    recap: m.Recap ?? m.recap ?? '',
+                    videoRecap: m.VideoRecap ?? m.videoRecap ?? m.Video_Recap ?? m.Video ?? ''
                 }));
 
                 const processedLaporan = preprocessLaporanData(laporan);

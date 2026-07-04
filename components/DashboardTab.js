@@ -266,7 +266,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
         let rateCount = 0;
         const contentTitles = new Set();
 
-        processedData.forEach(row => {
+        currentData.forEach(row => {
             totalViews += parseCleanInt(row.Views);
             totalReach += parseCleanInt(row['Account Reach']);
             totalEngagement += parseCleanInt(row['Total Engagement']);
