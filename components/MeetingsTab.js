@@ -263,8 +263,18 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     };
 
     // WYSIWYG Formatting Helpers
+    const safeExecCommand = (command, value = null) => {
+        if (typeof document !== 'undefined' && typeof document.execCommand === 'function') {
+            try {
+                document.execCommand(command, false, value);
+            } catch (err) {
+                console.warn(`execCommand('${command}') is not supported or failed:`, err);
+            }
+        }
+    };
+
     const applyFormatting = (command) => {
-        document.execCommand(command, false, null);
+        safeExecCommand(command);
         if (editorRef.current) {
             setFormRecap(editorRef.current.innerHTML);
         }
@@ -302,7 +312,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
             if (formattedUrl && !/^https?:\/\//i.test(formattedUrl)) {
                 formattedUrl = 'https://' + formattedUrl;
             }
-            document.execCommand('createLink', false, formattedUrl);
+            safeExecCommand('createLink', formattedUrl);
 
             if (editorRef.current) {
                 editorRef.current.querySelectorAll('a').forEach(a => {
@@ -326,13 +336,13 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                     const typedText = text.substring(0, offset);
                     if (typedText === '1. ') {
                         textNode.textContent = text.substring(offset);
-                        document.execCommand('insertOrderedList', false, null);
+                        safeExecCommand('insertOrderedList');
                         if (editorRef.current) {
                             setFormRecap(editorRef.current.innerHTML);
                         }
                     } else if (typedText === '* ' || typedText === '- ') {
                         textNode.textContent = text.substring(offset);
-                        document.execCommand('insertUnorderedList', false, null);
+                        safeExecCommand('insertUnorderedList');
                         if (editorRef.current) {
                             setFormRecap(editorRef.current.innerHTML);
                         }
@@ -347,7 +357,16 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         if (typeof window !== 'undefined' && window.DOMPurify) {
             return { __html: window.DOMPurify.sanitize(htmlContent) };
         }
-        return { __html: htmlContent };
+        // Secure fallback: Strip HTML tags and escape HTML entities to prevent XSS when sanitizer is not loaded
+        const text = String(htmlContent || '');
+        const cleanText = text
+            .replace(/<\/?[^>]+(>|$)/g, "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        return { __html: cleanText };
     };
 
     const meetingMembers = getMeetingMembers();

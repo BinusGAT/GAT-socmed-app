@@ -19,7 +19,16 @@ export default function AnalyticsTab() {
         if (typeof window !== 'undefined' && window.DOMPurify) {
             return { __html: window.DOMPurify.sanitize(htmlContent) };
         }
-        return { __html: htmlContent };
+        // Secure fallback: Strip HTML tags and escape HTML entities to prevent XSS when sanitizer is not loaded
+        const text = String(htmlContent || '');
+        const cleanText = text
+            .replace(/<\/?[^>]+(>|$)/g, "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        return { __html: cleanText };
     };
 
     const {

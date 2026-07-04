@@ -56,29 +56,7 @@ export const HEADERS = [
     'KPI Score', 'KPI Summary', 'URL', 'Comment Text'
 ];
 
-// Helper Functions
-export function escapeHTML(str) {
-    if (str === null || str === undefined) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
 
-export function sanitizeURL(url) {
-    if (!url) return '';
-    const trimmed = String(url).trim();
-    if (!trimmed) return '';
-    try {
-        const urlObj = new URL(trimmed.startsWith('http') ? trimmed : 'https://' + trimmed);
-        if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') return '';
-        return urlObj.href;
-    } catch {
-        return '';
-    }
-}
 
 export function formatDate(dateInput) {
     if (!dateInput) return '';
@@ -409,51 +387,6 @@ export function aggregateTrendData(activeData) {
     };
 }
 
-export function aggregatePlatformData(activeData) {
-    const platformGroups = {};
-    activeData.forEach(row => {
-        const platform = normalizePlatformName(row.Platform) || 'Unknown';
-        if (!platformGroups[platform]) {
-            platformGroups[platform] = 0;
-        }
-        platformGroups[platform] += parseInt(row.Views) || 0;
-    });
-
-    return {
-        platforms: Object.keys(platformGroups),
-        platformViews: Object.values(platformGroups)
-    };
-}
-
-export function aggregatePicData(activeData) {
-    const picGroups = {};
-    activeData.forEach(row => {
-        const pic = normalizePicName(row.PIC) || 'Unknown';
-        if (!picGroups[pic]) {
-            picGroups[pic] = 0;
-        }
-        picGroups[pic] += parseInt(row.Views) || 0;
-    });
-    return {
-        picLabels: Object.keys(picGroups),
-        picViews: Object.values(picGroups)
-    };
-}
-
-export function aggregateCategoryData(activeData) {
-    const catGroups = {};
-    activeData.forEach(row => {
-        const cat = row.Category || 'Unknown';
-        if (!catGroups[cat]) {
-            catGroups[cat] = 0;
-        }
-        catGroups[cat] += parseInt(row.Views) || 0;
-    });
-    return {
-        catLabels: Object.keys(catGroups),
-        catViews: Object.values(catGroups)
-    };
-}
 
 export function aggregateAllChartsData(activeData) {
     const platformGroups = {};

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
+import { DeleteConfirmModal } from './Modals';
 import { 
     normalizePicName, 
     getPicBadgeClass,
@@ -38,6 +39,10 @@ export default function TaskListTab({ onOpenDatePicker }) {
     const [modalPic, setModalPic] = useState('');
     const [modalCategory, setModalCategory] = useState('');
     const [modalStatus, setModalStatus] = useState(false);
+
+    // Delete confirmation state
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [taskToDelete, setTaskToDelete] = useState(null);
 
     // Sort states
     const [sortField, setSortField] = useState('Date');
@@ -192,9 +197,17 @@ export default function TaskListTab({ onOpenDatePicker }) {
         }
     };
 
-    const handleDeleteTask = async (taskId) => {
-        if (!confirm(`Are you sure you want to remove task ID: ${taskId}?`)) return;
-        await deleteCalendarTask(taskId);
+    const handleDeleteTask = (taskId) => {
+        setTaskToDelete(taskId);
+        setIsDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (taskToDelete) {
+            await deleteCalendarTask(taskToDelete);
+            setIsDeleteConfirmOpen(false);
+            setTaskToDelete(null);
+        }
     };
 
     const actionsDisabled = !isUnlocked || userRole === 'Creator';
@@ -445,6 +458,16 @@ export default function TaskListTab({ onOpenDatePicker }) {
                 </div>,
                 document.body
             )}
+
+            <DeleteConfirmModal 
+                isOpen={isDeleteConfirmOpen} 
+                onClose={() => {
+                    setIsDeleteConfirmOpen(false);
+                    setTaskToDelete(null);
+                }} 
+                onConfirm={handleDeleteConfirm} 
+                message={`Are you sure you want to remove task ID: ${taskToDelete}?`}
+            />
         </section>
     );
 }

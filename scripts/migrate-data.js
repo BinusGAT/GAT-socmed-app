@@ -143,15 +143,19 @@ async function main() {
     // 5. Populate member_list
     if (sheetMemberList.length > 0) {
       console.log('Migrating member_list...');
+      const queries = [];
       for (const m of sheetMemberList) {
         const name = m.NAMA || m.nama || '';
         const stream = m.STREAM || m.stream || 'Content Creator';
         if (name) {
-          await client.execute({
+          queries.push({
             sql: 'INSERT INTO member_list (NAMA, STREAM) VALUES (?, ?)',
             args: [name, stream]
           });
         }
+      }
+      if (queries.length > 0) {
+        await client.batch(queries);
       }
       console.log('✅ Migrated member_list.');
     }
@@ -159,6 +163,7 @@ async function main() {
     // 6. Populate scripts
     if (sheetScripts.length > 0) {
       console.log('Migrating scripts...');
+      const queries = [];
       for (const s of sheetScripts) {
         const title = s.Title || s.title || '';
         const status = s.Status || s.status || 'Idea';
@@ -170,11 +175,14 @@ async function main() {
         const caption = s.Caption || s.caption || '';
 
         if (title) {
-          await client.execute({
+          queries.push({
             sql: 'INSERT INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             args: [title, status, category, hook, scriptVal, hashtags, refs, caption]
           });
         }
+      }
+      if (queries.length > 0) {
+        await client.batch(queries);
       }
       console.log('✅ Migrated scripts.');
     }
@@ -182,6 +190,7 @@ async function main() {
     // 7. Populate meetings
     if (sheetMeetings.length > 0) {
       console.log('Migrating meetings...');
+      const queries = [];
       for (const m of sheetMeetings) {
         const id = m.ID || m.id || '';
         const date = m.Date || m.date || '';
@@ -191,11 +200,14 @@ async function main() {
         const video = m.VideoRecap || m.videoRecap || m.Video_Recap || '';
 
         if (id) {
-          await client.execute({
+          queries.push({
             sql: 'INSERT INTO meetings (ID, Date, Attendees, Absentees, Recap, VideoRecap) VALUES (?, ?, ?, ?, ?, ?)',
             args: [id, date, attendees, absentees, recap, video]
           });
         }
+      }
+      if (queries.length > 0) {
+        await client.batch(queries);
       }
       console.log('✅ Migrated meetings.');
     }
@@ -203,6 +215,7 @@ async function main() {
     // 8. Populate laporan
     if (sheetLaporan.length > 0) {
       console.log('Migrating laporan metrics (this might take a few moments)...');
+      const queries = [];
       for (const r of sheetLaporan) {
         const date = r.Date || r.date || '';
         const id = r.ID || r.id || '';
@@ -226,7 +239,7 @@ async function main() {
         const commentTxt = r['Comment Text'] || r.comment_text || '';
 
         if (id && plat) {
-          await client.execute({
+          queries.push({
             sql: `INSERT INTO laporan (
               Date, ID, "Content Title", PIC, Category, Platform, 
               Views, "Account Reach", Likes, Comments, Follows, Repost, Shares, 
@@ -239,6 +252,9 @@ async function main() {
             ]
           });
         }
+      }
+      if (queries.length > 0) {
+        await client.batch(queries);
       }
       console.log('✅ Migrated laporan metrics.');
     }

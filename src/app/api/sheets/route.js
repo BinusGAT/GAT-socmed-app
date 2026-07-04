@@ -15,15 +15,24 @@ function sha256(text) {
   return crypto.createHash('sha256').update(text).digest('hex');
 }
 
+function safeCompare(a, b) {
+  const hashA = crypto.createHash('sha256').update(a).digest();
+  const hashB = crypto.createHash('sha256').update(b).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
+
 function validateAuth(token, requiredLevel) {
   if (!token) return { valid: false, role: null };
 
   const doubleHash = sha256(String(token).trim() + PASSCODE_SALT);
 
-  if (doubleHash === PASSCODE_HASH_ADMIN) {
+  const isAdmin = safeCompare(doubleHash, PASSCODE_HASH_ADMIN);
+  const isCreator = safeCompare(doubleHash, PASSCODE_HASH_CREATOR);
+
+  if (isAdmin) {
     return { valid: true, role: 'Admin' };
   }
-  if (requiredLevel === 'any' && doubleHash === PASSCODE_HASH_CREATOR) {
+  if (requiredLevel === 'any' && isCreator) {
     return { valid: true, role: 'Creator' };
   }
   return { valid: false, role: null };
@@ -68,67 +77,84 @@ function getIndonesianMonth(dateStr) {
   return months[monthNum - 1] || '';
 }
 async function getNextId() {
-  const res = await db.execute("SELECT ID FROM schedule WHERE ID LIKE 'CT%'");
-  let maxNum = 0;
-  for (const row of res.rows) {
-    const idStr = String(row.ID || '');
-    const num = parseInt(idStr.replace('CT', ''), 10);
-    if (!isNaN(num) && num > maxNum) {
-      maxNum = num;
-    }
-  }
+  const res = await db.execute("SELECT MAX(CAST(SUBSTR(ID, 3) AS INTEGER)) AS maxNum FROM schedule WHERE ID LIKE 'CT%'");
+  const maxVal = res.rows[0]?.maxNum;
+  const maxNum = (maxVal !== null && maxVal !== undefined) ? parseInt(maxVal, 10) : 0;
   return 'CT' + (maxNum + 1);
 }
 
-async function syncGroupById(id) {
-  if (!id) return;
+async function syncGroupsByIds(ids) {
+  if (!ids || ids.length === 0) return;
 
-  // 1. Get all platform rows for this ID
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+  if (uniqueIds.length === 0) return;
+
+  const idsPlaceholder = uniqueIds.map(() => '?').join(', ');
   const rowsRes = await db.execute({
-    sql: "SELECT * FROM laporan WHERE ID = ?",
-    args: [id]
+    sql: `SELECT * FROM laporan WHERE ID IN (${idsPlaceholder})`,
+    args: uniqueIds
   });
-  const rows = rowsRes.rows;
+  const allRows = rowsRes.rows;
 
-  // 2. If no rows exist for this ID, clean up the schedule table
-  if (rows.length === 0) {
-    await db.execute({
-      sql: "DELETE FROM schedule WHERE ID = ?",
-      args: [id]
-    });
-    return;
+  const rowsById = {};
+  for (const id of uniqueIds) {
+    rowsById[id] = [];
   }
-
-  // 3. Compute KPI Summary and Status
-  let maxKpi = 3;
-  let isCompleted = 0;
-  for (const r of rows) {
-    const kpiVal = parseInt(r["KPI Score"]) || 0;
-    if (kpiVal > maxKpi) maxKpi = kpiVal;
-    if (String(r.URL || '').trim() !== '') {
-      isCompleted = 1;
+  for (const r of allRows) {
+    if (rowsById[r.ID]) {
+      rowsById[r.ID].push(r);
     }
   }
 
-  // 4. Update all platform rows with the new KPI Summary
-  await db.execute({
-    sql: 'UPDATE laporan SET "KPI Summary" = ? WHERE ID = ?',
-    args: [maxKpi, id]
-  });
+  const batchQueries = [];
 
-  // 5. Upsert schedule row
-  const firstRow = rows[0];
-  const dateStr = firstRow.Date;
-  const pic = firstRow.PIC;
-  const title = firstRow["Content Title"];
-  const category = firstRow.Category;
-  const month = getIndonesianMonth(dateStr);
+  for (const id of uniqueIds) {
+    const groupRows = rowsById[id] || [];
 
-  await db.execute({
-    sql: `INSERT OR REPLACE INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    args: [id, dateStr, pic, title, category, isCompleted, month]
-  });
+    if (groupRows.length === 0) {
+      batchQueries.push({
+        sql: "DELETE FROM schedule WHERE ID = ?",
+        args: [id]
+      });
+      continue;
+    }
+
+    let maxKpi = 3;
+    let isCompleted = 0;
+    for (const r of groupRows) {
+      const kpiVal = parseInt(r["KPI Score"]) || 0;
+      if (kpiVal > maxKpi) maxKpi = kpiVal;
+      if (String(r.URL || '').trim() !== '') {
+        isCompleted = 1;
+      }
+    }
+
+    batchQueries.push({
+      sql: 'UPDATE laporan SET "KPI Summary" = ? WHERE ID = ?',
+      args: [maxKpi, id]
+    });
+
+    const firstRow = groupRows[0];
+    const dateStr = firstRow.Date;
+    const pic = firstRow.PIC;
+    const title = firstRow["Content Title"];
+    const category = firstRow.Category;
+    const month = getIndonesianMonth(dateStr);
+
+    batchQueries.push({
+      sql: `INSERT OR REPLACE INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [id, dateStr, pic, title, category, isCompleted, month]
+    });
+  }
+
+  if (batchQueries.length > 0) {
+    await db.batch(batchQueries);
+  }
+}
+
+async function syncGroupById(id) {
+  await syncGroupsByIds([id]);
 }
 
 export async function POST(request) {
@@ -205,6 +231,7 @@ export async function POST(request) {
         const engagementRate = views > 0 ? (totalEngagement / views) * 100 : 0.0;
 
         const newId = await getNextId();
+        const insertQueries = [];
 
         for (const plat of platforms) {
           const isSelected = plat.toLowerCase() === selectedPlatform;
@@ -222,7 +249,7 @@ export async function POST(request) {
           const urlVal = isSelected ? (params.URL || '') : '';
           const commentVal = isSelected ? (params['Comment Text'] || '') : 'Planned from WebApp';
 
-          await db.execute({
+          insertQueries.push({
             sql: `INSERT INTO laporan (
               Date, ID, "Content Title", PIC, Category, Platform, 
               Views, "Account Reach", Likes, Comments, Follows, Repost, Shares, 
@@ -235,6 +262,7 @@ export async function POST(request) {
             ]
           });
         }
+        await db.batch(insertQueries);
         await syncGroupById(newId);
         result = { success: true, message: 'All 3 platform rows created successfully' };
         break;
@@ -325,15 +353,17 @@ export async function POST(request) {
       }
 
       case 'delete_batch': {
-        // Find all IDs affected
         const affectedIds = new Set();
-        for (const row of params.rows) {
-          const idRes = await db.execute({
-            sql: `SELECT ID FROM laporan WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ? LIMIT 1`,
-            args: [row.Date, row['Content Title'], row.PIC, row.Category, row.Platform]
-          });
-          if (idRes.rows[0]?.ID) {
-            affectedIds.add(idRes.rows[0].ID);
+        
+        // Find all IDs affected in a single batch select request
+        const selectQueries = params.rows.map(row => ({
+          sql: `SELECT ID FROM laporan WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ? LIMIT 1`,
+          args: [row.Date, row['Content Title'], row.PIC, row.Category, row.Platform]
+        }));
+        const selectResults = await db.batch(selectQueries);
+        for (const res of selectResults) {
+          if (res.rows[0]?.ID) {
+            affectedIds.add(res.rows[0].ID);
           }
         }
 
@@ -343,8 +373,9 @@ export async function POST(request) {
         }));
         await db.batch(deleteQueries);
 
-        for (const id of affectedIds) {
-          await syncGroupById(id);
+        // Sync all affected groups in a single batch database operation
+        if (affectedIds.size > 0) {
+          await syncGroupsByIds(Array.from(affectedIds));
         }
         result = { success: true, message: `Successfully deleted ${params.rows.length} rows` };
         break;

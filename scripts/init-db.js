@@ -121,12 +121,11 @@ async function main() {
         ['Ruliyanto', 'Content Creator'],
         ['Rafael', 'Content Creator']
       ];
-      for (const m of members) {
-        await client.execute({
-          sql: 'INSERT INTO member_list (NAMA, STREAM) VALUES (?, ?)',
-          args: m
-        });
-      }
+      const queries = members.map(m => ({
+        sql: 'INSERT INTO member_list (NAMA, STREAM) VALUES (?, ?)',
+        args: m
+      }));
+      await client.batch(queries);
       console.log('✅ Seeded member_list.');
     }
 
@@ -139,12 +138,11 @@ async function main() {
         ['CT2', '03/03/2026', 'Kelvin', 'Drakantos', 'Story Telling', 1, 'Maret'],
         ['CT3', '03/04/2026', 'Felix', 'Ubah Anime 2D jadi 3D Imersif', 'Article Reels', 1, 'Maret']
       ];
-      for (const t of tasks) {
-        await client.execute({
-          sql: 'INSERT INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          args: t
-        });
-      }
+      const queries = tasks.map(t => ({
+        sql: 'INSERT INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        args: t
+      }));
+      await client.batch(queries);
       console.log('✅ Seeded schedule.');
     }
 
@@ -156,12 +154,11 @@ async function main() {
         ['MEET001', '2026-03-02', 'Kelvin, Felix', '', 'Discussed project scope, deliverables, and timelines.', ''],
         ['MEET002', '2026-03-03', 'Andre, Kelvin', '', 'Reviewed UI mockups, feedback collected, next steps defined.', '']
       ];
-      for (const m of memos) {
-        await client.execute({
-          sql: 'INSERT INTO meetings (ID, Date, Attendees, Absentees, Recap, VideoRecap) VALUES (?, ?, ?, ?, ?, ?)',
-          args: m
-        });
-      }
+      const queries = memos.map(m => ({
+        sql: 'INSERT INTO meetings (ID, Date, Attendees, Absentees, Recap, VideoRecap) VALUES (?, ?, ?, ?, ?, ?)',
+        args: m
+      }));
+      await client.batch(queries);
       console.log('✅ Seeded meetings.');
     }
 
@@ -172,12 +169,11 @@ async function main() {
       const drafts = [
         ['Refind Self Storyboard', 'Completed', 'Story Telling', 'Have you ever wondered who you really are?', "Let's find out by exploring this beautiful game.", '#gaming #selfdiscovery', 'https://example.com', 'Discover your true self.']
       ];
-      for (const d of drafts) {
-        await client.execute({
-          sql: 'INSERT INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          args: d
-        });
-      }
+      const queries = drafts.map(d => ({
+        sql: 'INSERT INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: d
+      }));
+      await client.batch(queries);
       console.log('✅ Seeded scripts.');
     }
 
@@ -199,12 +195,11 @@ async function main() {
         ['03/04/2026', 'GAT003', 'Ubah Anime 2D jadi 3D Imersif', 'Felix', 'Article Reels', 'TikTok', 15000, 13200, 1250, 95, 22, 4, 58, 1429, 10.83, 5, 5, '', ''],
         ['03/04/2026', 'GAT003', 'Ubah Anime 2D jadi 3D Imersif', 'Felix', 'Article Reels', 'Youtube', 13500, 12000, 1100, 85, 18, 3, 52, 1258, 10.48, 5, 5, '', '']
       ];
-      for (const r of rows) {
-        await client.execute({
-          sql: 'INSERT INTO laporan (Date, ID, "Content Title", PIC, Category, Platform, Views, "Account Reach", Likes, Comments, Follows, Repost, Shares, "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          args: r
-        });
-      }
+      const queries = rows.map(r => ({
+        sql: 'INSERT INTO laporan (Date, ID, "Content Title", PIC, Category, Platform, Views, "Account Reach", Likes, Comments, Follows, Repost, Shares, "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        args: r
+      }));
+      await client.batch(queries);
       console.log('✅ Seeded laporan metrics.');
     }
 

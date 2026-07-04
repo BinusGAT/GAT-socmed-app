@@ -26,7 +26,16 @@ export default function DashboardTab({ onOpenDatePicker }) {
         if (typeof window !== 'undefined' && window.DOMPurify) {
             return { __html: window.DOMPurify.sanitize(htmlContent) };
         }
-        return { __html: htmlContent };
+        // Secure fallback: Strip HTML tags and escape HTML entities to prevent XSS when sanitizer is not loaded
+        const text = String(htmlContent || '');
+        const cleanText = text
+            .replace(/<\/?[^>]+(>|$)/g, "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        return { __html: cleanText };
     };
 
     const {
@@ -463,19 +472,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
         }
     };
 
-    const handleDeleteRow = async (row, index) => {
-        if (!isUnlocked) {
-            showAlert('Workspace is locked. Please unlock to modify.', 'error');
-            return;
-        }
-        if (userRole === 'Creator') {
-            showAlert('Creators are not authorized to delete database entries.', 'error');
-            return;
-        }
-        if (!confirm(`Are you sure you want to delete database record: "${row.ID}"?`)) return;
 
-        await deleteLaporanRow(row.ID, index);
-    };
 
     // ----------------------------------------------------
     // TABLE SELECTION & SORTING UTILS
