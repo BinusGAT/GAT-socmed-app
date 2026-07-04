@@ -251,9 +251,7 @@ export function getPlatformLogoHtml(platformName) {
     return `<span class="badge ${badgeClass}">${norm}</span>`;
 }
 
-export function getPlatformBadgeHtml(platformName) {
-    return getPlatformLogoHtml(platformName);
-}
+export const getPlatformBadgeHtml = getPlatformLogoHtml;
 
 export function getLocalDateInputValue() {
     const date = new Date();

@@ -88,46 +88,28 @@ export default function TaskListTab({ onOpenDatePicker }) {
     };
 
     const getProcessedTasks = () => {
-        let list = getTasks();
-
-        // 1. Search Query
-        if (tasklistSearch) {
-            const query = tasklistSearch.toLowerCase().trim();
-            list = list.filter(task => 
+        const query = tasklistSearch ? tasklistSearch.toLowerCase().trim() : '';
+        
+        return getTasks()
+            .filter(task => !query || 
                 task.contentTitle.toLowerCase().includes(query) ||
                 task.id.toLowerCase().includes(query)
-            );
-        }
+            )
+            .filter(task => !tasklistFilterPic || 
+                normalizePicName(task.pic) === normalizePicName(tasklistFilterPic)
+            )
+            .filter(task => !tasklistFilterStatus || 
+                task.calculatedStatus === tasklistFilterStatus
+            )
+            .sort((a, b) => {
+                const isDate = sortField === 'Date';
+                const valA = isDate ? (a.date || '') : String(a[sortField] || '').toLowerCase();
+                const valB = isDate ? (b.date || '') : String(b[sortField] || '').toLowerCase();
 
-        // 2. PIC Filter
-        if (tasklistFilterPic) {
-            list = list.filter(task => normalizePicName(task.pic) === normalizePicName(tasklistFilterPic));
-        }
-
-        // 3. Status Filter
-        if (tasklistFilterStatus) {
-            list = list.filter(task => task.calculatedStatus === tasklistFilterStatus);
-        }
-
-        // 4. Sort
-        list.sort((a, b) => {
-            let valA = a[sortField];
-            let valB = b[sortField];
-
-            if (['Date'].includes(sortField)) {
-                valA = a.date || '';
-                valB = b.date || '';
-            } else {
-                valA = String(valA || '').toLowerCase();
-                valB = String(valB || '').toLowerCase();
-            }
-
-            if (valA < valB) return sortAsc ? -1 : 1;
-            if (valA > valB) return sortAsc ? 1 : -1;
-            return 0;
-        });
-
-        return list;
+                if (valA < valB) return sortAsc ? -1 : 1;
+                if (valA > valB) return sortAsc ? 1 : -1;
+                return 0;
+            });
     };
 
     const processedTasks = getProcessedTasks();

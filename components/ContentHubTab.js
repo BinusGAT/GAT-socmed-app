@@ -13,6 +13,7 @@ export default function ContentHubTab() {
     const {
         draftsData,
         scheduleData,
+        currentData,
         isUnlocked,
         userRole,
         saveScriptDraft,
@@ -65,7 +66,11 @@ export default function ContentHubTab() {
         const task = (scheduleData || []).find(t => 
             String(t['Content Title'] || '').trim().toLowerCase() === title.trim().toLowerCase()
         );
-        return task ? { pic: task.PIC, date: task.Date } : null;
+        if (!task) return null;
+        const isUploaded = (currentData || []).some(row => 
+            row.ID === task.ID && row.URL && String(row.URL).trim() !== ''
+        );
+        return { pic: task.PIC, date: task.Date, isUploaded };
     };
 
     // Filtered drafts list
@@ -146,10 +151,13 @@ export default function ContentHubTab() {
             return;
         }
 
+        const currentSched = getResolvedSchedule(formTitle);
+        const isUploaded = currentSched ? currentSched.isUploaded : false;
+
         const updatedDraft = {
             title: formTitle,
             category: formCategory,
-            status: formStatus,
+            status: isUploaded ? 'Uploaded' : (formScript && String(formScript).trim() !== '' ? 'Scripting' : 'Idea'),
             hook: formHook,
             script: formScript,
             hashtags: formHashtags,
@@ -298,9 +306,17 @@ export default function ContentHubTab() {
                             filteredDrafts.map(({ d, index }) => {
                                 const sched = getResolvedSchedule(d.title);
                                 const isSelected = selectedDraftTitle === d.title;
-                                let badgeClass = 'badge-status-progress';
-                                if (d.status === 'Scripting') {
-                                    badgeClass = 'badge-status-today';
+                                
+                                let displayStatus = d.status || 'Idea';
+                                if (sched && sched.isUploaded) {
+                                    displayStatus = 'Uploaded';
+                                }
+
+                                let badgeClass = 'badge-status-progress'; // Idea (blue)
+                                if (displayStatus === 'Scripting') {
+                                    badgeClass = 'badge-status-today'; // Scripting (yellow)
+                                } else if (displayStatus === 'Uploaded') {
+                                    badgeClass = 'badge-status-completed'; // Uploaded (green)
                                 }
 
                                 return (
@@ -330,7 +346,7 @@ export default function ContentHubTab() {
                                                 )}
                                             </div>
                                             <span className={`badge-status ${badgeClass}`} style={{ fontSize: '9px', padding: '1px 4px', whiteSpace: 'nowrap' }}>
-                                                {d.status || 'Idea'}
+                                                {displayStatus}
                                             </span>
                                         </div>
                                     </button>
@@ -393,7 +409,7 @@ export default function ContentHubTab() {
                             </div>
 
                             <div className="form-row">
-                                <div className="form-group half">
+                                <div className="form-group full">
                                     <label>Category <span className="required">*</span></label>
                                     <select 
                                         className="form-control"
@@ -405,22 +421,6 @@ export default function ContentHubTab() {
                                         <option value="Story Telling">Story Telling</option>
                                         <option value="Motion">Motion</option>
                                     </select>
-                                </div>
-                                <div className="form-group half">
-                                    <label>Status <span className="required">*</span></label>
-                                    <input 
-                                        type="text" 
-                                        className="form-control" 
-                                        value="Scripting" 
-                                        readOnly
-                                        style={{
-                                            backgroundColor: 'var(--canvas)', 
-                                            color: 'var(--ink-muted)', 
-                                            cursor: 'not-allowed', 
-                                            opacity: 0.8, 
-                                            fontWeight: 600
-                                        }}
-                                    />
                                 </div>
                             </div>
 

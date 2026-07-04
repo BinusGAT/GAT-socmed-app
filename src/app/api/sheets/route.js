@@ -7,9 +7,18 @@ const db = {
   batch: dbBatch
 };
 
-const PASSCODE_SALT = process.env.PASSCODE_SALT || '';
-const PASSCODE_HASH_ADMIN = process.env.PASSCODE_HASH_ADMIN || '';
-const PASSCODE_HASH_CREATOR = process.env.PASSCODE_HASH_CREATOR || '';
+const PASSCODE_SALT = process.env.PASSCODE_SALT || crypto.randomBytes(32).toString('hex');
+const PASSCODE_HASH_ADMIN = process.env.PASSCODE_HASH_ADMIN || crypto.randomBytes(32).toString('hex');
+const PASSCODE_HASH_CREATOR = process.env.PASSCODE_HASH_CREATOR || crypto.randomBytes(32).toString('hex');
+
+// Server-side failed attempts tracking
+// Server-side failed attempts tracking
+const failedAttempts = new Map();
+const MAX_ATTEMPTS = 5;
+const LOCKDOWN_DURATION = 6 * 60 * 60 * 1000; // 6 hours
+
+// Server-side active sessions store (in-memory)
+const activeSessions = new Map(); // key: token, value: { role: string, expiresAt: number }
 
 function sha256(text) {
   return crypto.createHash('sha256').update(text).digest('hex');
@@ -22,17 +31,20 @@ function safeCompare(a, b) {
 }
 
 function validateAuth(token, requiredLevel) {
-  if (!token) return { valid: false, role: null };
+  if (!token || typeof token !== 'string') return { valid: false, role: null };
 
-  const doubleHash = sha256(String(token).trim() + PASSCODE_SALT);
+  const session = activeSessions.get(token);
+  if (!session) return { valid: false, role: null };
 
-  const isAdmin = safeCompare(doubleHash, PASSCODE_HASH_ADMIN);
-  const isCreator = safeCompare(doubleHash, PASSCODE_HASH_CREATOR);
+  if (session.expiresAt < Date.now()) {
+    activeSessions.delete(token); // Clean up expired session
+    return { valid: false, role: null };
+  }
 
-  if (isAdmin) {
+  if (session.role === 'Admin') {
     return { valid: true, role: 'Admin' };
   }
-  if (requiredLevel === 'any' && isCreator) {
+  if (requiredLevel === 'any' && session.role === 'Creator') {
     return { valid: true, role: 'Creator' };
   }
   return { valid: false, role: null };
@@ -166,6 +178,18 @@ export async function POST(request) {
 
     // 1. Handle Validate Mode separately
     if (action === 'validate_mode') {
+      const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'global';
+      const record = failedAttempts.get(ip) || { count: 0, lockUntil: 0 };
+      const now = Date.now();
+
+      if (record.lockUntil > now) {
+        const remainingTime = Math.ceil((record.lockUntil - now) / 1000);
+        return NextResponse.json(
+          { success: false, error: `Too many failed attempts. Locked out for ${remainingTime} seconds.` },
+          { status: 429 }
+        );
+      }
+
       const verifyRole = params.role || 'Admin';
       const passcode = params.passcode || '';
       
@@ -174,19 +198,51 @@ export async function POST(request) {
         passHash = sha256(passcode + PASSCODE_SALT);
       }
       
-      const verifyAuth = validateAuth(passHash, verifyRole === 'Admin' ? 'admin' : 'any');
-      const roleMatches = verifyAuth.valid && (verifyAuth.role === verifyRole);
+      const doubleHash = sha256(passHash + PASSCODE_SALT);
+      const isAdmin = safeCompare(doubleHash, PASSCODE_HASH_ADMIN);
+      const isCreator = safeCompare(doubleHash, PASSCODE_HASH_CREATOR);
       
-      return NextResponse.json({ 
-        success: true, 
-        valid: roleMatches, 
-        role: verifyAuth.role,
-        token: roleMatches ? passHash : null
-      });
+      const roleMatches = (verifyRole === 'Admin' && isAdmin) || (verifyRole === 'Creator' && isCreator);
+      const matchedRole = isAdmin ? 'Admin' : (isCreator ? 'Creator' : null);
+      
+      if (roleMatches && matchedRole) {
+        failedAttempts.delete(ip); // Reset attempts on success
+        
+        // Generate secure random session token
+        const sessionToken = crypto.randomBytes(32).toString('hex');
+        activeSessions.set(sessionToken, {
+          role: matchedRole,
+          expiresAt: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+        });
+
+        return NextResponse.json({ 
+          success: true, 
+          valid: true, 
+          role: matchedRole,
+          token: sessionToken
+        });
+      } else {
+        record.count += 1;
+        if (record.count >= MAX_ATTEMPTS) {
+          record.lockUntil = now + LOCKDOWN_DURATION;
+          failedAttempts.set(ip, record);
+          return NextResponse.json(
+            { success: false, error: 'Too many failed attempts. Locked out for 6 hours.' },
+            { status: 429 }
+          );
+        } else {
+          failedAttempts.set(ip, record);
+          return NextResponse.json({ 
+            success: true, 
+            valid: false, 
+            attemptsRemaining: MAX_ATTEMPTS - record.count 
+          });
+        }
+      }
     }
 
     // 2. Validate token for all other actions
-    const requiredLevel = ['read_all'].includes(action) ? 'any' : 'admin';
+    const requiredLevel = ['read_all', 'save_script', 'save_schedule'].includes(action) ? 'any' : 'admin';
     const auth = validateAuth(token, requiredLevel);
     if (!auth.valid) {
       return NextResponse.json(
@@ -200,11 +256,13 @@ export async function POST(request) {
 
     switch (action) {
       case 'read_all': {
-        const laporanRes = await db.execute("SELECT * FROM laporan");
-        const scheduleRes = await db.execute("SELECT * FROM schedule");
-        const memberListRes = await db.execute("SELECT * FROM member_list");
-        const scriptsRes = await db.execute("SELECT * FROM scripts");
-        const meetingsRes = await db.execute("SELECT * FROM meetings");
+        const [laporanRes, scheduleRes, memberListRes, scriptsRes, meetingsRes] = await Promise.all([
+          db.execute("SELECT * FROM laporan"),
+          db.execute("SELECT * FROM schedule"),
+          db.execute("SELECT * FROM member_list"),
+          db.execute("SELECT * FROM scripts"),
+          db.execute("SELECT * FROM meetings")
+        ]);
 
         result = {
           success: true,
@@ -247,7 +305,7 @@ export async function POST(request) {
           const rateVal = isSelected ? engagementRate : 0.0;
           const kpiVal = isSelected ? (parseInt(params['KPI Score']) || 3) : 3;
           const urlVal = isSelected ? (params.URL || '') : '';
-          const commentVal = isSelected ? (params['Comment Text'] || '') : 'Planned from WebApp';
+          const commentVal = isSelected ? (params['Comment Text'] || '') : '';
 
           insertQueries.push({
             sql: `INSERT INTO laporan (
@@ -389,25 +447,54 @@ export async function POST(request) {
         const category = params.Category || '';
 
         if (id) {
+          // Get the old title to update the corresponding script title if needed
+          const oldRow = await db.execute({
+            sql: `SELECT "Content Title" FROM laporan WHERE ID = ? LIMIT 1`,
+            args: [id]
+          });
+          const oldTitle = oldRow.rows[0]?.["Content Title"] || '';
+
           await db.execute({
             sql: `UPDATE laporan SET Date = ?, "Content Title" = ?, PIC = ?, Category = ? WHERE ID = ?`,
             args: [dateStr, title, pic, category, id]
           });
           await syncGroupById(id);
+
+          // If the title changed, update the script's title to keep them in sync
+          if (oldTitle && oldTitle.trim().toLowerCase() !== title.trim().toLowerCase()) {
+            await db.execute({
+              sql: "UPDATE scripts SET Title = ? WHERE LOWER(Title) = LOWER(?)",
+              args: [title, oldTitle]
+            });
+          }
         } else {
           const newId = await getNextId();
           const platforms = ['Instagram', 'TikTok', 'Youtube'];
-          for (const plat of platforms) {
-            await db.execute({
-              sql: `INSERT INTO laporan (
-                Date, ID, "Content Title", PIC, Category, Platform, 
-                Views, "Account Reach", Likes, Comments, Follows, Repost, Shares, 
-                "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text"
-              ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 3, 3, '', 'Planned from WebApp')`,
-              args: [dateStr, newId, title, pic, category, plat]
-            });
-          }
+          const insertQueries = platforms.map(plat => ({
+            sql: `INSERT INTO laporan (
+              Date, ID, "Content Title", PIC, Category, Platform, 
+              Views, "Account Reach", Likes, Comments, Follows, Repost, Shares, 
+              "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text"
+            ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 3, 3, '', '')`,
+            args: [dateStr, newId, title, pic, category, plat]
+          }));
+          await db.batch(insertQueries);
           await syncGroupById(newId);
+
+          // Automatically create a new script draft in Content Hub if it doesn't exist
+          if (title) {
+            const existingScript = await db.execute({
+              sql: "SELECT Title FROM scripts WHERE LOWER(Title) = LOWER(?)",
+              args: [title]
+            });
+            if (existingScript.rows.length === 0) {
+              await db.execute({
+                sql: `INSERT INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption)
+                      VALUES (?, 'Idea', ?, '', '', ?, '', '')`,
+                args: [title, category, category === 'Motion' ? '#motion #content' : '#storytelling #content']
+              });
+            }
+          }
         }
         result = { success: true, message: id ? 'Schedule updated successfully' : 'Schedule created successfully' };
         break;

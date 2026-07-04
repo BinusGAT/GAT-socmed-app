@@ -19,16 +19,58 @@ export default function AnalyticsTab() {
         if (typeof window !== 'undefined' && window.DOMPurify) {
             return { __html: window.DOMPurify.sanitize(htmlContent) };
         }
-        // Secure fallback: Strip HTML tags and escape HTML entities to prevent XSS when sanitizer is not loaded
-        const text = String(htmlContent || '');
-        const cleanText = text
-            .replace(/<\/?[^>]+(>|$)/g, "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-        return { __html: cleanText };
+        if (typeof window === 'undefined') return { __html: '' };
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlContent || '', 'text/html');
+            const allowedTags = ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'a', 'span', 'i'];
+            const allowedAttrs = {
+                'a': ['href', 'target', 'rel'],
+                'span': ['class', 'style'],
+                'i': ['class', 'style']
+            };
+            const sanitizeNode = (node) => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return document.createTextNode(node.nodeValue);
+                }
+                if (node.nodeType !== Node.ELEMENT_NODE) {
+                    return null;
+                }
+                const tagName = node.tagName.toLowerCase();
+                if (!allowedTags.includes(tagName)) {
+                    return document.createTextNode(node.textContent);
+                }
+                const cleanEl = document.createElement(tagName);
+                const attrs = allowedAttrs[tagName] || [];
+                for (const attr of attrs) {
+                    if (node.hasAttribute(attr)) {
+                        const val = node.getAttribute(attr);
+                        if (attr === 'href' && /^\s*javascript:/i.test(val)) {
+                            continue;
+                        }
+                        cleanEl.setAttribute(attr, val);
+                    }
+                }
+                node.childNodes.forEach(child => {
+                    const cleanChild = sanitizeNode(child);
+                    if (cleanChild) {
+                        cleanEl.appendChild(cleanChild);
+                    }
+                });
+                return cleanEl;
+            };
+            const container = document.createElement('div');
+            doc.body.childNodes.forEach(child => {
+                const cleanChild = sanitizeNode(child);
+                if (cleanChild) {
+                    container.appendChild(cleanChild);
+                }
+            });
+            return { __html: container.innerHTML };
+        } catch (e) {
+            console.error('HTML Sanitization error:', e);
+            return { __html: '' };
+        }
     };
 
     const {
@@ -46,6 +88,7 @@ export default function AnalyticsTab() {
 
     // KPI Explorer state
     const [kpiExplorerScore, setKpiExplorerScore] = useState(5);
+    const [kpiExplorerCategory, setKpiExplorerCategory] = useState('All');
 
     // Canvas references
     const trendCanvasRef = useRef(null);
@@ -147,17 +190,37 @@ export default function AnalyticsTab() {
 
     // Filter matching explorer data rows
     const getExplorerMatchingRows = () => {
-        return activeData.filter(row => {
-            const views = parseInt(row.Views) || 0;
-            let score = 3;
-            if (views >= 100000) score = 6;
-            else if (views >= 10000) score = 5;
-            else if (views >= 1000) score = 4;
-            return score === kpiExplorerScore;
-        });
+        return activeData
+            .filter(row => {
+                const views = parseInt(row.Views) || 0;
+                let score = 3;
+                if (views >= 100000) score = 6;
+                else if (views >= 10000) score = 5;
+                else if (views >= 1000) score = 4;
+                
+                // Match KPI score
+                if (score !== kpiExplorerScore) return false;
+                
+                // Match category filter
+                if (kpiExplorerCategory !== 'All') {
+                    if (row.Category !== kpiExplorerCategory) return false;
+                }
+                
+                return true;
+            })
+            .sort((a, b) => (parseInt(b.Views) || 0) - (parseInt(a.Views) || 0));
     };
 
     const explorerRows = getExplorerMatchingRows();
+
+    // Extract unique categories from activeData for the selector dropdown
+    const uniqueCategories = Array.from(
+        new Set(
+            activeData
+                .map(row => row.Category)
+                .filter(Boolean)
+        )
+    ).sort();
 
     // Count categories in explorer
     const getExplorerCategorySummary = () => {
@@ -610,10 +673,35 @@ export default function AnalyticsTab() {
                         <div className="panel leaderboard-card">
                             <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: 'var(--space-md)' }}>
                                 <h2 style={{ margin: 0 }}><span className="panel-icon"><i className="fa-solid fa-magnifying-glass-chart text-success"></i></span> KPI Content Explorer</h2>
-                                <div className="kpi-selector-buttons" style={{ display: 'flex', gap: '8px' }}>
-                                    <button type="button" className={`btn btn-outline btn-sm ${kpiExplorerScore === 5 ? 'active' : ''}`} onClick={() => setKpiExplorerScore(5)}>KPI 5</button>
-                                    <button type="button" className={`btn btn-outline btn-sm ${kpiExplorerScore === 4 ? 'active' : ''}`} onClick={() => setKpiExplorerScore(4)}>KPI 4</button>
-                                    <button type="button" className={`btn btn-outline btn-sm ${kpiExplorerScore === 3 ? 'active' : ''}`} onClick={() => setKpiExplorerScore(3)}>KPI 3</button>
+                                <div className="kpi-selector-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)', textTransform: 'uppercase' }}>Filter Category:</span>
+                                        <select 
+                                            className="form-control"
+                                            value={kpiExplorerCategory}
+                                            onChange={(e) => setKpiExplorerCategory(e.target.value)}
+                                            style={{
+                                                padding: '4px 8px',
+                                                fontSize: '12px',
+                                                height: 'auto',
+                                                minWidth: '130px',
+                                                borderRadius: 'var(--radius-sm)',
+                                                border: '1px solid var(--hairline)',
+                                                background: 'var(--surface)',
+                                                color: 'var(--ink)'
+                                            }}
+                                        >
+                                            <option value="All">All Categories</option>
+                                            {uniqueCategories.map(cat => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="kpi-selector-buttons" style={{ display: 'flex', gap: '6px' }}>
+                                        <button type="button" className={`btn btn-outline btn-sm ${kpiExplorerScore === 5 ? 'active' : ''}`} onClick={() => setKpiExplorerScore(5)}>KPI 5</button>
+                                        <button type="button" className={`btn btn-outline btn-sm ${kpiExplorerScore === 4 ? 'active' : ''}`} onClick={() => setKpiExplorerScore(4)}>KPI 4</button>
+                                        <button type="button" className={`btn btn-outline btn-sm ${kpiExplorerScore === 3 ? 'active' : ''}`} onClick={() => setKpiExplorerScore(3)}>KPI 3</button>
+                                    </div>
                                 </div>
                             </div>
                             <div id="kpiExplorerCategorySummary" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: 'var(--space-md)', fontSize: '13px', padding: '0 var(--space-lg)' }}>

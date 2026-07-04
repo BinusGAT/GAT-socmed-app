@@ -2,7 +2,7 @@ import React from 'react';
 import { useDashboard } from './DashboardContext';
 
 export default function Sidebar({ isOpen, toggleSidebar }) {
-    const { currentView, setCurrentView, isUnlocked } = useDashboard();
+    const { currentView, setCurrentView, isUnlocked, setSelectedMeetingId } = useDashboard();
 
     const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: 'fa-gauge-high' },
@@ -16,6 +16,9 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
     const visibleItems = navItems.filter(item => !item.restricted || isUnlocked);
 
     const handleNavClick = (id) => {
+        if (id !== 'meeting') {
+            setSelectedMeetingId(null);
+        }
         setCurrentView(id);
         if (window.innerWidth <= 1024) {
             toggleSidebar(); // Close sidebar on mobile after clicking

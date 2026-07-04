@@ -1,5 +1,15 @@
+let inMemoryToken = '';
+
+export function setSessionToken(token) {
+  inMemoryToken = token || '';
+}
+
+export function getSessionToken() {
+  return inMemoryToken;
+}
+
 export async function callSheetsAPI(action, params = {}) {
-  const token = typeof window !== 'undefined' ? sessionStorage.getItem('session_token') : null;
+  const token = inMemoryToken;
   const payload = {
     action,
     params
@@ -16,7 +26,6 @@ export async function callSheetsAPI(action, params = {}) {
       },
       body: JSON.stringify(payload)
     });
-
     if (!response.ok) {
       const errorText = await response.text();
       let errorJson;
@@ -25,7 +34,13 @@ export async function callSheetsAPI(action, params = {}) {
       } catch {
         // Not JSON
       }
-      throw new Error((errorJson && errorJson.error) || `HTTP error! Status: ${response.status}`);
+      const errorMsg = (errorJson && errorJson.error) || `HTTP error! Status: ${response.status}`;
+      if (response.status === 401 || errorMsg.includes('Unauthorized') || errorMsg.includes('Access token')) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('unauthorized-api-call'));
+        }
+      }
+      throw new Error(errorMsg);
     }
 
     const result = await response.json();

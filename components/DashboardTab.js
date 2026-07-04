@@ -26,16 +26,58 @@ export default function DashboardTab({ onOpenDatePicker }) {
         if (typeof window !== 'undefined' && window.DOMPurify) {
             return { __html: window.DOMPurify.sanitize(htmlContent) };
         }
-        // Secure fallback: Strip HTML tags and escape HTML entities to prevent XSS when sanitizer is not loaded
-        const text = String(htmlContent || '');
-        const cleanText = text
-            .replace(/<\/?[^>]+(>|$)/g, "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-        return { __html: cleanText };
+        if (typeof window === 'undefined') return { __html: '' };
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlContent || '', 'text/html');
+            const allowedTags = ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'a', 'span', 'i'];
+            const allowedAttrs = {
+                'a': ['href', 'target', 'rel'],
+                'span': ['class', 'style'],
+                'i': ['class', 'style']
+            };
+            const sanitizeNode = (node) => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return document.createTextNode(node.nodeValue);
+                }
+                if (node.nodeType !== Node.ELEMENT_NODE) {
+                    return null;
+                }
+                const tagName = node.tagName.toLowerCase();
+                if (!allowedTags.includes(tagName)) {
+                    return document.createTextNode(node.textContent);
+                }
+                const cleanEl = document.createElement(tagName);
+                const attrs = allowedAttrs[tagName] || [];
+                for (const attr of attrs) {
+                    if (node.hasAttribute(attr)) {
+                        const val = node.getAttribute(attr);
+                        if (attr === 'href' && /^\s*javascript:/i.test(val)) {
+                            continue;
+                        }
+                        cleanEl.setAttribute(attr, val);
+                    }
+                }
+                node.childNodes.forEach(child => {
+                    const cleanChild = sanitizeNode(child);
+                    if (cleanChild) {
+                        cleanEl.appendChild(cleanChild);
+                    }
+                });
+                return cleanEl;
+            };
+            const container = document.createElement('div');
+            doc.body.childNodes.forEach(child => {
+                const cleanChild = sanitizeNode(child);
+                if (cleanChild) {
+                    container.appendChild(cleanChild);
+                }
+            });
+            return { __html: container.innerHTML };
+        } catch (e) {
+            console.error('HTML Sanitization error:', e);
+            return { __html: '' };
+        }
     };
 
     const {
@@ -497,8 +539,15 @@ export default function DashboardTab({ onOpenDatePicker }) {
         if (selectedRows.length === 0) return;
         if (!confirm(`Are you sure you want to delete ${selectedRows.length} selected records?`)) return;
 
+        const currentDataIndexMap = new Map();
+        currentData.forEach((row, index) => {
+            if (row.ID && !currentDataIndexMap.has(row.ID)) {
+                currentDataIndexMap.set(row.ID, index);
+            }
+        });
+
         const rowsToDelete = selectedRows.map(id => {
-            const index = currentData.findIndex(row => row.ID === id);
+            const index = currentDataIndexMap.has(id) ? currentDataIndexMap.get(id) : -1;
             return { id, rowIndex: index };
         }).filter(item => item.rowIndex !== -1);
 
@@ -1020,10 +1069,18 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {processedData.map((row, idx) => {
-                                        const mainIndex = currentData.findIndex(r => r.ID === row.ID);
-                                        const isRowSelected = selectedRows.includes(row.ID);
-                                        const isZeroMetrics = hasZeroEngagementMetrics(row);
+                                    {(() => {
+                                        const currentDataIndexMap = new Map();
+                                        currentData.forEach((r, i) => {
+                                            if (r.ID && !currentDataIndexMap.has(r.ID)) {
+                                                currentDataIndexMap.set(r.ID, i);
+                                            }
+                                        });
+
+                                        return processedData.map((row, idx) => {
+                                            const mainIndex = currentDataIndexMap.has(row.ID) ? currentDataIndexMap.get(row.ID) : -1;
+                                            const isRowSelected = selectedRows.includes(row.ID);
+                                            const isZeroMetrics = hasZeroEngagementMetrics(row);
                                         const metricClass = isZeroMetrics ? 'cell-danger' : '';
 
                                         return (
@@ -1147,7 +1204,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                                 )}
                                             </tr>
                                         );
-                                    })}
+                                    });
+                                })()}
                                 </tbody>
                             </table>
                         )}

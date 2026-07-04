@@ -743,6 +743,12 @@ export function CalendarExportModal({ isOpen, onClose }) {
             if (editorEl) {
                 editorEl.style.display = 'none';
             }
+            // Remove navigation and export/today actions in the exported image
+            clone.querySelectorAll('.calendar-nav-btn').forEach(el => el.remove());
+            const toolbarActions = clone.querySelector('.calendar-toolbar-actions');
+            if (toolbarActions) {
+                toolbarActions.remove();
+            }
             clone.removeAttribute('style');
 
             // Filter elements based on user options

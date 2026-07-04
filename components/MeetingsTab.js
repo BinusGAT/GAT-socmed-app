@@ -30,12 +30,6 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const editorRef = useRef(null);
 
-    // Reset selected meeting ID when switching away (unmounting)
-    useEffect(() => {
-        return () => {
-            setSelectedMeetingId(null);
-        };
-    }, [setSelectedMeetingId]);
 
     // Scroll selected meeting item into view
     useEffect(() => {
@@ -134,13 +128,10 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     // Update contenteditable element content when isEditing becomes true or when switching to editable view
     useEffect(() => {
         if (isEditing && editorRef.current) {
-            const currentText = editorRef.current.innerHTML;
             if (selectedMeetingId === 'NEW') {
-                if (currentText !== '') {
-                    editorRef.current.innerHTML = '';
-                }
-            } else if (currentText !== formRecap) {
-                editorRef.current.innerHTML = formRecap;
+                editorRef.current.innerHTML = '';
+            } else {
+                editorRef.current.innerHTML = sanitizeHtmlString(formRecap);
             }
         }
     }, [isEditing, selectedMeetingId]);
@@ -358,20 +349,66 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         updateActiveStyles();
     };
 
-    const createSafeHtml = (htmlContent) => {
+    const sanitizeHtmlString = (html) => {
         if (typeof window !== 'undefined' && window.DOMPurify) {
-            return { __html: window.DOMPurify.sanitize(htmlContent) };
+            return window.DOMPurify.sanitize(html);
         }
-        // Secure fallback: Strip HTML tags and escape HTML entities to prevent XSS when sanitizer is not loaded
-        const text = String(htmlContent || '');
-        const cleanText = text
-            .replace(/<\/?[^>]+(>|$)/g, "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-        return { __html: cleanText };
+        if (typeof window === 'undefined') return '';
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html || '', 'text/html');
+            const allowedTags = ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'a', 'span', 'i'];
+            const allowedAttrs = {
+                'a': ['href', 'target', 'rel'],
+                'span': ['class', 'style'],
+                'i': ['class', 'style']
+            };
+            const sanitizeNode = (node) => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return document.createTextNode(node.nodeValue);
+                }
+                if (node.nodeType !== Node.ELEMENT_NODE) {
+                    return null;
+                }
+                const tagName = node.tagName.toLowerCase();
+                if (!allowedTags.includes(tagName)) {
+                    return document.createTextNode(node.textContent);
+                }
+                const cleanEl = document.createElement(tagName);
+                const attrs = allowedAttrs[tagName] || [];
+                for (const attr of attrs) {
+                    if (node.hasAttribute(attr)) {
+                        const val = node.getAttribute(attr);
+                        if (attr === 'href' && /^\s*javascript:/i.test(val)) {
+                            continue;
+                        }
+                        cleanEl.setAttribute(attr, val);
+                    }
+                }
+                node.childNodes.forEach(child => {
+                    const cleanChild = sanitizeNode(child);
+                    if (cleanChild) {
+                        cleanEl.appendChild(cleanChild);
+                    }
+                });
+                return cleanEl;
+            };
+            const container = document.createElement('div');
+            doc.body.childNodes.forEach(child => {
+                const cleanChild = sanitizeNode(child);
+                if (cleanChild) {
+                    container.appendChild(cleanChild);
+                }
+            });
+            return container.innerHTML;
+        } catch (e) {
+            console.error('HTML Sanitization error:', e);
+            return '';
+        }
+    };
+
+    const createSafeHtml = (htmlContent) => {
+        return { __html: sanitizeHtmlString(htmlContent) };
     };
 
     const meetingMembers = getMeetingMembers();
@@ -669,7 +706,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
 
                             {/* Form actions */}
                             <div className="form-actions editor-actions" style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-                                {isUnlocked && (
+                                {isUnlocked && userRole !== 'Creator' && (
                                     <button type="submit" className="btn btn-primary">
                                         <i className="fa-solid fa-floppy-disk"></i> Save Memo
                                     </button>

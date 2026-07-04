@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { callSheetsAPI } from '../utils/api';
+import { callSheetsAPI, setSessionToken, getSessionToken } from '../utils/api';
 import { 
     normalizePicName, 
     getLocalDateInputValue, 
@@ -58,13 +58,11 @@ export function DashboardProvider({ children }) {
             document.body.classList.remove('dark-mode');
         }
 
-        // CUD Unlock
-        const savedUnlocked = sessionStorage.getItem('cud_unlocked') === 'true';
-        const savedRole = sessionStorage.getItem('user_role');
-        if (savedUnlocked && savedRole) {
-            setIsUnlocked(true);
-            setUserRole(savedRole);
-        }
+        // CUD Unlock: Lock on page refresh for maximum security (token is in-memory)
+        sessionStorage.removeItem('cud_unlocked');
+        sessionStorage.removeItem('user_role');
+        setIsUnlocked(false);
+        setUserRole(null);
 
         // Load Offline Member Defaults
         setMemberListData([
@@ -77,30 +75,27 @@ export function DashboardProvider({ children }) {
             { NAMA: 'Rafael', STREAM: 'Content Creator' }
         ]);
 
-        // Only load offline/local data if unlocked initially
-        if (savedUnlocked) {
-            // Load Offline Schedule Defaults
-            setScheduleData([
-                { ID: 'CT1', Date: '03/02/2026', PIC: 'Felix', 'Content Title': 'Refind Self', Category: 'Story Telling', Status: true, Month: 'Maret' },
-                { ID: 'CT2', Date: '03/03/2026', PIC: 'Kelvin', 'Content Title': 'Drakantos', Category: 'Story Telling', Status: true, Month: 'Maret' },
-                { ID: 'CT3', Date: '03/04/2026', PIC: 'Felix', 'Content Title': 'Ubah Anime 2D jadi 3D Imersif', Category: 'Article Reels', Status: true, Month: 'Maret' }
-            ]);
+        setScheduleData([]);
+        setDraftsData([]);
+        setMeetingsData([]);
+        setCurrentData([]);
+    }, []);
 
-            // Load initial local storage data (for offline drafts/meetings)
-            const localDrafts = localStorage.getItem('GAT_storyboard_drafts');
-            if (localDrafts) {
-                try { setDraftsData(JSON.parse(localDrafts)); } catch (e) {}
-            }
-            const localMeetings = localStorage.getItem('GAT_meeting_memos');
-            if (localMeetings) {
-                try { setMeetingsData(JSON.parse(localMeetings)); } catch (e) {}
-            }
-        } else {
-            setScheduleData([]);
-            setDraftsData([]);
-            setMeetingsData([]);
-            setCurrentData([]);
-        }
+    // Global listener for API authorization failures (session expired/invalid)
+    useEffect(() => {
+        const handleUnauthorized = () => {
+            setIsUnlocked(false);
+            setUserRole(null);
+            sessionStorage.setItem('cud_unlocked', 'false');
+            sessionStorage.setItem('user_role', '');
+            setSessionToken('');
+            showAlert('🔒 Session expired. Please unlock the workspace again.', 'error');
+        };
+
+        window.addEventListener('unauthorized-api-call', handleUnauthorized);
+        return () => {
+            window.removeEventListener('unauthorized-api-call', handleUnauthorized);
+        };
     }, []);
 
     // Load data from Google Sheets when unlock status changes
@@ -370,7 +365,7 @@ export function DashboardProvider({ children }) {
                 setUserRole(role);
                 sessionStorage.setItem('cud_unlocked', 'true');
                 sessionStorage.setItem('user_role', role);
-                sessionStorage.setItem('session_token', result.token || '');
+                setSessionToken(result.token || '');
                 showAlert(`🔓 Workspace unlocked successfully as ${role}!`, 'success');
                 return true;
             } else {
@@ -393,14 +388,14 @@ export function DashboardProvider({ children }) {
             setIsLoading(false);
         }
     };
-
+ 
     // Lock Workspace
     const lockWorkspace = () => {
         setIsUnlocked(false);
         setUserRole(null);
         sessionStorage.setItem('cud_unlocked', 'false');
         sessionStorage.setItem('user_role', '');
-        sessionStorage.setItem('session_token', '');
+        setSessionToken('');
         showAlert('🔒 Workspace locked. Session ended.', 'info');
     };
 
