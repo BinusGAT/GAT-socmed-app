@@ -5,7 +5,8 @@ import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import { 
     normalizePicName, 
-    getPicBadgeClass
+    getPicBadgeClass,
+    parseDate
 } from '../utils/helpers';
 
 export default function ContentHubTab() {
