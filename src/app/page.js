@@ -8,7 +8,8 @@ import {
     UnlockModal, 
     DateRangeModal,
     DatePickerModal,
-    CalendarExportModal
+    CalendarExportModal,
+    HelpGuideModal
 } from '../../components/Modals';
 import DashboardTab from '../../components/DashboardTab';
 import CalendarTab from '../../components/CalendarTab';
@@ -62,6 +63,7 @@ function DashboardAppContent() {
     const [unlockOpen, setUnlockOpen] = useState(false);
     const [dateRangeOpen, setDateRangeOpen] = useState(false);
     const [calendarExportOpen, setCalendarExportOpen] = useState(false);
+    const [helpOpen, setHelpOpen] = useState(false);
     
     // Date Picker state
     const [datePickerOpen, setDatePickerOpen] = useState(false);
@@ -186,6 +188,7 @@ function DashboardAppContent() {
                     openDateRangeModal={() => setDateRangeOpen(true)}
                     onExport={handleExportAll}
                     dateRangeText={getDateRangeText()}
+                    openHelpModal={() => setHelpOpen(true)}
                 />
 
                 {/* Global loading spinner overlay */}
@@ -250,6 +253,7 @@ function DashboardAppContent() {
                 initialDate={datePickerInitialDate}
             />
             <CalendarExportModal isOpen={calendarExportOpen} onClose={() => setCalendarExportOpen(false)} />
+            <HelpGuideModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
         </div>
     );
 }

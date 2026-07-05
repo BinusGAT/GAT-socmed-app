@@ -1215,3 +1215,338 @@ export function LinkModal({ isOpen, onClose, onConfirm }) {
     );
 }
 
+// ----------------------------------------------------
+// 8. HELP & OPERATIONS GUIDE MODAL
+// ----------------------------------------------------
+export function HelpGuideModal({ isOpen, onClose }) {
+    const { userRole } = useDashboard();
+    const [activeTab, setActiveTab] = useState('roles');
+
+    if (!isOpen) return null;
+    if (typeof window === 'undefined') return null;
+
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'roles':
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{
+                            padding: '10px 14px',
+                            borderRadius: '6px',
+                            backgroundColor: 'var(--primary-bg)',
+                            border: '1px solid var(--primary-focus)',
+                            fontSize: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            color: 'var(--ink)'
+                        }}>
+                            <i className="fa-solid fa-circle-check" style={{ color: 'var(--primary)' }}></i>
+                            <span>You are currently authenticated under <strong>{userRole === 'Admin' ? 'ADMIN MODE' : 'CREATOR MODE'}</strong>.</span>
+                        </div>
+
+                        <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.5', color: 'var(--ink-muted)' }}>
+                            GAT ContentManager dynamically adapts its interface and access controls based on the authenticated role.
+                        </p>
+                        
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: '12px',
+                            marginTop: '4px'
+                        }}>
+                            {/* Admin Card */}
+                            <div style={{
+                                border: userRole === 'Admin' ? '2px solid var(--primary)' : '1px solid var(--hairline-strong)',
+                                borderRadius: '8px',
+                                padding: '16px',
+                                backgroundColor: userRole === 'Admin' ? 'var(--primary-bg-strong)' : 'var(--canvas)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                opacity: userRole === 'Admin' ? 1 : 0.6,
+                                transition: 'all 0.2s'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)' }}>
+                                    <i className="fa-solid fa-user-gear" style={{ fontSize: '16px' }}></i>
+                                    <span style={{ fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em' }}>ADMIN MODE</span>
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '11px', color: 'var(--ink-muted)', lineHeight: '1.6' }}>
+                                    <li>Full read & write access to all tabs.</li>
+                                    <li>Add, edit, or delete any task, calendar event, meeting memo, or draft.</li>
+                                    <li>Authorized to sync and write back records to the main database.</li>
+                                </ul>
+                            </div>
+
+                            {/* Creator Card */}
+                            <div style={{
+                                border: userRole === 'Creator' ? '2px solid var(--primary)' : '1px solid var(--hairline-strong)',
+                                borderRadius: '8px',
+                                padding: '16px',
+                                backgroundColor: userRole === 'Creator' ? 'var(--primary-bg-strong)' : 'var(--canvas)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                opacity: userRole === 'Creator' ? 1 : 0.6,
+                                transition: 'all 0.2s'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)' }}>
+                                    <i className="fa-solid fa-palette" style={{ fontSize: '16px' }}></i>
+                                    <span style={{ fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em' }}>CREATOR MODE</span>
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '11px', color: 'var(--ink-muted)', lineHeight: '1.6' }}>
+                                    <li>Optimized read-focused workstation.</li>
+                                    <li>Can view analytics, calendars, and dashboards without accidental edits.</li>
+                                    <li>Full permissions to add and edit meeting memos and storyboard drafts.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div style={{
+                            fontSize: '11px',
+                            color: 'var(--ink-faint)',
+                            borderTop: '1px solid var(--hairline)',
+                            paddingTop: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}>
+                            <i className="fa-solid fa-circle-info"></i>
+                            <span>Workspace role can be changed on the Lock screen by re-entering the staff key.</span>
+                        </div>
+                    </div>
+                );
+            case 'workflows':
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '350px', overflowY: 'auto', paddingRight: '4px' }}>
+                        <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.5', color: 'var(--ink-muted)' }}>
+                            Navigate through the sidebar to coordinate content operations:
+                        </p>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                                <div style={{ minWidth: '100px', fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>
+                                    <i className="fa-solid fa-gauge-high" style={{ width: '16px', marginRight: '6px', color: 'var(--primary)' }}></i>Dashboard
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                                    Overview of total publication views, reaches, follow growth, and recent performance highlights.
+                                </div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', borderTop: '1px solid var(--hairline)', paddingTop: '8px' }}>
+                                <div style={{ minWidth: '100px', fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>
+                                    <i className="fa-solid fa-calendar-days" style={{ width: '16px', marginRight: '6px', color: 'var(--primary)' }}></i>Calendar
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                                    Visual publication timeline. Useful for seeing scheduled posting dates. Exports clean PNGs for team updates.
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', borderTop: '1px solid var(--hairline)', paddingTop: '8px' }}>
+                                <div style={{ minWidth: '100px', fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>
+                                    <i className="fa-solid fa-list-check" style={{ width: '16px', marginRight: '6px', color: 'var(--primary)' }}></i>Task List
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                                    Tracks action items, priorities, and deadlines. Filter by "Due Today", status, or PIC.
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', borderTop: '1px solid var(--hairline)', paddingTop: '8px' }}>
+                                <div style={{ minWidth: '100px', fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>
+                                    <i className="fa-solid fa-pen-to-square" style={{ width: '16px', marginRight: '6px', color: 'var(--primary)' }}></i>Content Hub
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                                    Where storyboards, hooks, and drafts are written. Helps refine scripts before filming.
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', borderTop: '1px solid var(--hairline)', paddingTop: '8px' }}>
+                                <div style={{ minWidth: '100px', fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>
+                                    <i className="fa-solid fa-handshake" style={{ width: '16px', marginRight: '6px', color: 'var(--primary)' }}></i>Meeting Memos
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                                    Log meeting notes and action points. Click any card to instantly scroll down and edit its content.
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', borderTop: '1px solid var(--hairline)', paddingTop: '8px' }}>
+                                <div style={{ minWidth: '100px', fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>
+                                    <i className="fa-solid fa-chart-line" style={{ width: '16px', marginRight: '6px', color: 'var(--primary)' }}></i>Analytics
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                                    Detailed trend breakdown (monthly/weekly), engagement metrics, and rank lists for PICs and platforms.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'security':
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.5', color: 'var(--ink-muted)' }}>
+                            Understanding the security systems and offline capabilities of the dashboard:
+                        </p>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <i className="fa-solid fa-lock" style={{ color: 'var(--primary)', marginTop: '3px', fontSize: '14px', width: '16px' }}></i>
+                                <div>
+                                    <strong style={{ fontSize: '12px', color: 'var(--ink)', display: 'block' }}>Automatic Session Locking</strong>
+                                    <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>
+                                        To protect sensitive information, refreshing the page or closing the tab automatically locks the database access. This is an intentional security control.
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ef4444', marginTop: '3px', fontSize: '14px', width: '16px' }}></i>
+                                <div>
+                                    <strong style={{ fontSize: '12px', color: 'var(--ink)', display: 'block' }}>Brute Force Lockdown</strong>
+                                    <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>
+                                        Entering incorrect access passcodes 5 consecutive times triggers an automatic 6-hour browser lockdown where no credentials will be accepted.
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <i className="fa-solid fa-cloud-sun" style={{ color: 'var(--primary)', marginTop: '3px', fontSize: '14px', width: '16px' }}></i>
+                                <div>
+                                    <strong style={{ fontSize: '12px', color: 'var(--ink)', display: 'block' }}>Local Sync & Caching</strong>
+                                    <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>
+                                        Database tables are automatically cached in your browser. If offline or facing connection trouble, the dashboard loads using local backup data.
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
+    return createPortal(
+        <div className="modal-overlay" style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 16000,
+            backdropFilter: 'blur(4px)'
+        }}>
+            <div className="modal-card" style={{
+                width: '100%',
+                maxWidth: '560px',
+                background: 'var(--surface-elevated, #18181b)',
+                border: '1px solid var(--hairline, #27272a)',
+                borderRadius: '12px',
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px',
+                boxShadow: 'var(--shadow-lg, 0 10px 25px -5px rgba(0, 0, 0, 0.3))'
+            }}>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--hairline)', paddingBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="fa-solid fa-circle-question" style={{ color: 'var(--primary)', fontSize: '20px' }}></i>
+                        <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--ink)' }}>Help & Operations Guide</h3>
+                    </div>
+                    <button className="gate-modal-close" onClick={onClose} aria-label="Close modal" style={{ padding: '4px', cursor: 'pointer' }}>
+                        <i className="fa-solid fa-xmark" style={{ fontSize: '18px' }}></i>
+                    </button>
+                </div>
+
+                {/* Tabs */}
+                <div style={{
+                    display: 'flex',
+                    borderBottom: '1px solid var(--hairline)',
+                    gap: '16px',
+                    paddingBottom: '2px'
+                }}>
+                    <button 
+                        onClick={() => setActiveTab('roles')}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            borderBottom: activeTab === 'roles' ? '2px solid var(--primary)' : '2px solid transparent',
+                            color: activeTab === 'roles' ? 'var(--ink)' : 'var(--ink-muted)',
+                            padding: '8px 4px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: activeTab === 'roles' ? 600 : 500,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <i className="fa-solid fa-user-lock"></i> Workspace Roles
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('workflows')}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            borderBottom: activeTab === 'workflows' ? '2px solid var(--primary)' : '2px solid transparent',
+                            color: activeTab === 'workflows' ? 'var(--ink)' : 'var(--ink-muted)',
+                            padding: '8px 4px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: activeTab === 'workflows' ? 600 : 500,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <i className="fa-solid fa-route"></i> Workflows
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('security')}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            borderBottom: activeTab === 'security' ? '2px solid var(--primary)' : '2px solid transparent',
+                            color: activeTab === 'security' ? 'var(--ink)' : 'var(--ink-muted)',
+                            padding: '8px 4px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: activeTab === 'security' ? 600 : 500,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <i className="fa-solid fa-shield-halved"></i> Security & Sync
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="help-modal-body">
+                    {renderTabContent()}
+                </div>
+
+                {/* Footer */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--hairline)', paddingTop: '14px', marginTop: '4px' }}>
+                    <button 
+                        type="button" 
+                        className="btn btn-primary" 
+                        onClick={onClose}
+                        style={{ minWidth: '100px' }}
+                    >
+                        Got it
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+}
+

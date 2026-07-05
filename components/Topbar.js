@@ -7,7 +7,8 @@ export default function Topbar({
     openDbSettingsModal,
     openDateRangeModal, 
     onExport, 
-    dateRangeText 
+    dateRangeText,
+    openHelpModal
 }) {
     const { 
         currentView, 
@@ -81,6 +82,20 @@ export default function Topbar({
                             <i className={`fa-solid ${darkMode ? 'fa-sun' : 'fa-moon'}`}></i>
                         </span>
                     </button>
+
+                    {/* Help & Operations Guide */}
+                    {isUnlocked && (
+                        <button 
+                            className="btn btn-outline" 
+                            id="helpGuideBtn" 
+                            onClick={openHelpModal}
+                            title="Help & Operations Guide"
+                        >
+                            <span className="btn-icon">
+                                <i className="fa-solid fa-circle-question"></i>
+                            </span>
+                        </button>
+                    )}
 
                     {/* Date Range Picker */}
                     <button 
