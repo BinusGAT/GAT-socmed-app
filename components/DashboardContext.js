@@ -111,6 +111,13 @@ export function DashboardProvider({ children }) {
         }
     }, [isUnlocked]);
 
+    // Reset Task List filters whenever the view changes
+    useEffect(() => {
+        setTasklistSearch('');
+        setTasklistFilterPic('');
+        setTasklistFilterStatus('');
+    }, [currentView]);
+
     // Show Alert helper
     const showAlert = (message, type = 'success') => {
         setGlobalAlert({ message, type });

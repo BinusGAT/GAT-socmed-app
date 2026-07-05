@@ -174,6 +174,9 @@ function DashboardAppContent() {
         <div className="app-container" style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative' }}>
             {/* Sidebar navigation */}
             <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+            {sidebarOpen && (
+                <div className="sidebar-overlay active" onClick={toggleSidebar}></div>
+            )}
 
             {/* Main Content Area */}
             <main className="main-content">

@@ -141,6 +141,12 @@ export default function ContentHubTab() {
         const success = await saveScriptDraft(newDraft);
         if (success) {
             setSelectedDraftTitle(newDraft.title);
+            setTimeout(() => {
+                const editorEl = document.querySelector('.creative-editor');
+                if (editorEl) {
+                    editorEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 50);
         }
     };
 
@@ -323,7 +329,15 @@ export default function ContentHubTab() {
                                     <button 
                                         key={index}
                                         type="button" 
-                                        onClick={() => setSelectedDraftTitle(d.title)}
+                                        onClick={() => {
+                                            setSelectedDraftTitle(d.title);
+                                            setTimeout(() => {
+                                                const editorEl = document.querySelector('.creative-editor');
+                                                if (editorEl) {
+                                                    editorEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                }
+                                            }, 50);
+                                        }}
                                         className={`draft-item ${isSelected ? 'active' : ''}`}
                                     >
                                         <div className="draft-item-title">{d.title || 'Untitled Draft'}</div>
@@ -387,8 +401,11 @@ export default function ContentHubTab() {
                                             <i className="fa-solid fa-trash-can"></i> Delete
                                         </button>
                                     )}
-                                    <button type="button" className="btn btn-outline btn-sm" onClick={() => setSelectedDraftTitle(null)}>
-                                        Close
+                                    <button type="button" className="btn btn-outline btn-sm mobile-close-btn" onClick={() => {
+                                        setSelectedDraftTitle(null);
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}>
+                                        <i className="fa-solid fa-xmark"></i> Close
                                     </button>
                                 </div>
                             </div>

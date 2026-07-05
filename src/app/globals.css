@@ -4187,7 +4187,7 @@ body.role-creator .meeting-editor-controls {
 @media (max-width: 768px) {
     .meeting-split-container {
         grid-template-columns: 1fr;
-        grid-template-rows: 240px 1fr;
+        grid-template-rows: 320px 1fr;
     }
 }
 
@@ -5057,3 +5057,159 @@ body.dark-mode .custom-datepicker-popover {
 table td[rowspan] {
     vertical-align: middle !important;
 }
+
+/* ==========================================================================
+   PHONE AND MOBILE LAYOUT OPTIMIZATIONS (E:\Binus\Intern\Dashboard\sc Audit)
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* 1. Topbar Navigation Caret & Layout Clean Up */
+    .topbar .action-group .btn .fa-caret-down {
+        display: none !important;
+    }
+    
+    .topbar .action-group {
+        gap: 6px !important;
+    }
+    
+    /* 2. Stats Grid Symmetry (Prevent 5th card stand-alone) */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: var(--space-xs) !important;
+    }
+    
+    .stats-grid .stat-card:last-child {
+        grid-column: span 2 !important;
+    }
+
+    /* 3. Table Horizontal Scrollbar Visibility & Density */
+    .table-container {
+        scrollbar-width: thin !important;
+        -ms-overflow-style: auto !important;
+    }
+    
+    .table-container::-webkit-scrollbar {
+        display: block !important;
+        height: 6px !important;
+        width: 6px !important;
+    }
+    
+    .table-container::-webkit-scrollbar-thumb {
+        background-color: var(--hairline-strong) !important;
+        border-radius: var(--radius-pill) !important;
+    }
+
+    table td {
+        padding: 8px 10px !important;
+        font-size: 11.5px !important;
+    }
+    
+    table th {
+        padding: 8px 10px !important;
+        font-size: 9.5px !important;
+    }
+
+    /* 4. Calendar Weekday Labels & Cells Clean Up */
+    .calendar-weekdays div {
+        font-size: 0 !important;
+    }
+    
+    .calendar-weekdays div::after {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+    }
+    
+    .calendar-weekdays div:nth-child(1)::after { content: "Sun" !important; }
+    .calendar-weekdays div:nth-child(2)::after { content: "Mon" !important; }
+    .calendar-weekdays div:nth-child(3)::after { content: "Tue" !important; }
+    .calendar-weekdays div:nth-child(4)::after { content: "Wed" !important; }
+    .calendar-weekdays div:nth-child(5)::after { content: "Thu" !important; }
+    .calendar-weekdays div:nth-child(6)::after { content: "Fri" !important; }
+    .calendar-weekdays div:nth-child(7)::after { content: "Sat" !important; }
+
+    /* Hide Category inside calendar cell and scale pills */
+    .calendar-day-task-category {
+        display: none !important;
+    }
+    
+    .calendar-day-task-pill {
+        font-size: 8px !important;
+        padding: 1px 3px !important;
+        margin-top: 2px !important;
+        border-radius: var(--radius-xs) !important;
+    }
+    
+    /* Adjust selected date display text */
+    .calendar-selected-date {
+        font-size: 13px !important;
+    }
+
+    /* 5. Meeting Memo Directory Layout & Height Optimization (unified with Content Hub) */
+    .panel-meeting {
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+    .meeting-split-container {
+        grid-template-columns: 1fr !important;
+        grid-template-rows: auto !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .meeting-sidebar {
+        border-right: none !important;
+        border-bottom: 1px solid var(--hairline) !important;
+        padding: 0 0 var(--space-lg) 0 !important;
+        height: auto !important;
+        overflow-y: visible !important;
+    }
+
+    .meeting-list-container {
+        max-height: none !important;
+        height: auto !important;
+        overflow-y: visible !important;
+    }
+
+    .meeting-main-content {
+        padding: var(--space-lg) 0 0 0 !important;
+        height: auto !important;
+        overflow-y: visible !important;
+    }
+
+    .meeting-item {
+        padding: 10px 12px !important;
+        gap: 4px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    /* For extra narrow phone screens */
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .stats-grid .stat-card:last-child {
+        grid-column: span 1 !important;
+    }
+}
+
+/* Mobile close button is hidden on desktop by default */
+.mobile-close-btn {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    /* Optimization: Disable layout-affecting transitions on mobile main-content to boost performance */
+    .main-content {
+        transition: none !important;
+    }
+
+    /* Make mobile close button visible */
+    .mobile-close-btn {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 6px;
+    }
+}
+

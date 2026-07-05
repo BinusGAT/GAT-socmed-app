@@ -194,6 +194,12 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         if (!isUnlocked || userRole === 'Creator') return;
         setSelectedMeetingId('NEW');
         setIsEditing(true);
+        setTimeout(() => {
+            const detailEl = document.querySelector('.meeting-main-content');
+            if (detailEl) {
+                detailEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 50);
     };
 
     const handleCancelEdit = () => {
@@ -474,7 +480,15 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                     <button
                                         key={memo.id}
                                         type="button"
-                                        onClick={() => setSelectedMeetingId(memo.id)}
+                                        onClick={() => {
+                                            setSelectedMeetingId(memo.id);
+                                            setTimeout(() => {
+                                                const detailEl = document.querySelector('.meeting-main-content');
+                                                if (detailEl) {
+                                                    detailEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                }
+                                            }, 50);
+                                        }}
                                         className={`meeting-item ${isSelected ? 'active' : ''}`}
                                     >
                                         <div className="meeting-item-date">
@@ -516,6 +530,12 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                     <i className="fa-solid fa-calendar-day" style={{ color: 'var(--primary)' }}></i> Date: {parseDate(formDate)}
                                 </h3>
                                 <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button type="button" className="btn btn-outline btn-sm mobile-close-btn" onClick={() => {
+                                        setSelectedMeetingId(null);
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}>
+                                        <i className="fa-solid fa-xmark"></i> Close
+                                    </button>
                                     {userRole !== 'Creator' && (
                                         <button type="button" className="btn btn-outline btn-sm" onClick={() => setIsEditing(true)}>
                                             <i className="fa-solid fa-pen"></i> Edit
@@ -599,10 +619,17 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                     ) : (
                         /* EDIT MODE */
                         <form onSubmit={handleSaveMemo} className="meeting-detail-card" autoComplete="off">
-                            <div className="meeting-details-header" style={{ borderBottom: '1px solid var(--hairline)', paddingBottom: '12px', marginBottom: '20px' }}>
+                            <div className="meeting-details-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--hairline)', paddingBottom: '12px', marginBottom: '20px' }}>
                                 <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <i className="fa-solid fa-file-pen" style={{ color: 'var(--primary)' }}></i> {selectedMeetingId === 'NEW' ? 'Create Meeting Memo' : 'Edit Meeting Memo'}
                                 </h3>
+                                <button type="button" className="btn btn-outline btn-sm mobile-close-btn" onClick={() => {
+                                    handleCancelEdit();
+                                    setSelectedMeetingId(null);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}>
+                                    <i className="fa-solid fa-xmark"></i> Close
+                                </button>
                             </div>
 
                             <div className="form-row">

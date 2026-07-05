@@ -264,7 +264,7 @@ export default function CalendarTab({ onOpenExport }) {
                     </div>
                     <div className="calendar-toolbar-actions" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                         <button type="button" className="btn btn-outline btn-sm" onClick={onOpenExport}>
-                            <i className="fa-solid fa-file-image"></i> Export
+                            <i className="fa-solid fa-file-image"></i> <span className="btn-text">Export</span>
                         </button>
                         <button type="button" className="btn btn-outline btn-sm" onClick={goToToday}>Today</button>
                         <button type="button" className="calendar-nav-btn" onClick={() => shiftMonth(1)}>
