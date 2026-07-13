@@ -45,5 +45,15 @@ next-env.d.ts
 *.db-journal
 local.db
 
-# local scripts containing secrets
-scripts/generate-hash.js
+/.agents
+/references
+/scratch
+/.gemini
+*init-db.js
+*migrate-data.js
+*generate-hash.js
+
+# dev utility scripts
+/scripts/
+next.config.mjs
+/assets/

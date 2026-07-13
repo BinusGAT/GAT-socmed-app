@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardProvider, useDashboard } from '../../components/DashboardContext';
 import Sidebar from '../../components/Sidebar';
 import Topbar from '../../components/Topbar';
@@ -17,24 +17,31 @@ import TaskListTab from '../../components/TaskListTab';
 import ContentHubTab from '../../components/ContentHubTab';
 import MeetingsTab from '../../components/MeetingsTab';
 import AnalyticsTab from '../../components/AnalyticsTab';
+import WebAnalyticsTab from '../../components/WebAnalyticsTab';
+import SettingsTab from '../../components/SettingsTab';
 import { formatDisplayDate } from '../../utils/helpers';
+import LockScreen from '../../components/LockScreen';
 
 function DashboardAppContent() {
     const {
         currentView,
+        setCurrentView,
         isLoading,
         isUnlocked,
+        userRole,
         globalAlert,
         showAlert,
         dateRange,
-        currentData
+        currentData,
+        setSelectedMeetingId,
+        appSettingsData
     } = useDashboard();
 
     // Layout states
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     // Sync active view mode class and lock status to body element for CSS alignment
-    React.useEffect(() => {
+    useEffect(() => {
         if (typeof document === 'undefined') return;
         const classes = ['calendar-mode', 'tasklist-mode', 'meeting-mode', 'content-mode', 'analytics-mode'];
         classes.forEach(c => document.body.classList.remove(c));
@@ -154,7 +161,11 @@ function DashboardAppContent() {
 
     // Render active panel
     const renderActiveTab = () => {
-        switch (currentView) {
+        let view = currentView;
+        if (userRole === 'Viewer' && !['dashboard', 'analytics', 'web-analytics'].includes(view)) {
+            view = 'dashboard';
+        }
+        switch (view) {
             case 'dashboard':
                 return <DashboardTab onOpenDatePicker={openDatePicker} />;
             case 'calendar':
@@ -167,21 +178,86 @@ function DashboardAppContent() {
                 return <MeetingsTab onOpenDatePicker={openDatePicker} />;
             case 'analytics':
                 return <AnalyticsTab />;
+            case 'web-analytics':
+                return <WebAnalyticsTab />;
+            case 'settings':
+                return <SettingsTab />;
             default:
                 return <DashboardTab onOpenDatePicker={openDatePicker} />;
         }
     };
 
+    // Define bottom nav items for mobile layout
+    const mobileNavItems = [
+        { id: 'dashboard', label: 'Home', icon: 'dashboard' },
+        { id: 'calendar', label: 'Planner', icon: 'calendar_month' },
+        { id: 'tasklist', label: 'Tasks', icon: 'assignment', restricted: true },
+        { id: 'content', label: 'Library', icon: 'folder_open', restricted: true },
+        { id: 'meeting', label: 'Memos', icon: 'description', restricted: true },
+        { id: 'analytics', label: 'Data', icon: 'analytics' },
+        { id: 'web-analytics', label: 'Web', icon: 'language', restricted: true }
+    ];
+
+    const visibleMobileItems = mobileNavItems.filter(item => {
+        if (userRole === 'Viewer') {
+            return item.id === 'dashboard' || item.id === 'analytics' || item.id === 'web-analytics';
+        }
+        return !item.restricted || isUnlocked;
+    });
+
+    const handleMobileNavClick = (id) => {
+        if (id !== 'meeting') {
+            setSelectedMeetingId(null);
+        }
+        setCurrentView(id);
+    };
+
+    if (!isUnlocked) {
+        return (
+            <div className="flex min-h-screen w-screen justify-center items-center bg-background relative overflow-hidden">
+                {isLoading && (
+                    <div className="fixed inset-0 bg-background/40 backdrop-blur-md flex items-center justify-center z-[9999] animate-fade-in">
+                        <div className="noise-overlay"></div>
+                        <div className="bg-surface-container/70 backdrop-blur-xl border border-outline-variant/30 rounded-2xl p-6 flex flex-col items-center gap-4 max-w-[280px] shadow-2xl relative">
+                            <div className="relative w-12 h-12 flex items-center justify-center">
+                                <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping"></div>
+                                <div className="w-8 h-8 border-3 border-primary/10 border-t-primary rounded-full animate-spin"></div>
+                            </div>
+                            <span className="text-body-sm text-on-surface font-bold tracking-wide">Authenticating...</span>
+                        </div>
+                    </div>
+                )}
+
+                {globalAlert && (
+                    <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 py-3.5 px-5 rounded-xl shadow-2xl animate-slide-in text-body-sm font-semibold border ${
+                        globalAlert.type === 'error' 
+                            ? 'bg-error/10 border-error/25 text-error shadow-[0_4px_20px_rgba(186,26,26,0.12)]' 
+                            : globalAlert.type === 'warning' 
+                            ? 'bg-amber-500/10 border-amber-500/25 text-amber-500 shadow-[0_4px_20px_rgba(245,158,11,0.12)]'
+                            : 'bg-primary/10 border-primary/25 text-primary shadow-[0_4px_20px_rgba(16,185,129,0.12)]'
+                    }`}>
+                        <span className="material-symbols-outlined text-[20px]">
+                            {globalAlert.type === 'error' ? 'error' : globalAlert.type === 'warning' ? 'warning' : 'check_circle'}
+                        </span>
+                        <span className="text-pretty">{globalAlert.message}</span>
+                    </div>
+                )}
+
+                <LockScreen sectionName="Workspace" />
+            </div>
+        );
+    }
+
     return (
-        <div className="app-container" style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative' }}>
+        <div className="flex min-h-screen w-full relative bg-background">
             {/* Sidebar navigation */}
             <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
             {sidebarOpen && (
-                <div className="sidebar-overlay active" onClick={toggleSidebar}></div>
+                <div className="lg:hidden fixed inset-0 bg-background/60 backdrop-blur-xs z-40 transition-opacity" onClick={toggleSidebar}></div>
             )}
 
             {/* Main Content Area */}
-            <main className="main-content">
+            <main className="flex-1 flex flex-col min-h-screen w-full lg:pl-[280px] pt-16 pb-20 lg:pb-0">
                 <Topbar 
                     toggleSidebar={toggleSidebar} 
                     openUnlockModal={() => setUnlockOpen(true)}
@@ -191,53 +267,77 @@ function DashboardAppContent() {
                     openHelpModal={() => setHelpOpen(true)}
                 />
 
-                {/* Global loading spinner overlay */}
+                {/* Loading overlay */}
                 {isLoading && (
-                    <div className="loading-overlay" id="loadingOverlay" style={{ display: 'flex' }}>
-                        <div className="loading-card">
-                            <div className="loading-spinner"></div>
-                            <span id="loadingMessage">Syncing with Database...</span>
+                    <div className="fixed inset-0 bg-background/40 backdrop-blur-md flex items-center justify-center z-[9999] animate-fade-in">
+                        <div className="noise-overlay"></div>
+                        <div className="bg-surface-container/70 backdrop-blur-xl border border-outline-variant/30 rounded-2xl p-6 flex flex-col items-center gap-4 max-w-[280px] shadow-2xl relative">
+                            <div className="relative w-12 h-12 flex items-center justify-center">
+                                <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping"></div>
+                                <div className="w-8 h-8 border-3 border-primary/10 border-t-primary rounded-full animate-spin"></div>
+                            </div>
+                            <span className="text-body-sm text-on-surface font-bold tracking-wide">Syncing Database...</span>
                         </div>
                     </div>
                 )}
 
                 {/* Global Alert Notification Banner */}
                 {globalAlert && (
-                    <div className={`alert-banner alert-${globalAlert.type}`} style={{
-                        position: 'fixed',
-                        top: '24px',
-                        right: '24px',
-                        zIndex: 9999,
-                        padding: '12px 20px',
-                        borderRadius: 'var(--radius-md)',
-                        boxShadow: 'var(--shadow-lg)',
-                        animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        fontWeight: 500,
-                        fontSize: '13px'
-                    }}>
-                        {globalAlert.type === 'error' ? (
-                            <i className="fa-solid fa-circle-xmark" style={{ fontSize: '16px' }}></i>
-                        ) : globalAlert.type === 'warning' ? (
-                            <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '16px' }}></i>
-                        ) : globalAlert.type === 'info' ? (
-                            <i className="fa-solid fa-circle-info" style={{ fontSize: '16px' }}></i>
-                        ) : (
-                            <i className="fa-solid fa-circle-check" style={{ fontSize: '16px' }}></i>
-                        )}
-                        <span>{globalAlert.message}</span>
+                    <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 py-3.5 px-5 rounded-xl shadow-2xl animate-slide-in text-body-sm font-semibold border ${
+                        globalAlert.type === 'error' 
+                            ? 'bg-error/10 border-error/25 text-error shadow-[0_4px_20px_rgba(186,26,26,0.12)]' 
+                            : globalAlert.type === 'warning' 
+                            ? 'bg-amber-500/10 border-amber-500/25 text-amber-500 shadow-[0_4px_20px_rgba(245,158,11,0.12)]'
+                            : 'bg-primary/10 border-primary/25 text-primary shadow-[0_4px_20px_rgba(16,185,129,0.12)]'
+                    }`}>
+                        <span className="material-symbols-outlined text-[20px]">
+                            {globalAlert.type === 'error' ? 'error' : globalAlert.type === 'warning' ? 'warning' : 'check_circle'}
+                        </span>
+                        <span className="text-pretty">{globalAlert.message}</span>
                     </div>
                 )}
 
-                {renderActiveTab()}
+                {/* Active Tab View */}
+                <div className="flex-1 p-6 relative">
+                    {renderActiveTab()}
+                </div>
 
                 {/* Footer copyright */}
-                <footer className="footer" style={{ padding: '16px 20px', borderTop: '1px solid var(--hairline)', background: 'var(--canvas)', fontSize: '11px', color: 'var(--ink-muted)', textAlign: 'center', marginTop: 'auto' }}>
-                    <div>&copy; {new Date().getFullYear()} GAT ContentManager. All rights reserved.</div>
+                <footer className="w-full py-5 px-6 border-t border-outline-variant/10 bg-surface-container-lowest flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] text-on-surface-variant/50">
+                    <div className="flex items-center gap-2">
+                        <span>&copy; {new Date().getFullYear()} {appSettingsData?.app_full_name || 'Content suite'}. All rights reserved.</span>
+                        <span className="px-1.5 py-0.5 rounded bg-surface-container-high text-[9px] font-bold tracking-wider text-on-surface-variant uppercase">{appSettingsData?.app_version || 'v0.1.0-alpha'}</span>
+                    </div>
+                    <div className="flex items-center gap-4 font-medium">
+                        <a href="#help" className="hover:text-primary transition-colors">Operations Help</a>
+                        <span className="w-1 h-1 rounded-full bg-outline-variant/40"></span>
+                        <a href="#privacy" className="hover:text-primary transition-colors">Privacy Policy</a>
+                        <span className="w-1 h-1 rounded-full bg-outline-variant/40"></span>
+                        <a href="#terms" className="hover:text-primary transition-colors">Terms of Service</a>
+                    </div>
                 </footer>
             </main>
+
+            {/* Mobile Bottom Navigation Bar */}
+            <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-md border-t border-outline-variant/20 flex items-center justify-around px-2 z-[90]">
+                {visibleMobileItems.map((item) => {
+                    const isActive = currentView === item.id;
+                    return (
+                        <button
+                            key={item.id}
+                            onClick={() => handleMobileNavClick(item.id)}
+                            className={`flex flex-col items-center gap-1 cursor-pointer transition-all micro-interaction ${
+                                isActive ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
+                            }`}
+                        >
+                            <span className="material-symbols-outlined text-[24px]" style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}>
+                                {item.icon}
+                            </span>
+                            <span className="text-[10px] font-semibold uppercase tracking-tighter">{item.label}</span>
+                        </button>
+                    );
+                })}
+            </nav>
 
             {/* Modals Overlays */}
             <UnlockModal isOpen={unlockOpen} onClose={() => setUnlockOpen(false)} />

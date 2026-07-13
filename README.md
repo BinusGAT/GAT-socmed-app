@@ -1,6 +1,6 @@
-# GAT ContentManager
+# ContentManager
 
-GAT ContentManager is a private content operations dashboard for viewing publication performance, planning work, reviewing team memos, and checking analytics in one place. It is built as a focused workspace with a clean top bar, a compact sidebar, and locked sections for sensitive content.
+ContentManager is a private content operations dashboard for viewing publication performance, planning work, reviewing team memos, and checking analytics in one place. It is built as a focused workspace with a clean top bar, a compact sidebar, and locked sections for sensitive content.
 
 ## At A Glance
 
@@ -13,36 +13,33 @@ GAT ContentManager is a private content operations dashboard for viewing publica
 | Meeting Memo | Meeting notes and recaps | Supports date-based editing and review |
 | Analytics | Performance reporting and insight | Helps review trends and outcomes |
 
-## Core Experience
+## Core Experience & Features
 
 The interface is designed to feel immediate and organized:
 
-- The top bar keeps the active section and main actions visible.
-- The sidebar makes navigation fast and highlights the current view.
-- The date range control lets you narrow what data is shown without leaving the page.
-- The dark mode toggle switches the visual theme while staying in the same workspace.
-- The refresh action reloads the current data state when you need a clean update.
-- The export action lets you download content performance data to Excel.
+- **Default Dark Mode:** The visual theme defaults to Dark Mode on first load, maintaining a sleek, modern visual aesthetic.
+- **Top Bar Actions:** Keeps the active page title, search bar, date range filters, notifications (emoji-free, clean Google Material Symbols), and profile avatar settings accessible.
+- **Bottom Navigation Tab Bar (Mobile):** Replaces the redundant mobile sidebar burger menu toggle, providing streamlined tab switches on smaller viewports.
+- **Sandboxed Calendar Image Export:** Renders and downloads a PNG screenshot of your calendar layout. Runs within an isolated sandboxed iframe and automatically strips unsupported Tailwind CSS v4 color formats (`oklab`/`oklch`) and publication status checkmarks (`task_alt`) for clean exports.
 
-## Workspace Flow
+## Workspace Roles & Access
 
-1. Open the dashboard and review the summary view.
-2. Switch to Calendar, Task List, Content Hub, Meeting Memo, or Analytics from the sidebar.
-3. Use the date filter to focus on the period you need.
-4. Unlock the workspace when you need access to restricted content tools.
-5. Export or refresh data from the top bar as needed.
+Access is secured via a pin-based lock screen with safe server-side timing verification:
 
-## Interface Details
+- **Viewer (Passcode: `viewer`):** Has read-only access to the Dashboard and Analytics sections. Restricted sidebar triggers, "+ New Post" FABs, edit icons, and delete buttons are completely hidden.
+- **Creator:** Authorized to write/edit/delete scheduled tasks, calendar events, drafts, and meeting memos, but cannot save or delete rows in the master publication database (`laporan`).
+- **Admin:** Has full read, write, and delete permissions across all tables and database views.
 
-- Sidebar navigation stays consistent across all views.
-- Restricted sections remain hidden until unlock is completed.
-- Global banners display success, warning, info, and error messages.
-- A loading overlay appears while the dashboard is syncing data.
-- Meeting-related screens can open date pickers and modal dialogs for supporting actions.
+## Rich Text Formatting & Editor
 
-## Data And Access Behavior
+The Meeting Memo section features a WYSIWYG rich text editor with strict paste safety measures:
+- **Paste Sanitization:** Intercepts clipboard events to strip out problematic inline formatting (like black text `color` or `background` properties), ensuring pasted copy automatically inherits the current theme text colors.
+- **List Style Restoration:** Integrates custom CSS styling overrides to bypass Tailwind's preflight resets, restoring clear bullet and numbered list layout formatting.
+- **Form Simplification:** Hides `Platform` and `Views` input boxes when adding new posts to keep the interface clean, making them visible and editable only during subsequent updates.
 
-- The app syncs with a backend data source for content, schedule, draft, meeting, and analytics records.
-- Sensitive areas stay hidden until the workspace is unlocked.
-- A refresh resets the unlock state by design so restricted content is not left open.
-- Cached or offline data can keep the dashboard populated when it is available.
+## Data & Network Resilience
+
+- **Timeout Safety:** Backend api calls to the database integration have a 30-second request timeout threshold to accommodate slower database syncs.
+- **Abort Error Handling:** Intercepts network `AbortError` triggers to present helpful, user-friendly instructions rather than raw console stack traces.
+- **Session Locking:** A manual refresh or session timeout resets the unlocked workspace state by design to keep restricted content secure.
+

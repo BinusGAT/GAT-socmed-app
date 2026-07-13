@@ -5,16 +5,14 @@ import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import { 
     normalizePicName, 
-    getPicBadgeClass,
     getPlatformBadgeHtml,
-    getPlatformLogoHtml,
     formatNumber,
     parseDate,
-    aggregateAllChartsData
+    aggregateAllChartsData,
+    getPicBadgeClasses
 } from '../utils/helpers';
 
 export default function AnalyticsTab() {
-    // Helper to render sanitised HTML securely
     const createSafeHtml = (htmlContent) => {
         if (typeof window !== 'undefined' && window.DOMPurify) {
             return { __html: window.DOMPurify.sanitize(htmlContent) };
@@ -75,12 +73,6 @@ export default function AnalyticsTab() {
 
     const {
         currentData,
-        dateRange,
-        searchQuery,
-        mainFilterPic,
-        mainFilterCategory,
-        mainFilterPlatform,
-        darkMode,
         isUnlocked
     } = useDashboard();
 
@@ -102,12 +94,7 @@ export default function AnalyticsTab() {
     const picChartRef = useRef(null);
     const categoryChartRef = useRef(null);
 
-    // Use the complete unfiltered database for global analytics distributions
-    const getFilteredData = () => {
-        return [...currentData];
-    };
-
-    const activeData = getFilteredData();
+    const activeData = [...currentData];
 
     // Determine data availability
     useEffect(() => {
@@ -118,9 +105,6 @@ export default function AnalyticsTab() {
         setHasData(true);
     }, [activeData]);
 
-    // ----------------------------------------------------
-    // KPI CALCULATION AND METRICS HELPERS
-    // ----------------------------------------------------
     const calculateStats = () => {
         let totalViews = 0;
         let totalReach = 0;
@@ -145,7 +129,7 @@ export default function AnalyticsTab() {
             }
         });
 
-        const avgEngagementRate = rateCount > 0 ? (totalRate / rateCount).toFixed(2) + '%' : '0.00%';
+        const avgEngagementRate = rateCount > 0 ? (totalRate / rateCount).toFixed(1) + '%' : '0.0%';
 
         return {
             contentTitlesSize: contentTitles.size,
@@ -158,9 +142,6 @@ export default function AnalyticsTab() {
 
     const stats = calculateStats();
 
-    // ----------------------------------------------------
-    // KPI DISTRIBUTION & EXPLORER METRICS
-    // ----------------------------------------------------
     const getKpiDistribution = () => {
         let kpiCount6 = 0, kpiCount5 = 0, kpiCount4 = 0, kpiCount3 = 0;
         const titleKpiMap = {};
@@ -188,7 +169,6 @@ export default function AnalyticsTab() {
 
     const kpiDistribution = getKpiDistribution();
 
-    // Filter matching explorer data rows
     const getExplorerMatchingRows = () => {
         return activeData
             .filter(row => {
@@ -198,10 +178,8 @@ export default function AnalyticsTab() {
                 else if (views >= 10000) score = 5;
                 else if (views >= 1000) score = 4;
                 
-                // Match KPI score
                 if (score !== kpiExplorerScore) return false;
                 
-                // Match category filter
                 if (kpiExplorerCategory !== 'All') {
                     if (row.Category !== kpiExplorerCategory) return false;
                 }
@@ -213,7 +191,6 @@ export default function AnalyticsTab() {
 
     const explorerRows = getExplorerMatchingRows();
 
-    // Extract unique categories from activeData for the selector dropdown
     const uniqueCategories = Array.from(
         new Set(
             activeData
@@ -222,7 +199,6 @@ export default function AnalyticsTab() {
         )
     ).sort();
 
-    // Count categories in explorer
     const getExplorerCategorySummary = () => {
         const counts = {};
         explorerRows.forEach(row => {
@@ -234,9 +210,6 @@ export default function AnalyticsTab() {
 
     const explorerCategories = getExplorerCategorySummary();
 
-    // ----------------------------------------------------
-    // LEADERBOARD DATABASES
-    // ----------------------------------------------------
     const getTopPerformingContents = () => {
         return [...activeData]
             .sort((a, b) => (parseInt(b.Views) || 0) - (parseInt(a.Views) || 0))
@@ -269,43 +242,25 @@ export default function AnalyticsTab() {
 
     const creatorLeaderboard = getCreatorLeaderboard();
 
-    const getKpiBadgeClass = (score) => {
-        const kpi = parseInt(score) || 0;
-        if (kpi >= 6) return 'badge-kpi-excellent';
-        if (kpi >= 5) return 'badge-kpi-good';
-        if (kpi >= 4) return 'badge-kpi-average';
-        return 'badge-kpi-low';
-    };
-
-    // ----------------------------------------------------
-    // CHART.JS LIFECYCLE MANAGEMENT
-    // ----------------------------------------------------
+    // Chart lifecycle
     useEffect(() => {
         if (!hasData) return;
 
         const renderTimer = setTimeout(() => {
-            if (typeof window === 'undefined' || !window.Chart) {
-                console.warn('Chart.js library is not loaded on window.');
-                return;
-            }
+            if (typeof window === 'undefined' || !window.Chart) return;
 
             const Chart = window.Chart;
-
             const { trendData, platformData, picData, categoryData } = aggregateAllChartsData(activeData);
 
-            // Clean up old charts before rendering new ones
             if (trendChartRef.current) trendChartRef.current.destroy();
             if (platformChartRef.current) platformChartRef.current.destroy();
             if (picChartRef.current) picChartRef.current.destroy();
             if (categoryChartRef.current) categoryChartRef.current.destroy();
 
-            // Font & Grid color configurations
-            const textColor = darkMode ? '#d0d6e0' : '#37352f';
-            const gridColor = darkMode ? '#23252a' : '#e6e6e6';
+            const textColor = '#bbcabf';
+            const gridColor = 'rgba(255, 255, 255, 0.04)';
 
-            // ----------------------------------------------------
-            // CHART 1: PERFORMANCE TREND (LINE)
-            // ----------------------------------------------------
+            // Trend
             if (trendCanvasRef.current && trendData) {
                 const { sortedDates, viewsData, engagementData } = trendData;
                 trendChartRef.current = new Chart(trendCanvasRef.current, {
@@ -316,21 +271,21 @@ export default function AnalyticsTab() {
                             {
                                 label: 'Views',
                                 data: viewsData,
-                                borderColor: '#0075de',
-                                backgroundColor: 'rgba(0, 117, 222, 0.08)',
-                                borderWidth: 2,
+                                borderColor: '#10b981', // primary Emerald
+                                backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                                borderWidth: 2.5,
                                 fill: true,
-                                tension: 0.3,
+                                tension: 0.35,
                                 yAxisID: 'y'
                             },
                             {
                                 label: 'Engagement',
                                 data: engagementData,
-                                borderColor: '#1aae39',
-                                backgroundColor: 'rgba(26, 174, 57, 0.08)',
-                                borderWidth: 2,
+                                borderColor: '#89ceff', // secondary Light Blue
+                                backgroundColor: 'rgba(137, 206, 255, 0.05)',
+                                borderWidth: 2.5,
                                 fill: true,
-                                tension: 0.3,
+                                tension: 0.35,
                                 yAxisID: 'y1'
                             }
                         ]
@@ -339,35 +294,33 @@ export default function AnalyticsTab() {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { labels: { color: textColor, font: { family: 'Inter', size: 11 } } }
+                            legend: { labels: { color: textColor, font: { family: 'Inter', size: 10 } } }
                         },
                         scales: {
                             x: {
                                 grid: { color: gridColor },
-                                ticks: { color: textColor, font: { family: 'Inter', size: 10 } }
+                                ticks: { color: textColor, font: { family: 'Inter', size: 9 } }
                             },
                             y: {
                                 type: 'linear',
                                 display: true,
                                 position: 'left',
                                 grid: { color: gridColor },
-                                ticks: { color: textColor, font: { family: 'Inter', size: 10 } }
+                                ticks: { color: textColor, font: { family: 'Inter', size: 9 } }
                             },
                             y1: {
                                 type: 'linear',
                                 display: true,
                                 position: 'right',
                                 grid: { drawOnChartArea: false },
-                                ticks: { color: textColor, font: { family: 'Inter', size: 10 } }
+                                ticks: { color: textColor, font: { family: 'Inter', size: 9 } }
                             }
                         }
                     }
                 });
             }
 
-            // ----------------------------------------------------
-            // CHART 2: PLATFORM DISTRIBUTION (DOUGHNUT)
-            // ----------------------------------------------------
+            // Platform share
             if (platformCanvasRef.current && platformData) {
                 const { platforms, platformViews } = platformData;
                 platformChartRef.current = new Chart(platformCanvasRef.current, {
@@ -376,9 +329,9 @@ export default function AnalyticsTab() {
                         labels: platforms,
                         datasets: [{
                             data: platformViews,
-                            backgroundColor: ['#e1306c', '#00f2fe', '#ff0000'],
-                            borderWidth: darkMode ? 1 : 2,
-                            borderColor: darkMode ? '#0f1011' : '#ffffff'
+                            backgroundColor: ['#f43f5e', '#2dd4bf', '#ef4444'],
+                            borderWidth: 1,
+                            borderColor: '#131b2e'
                         }]
                     },
                     options: {
@@ -387,16 +340,14 @@ export default function AnalyticsTab() {
                         plugins: {
                             legend: { 
                                 position: 'right',
-                                labels: { color: textColor, font: { family: 'Inter', size: 11 } } 
+                                labels: { color: textColor, font: { family: 'Inter', size: 10 } } 
                             }
                         }
                     }
                 });
             }
 
-            // ----------------------------------------------------
-            // CHART 3: VIEWS BY PIC (BAR)
-            // ----------------------------------------------------
+            // Views by PIC
             if (picCanvasRef.current && picData) {
                 const { picLabels, picViews } = picData;
                 picChartRef.current = new Chart(picCanvasRef.current, {
@@ -406,7 +357,7 @@ export default function AnalyticsTab() {
                         datasets: [{
                             label: 'Views',
                             data: picViews,
-                            backgroundColor: '#5e6ad2',
+                            backgroundColor: '#10b981',
                             borderRadius: 4
                         }]
                     },
@@ -419,20 +370,18 @@ export default function AnalyticsTab() {
                         scales: {
                             x: {
                                 grid: { color: gridColor },
-                                ticks: { color: textColor, font: { family: 'Inter', size: 10 } }
+                                ticks: { color: textColor, font: { family: 'Inter', size: 9 } }
                             },
                             y: {
                                 grid: { color: gridColor },
-                                ticks: { color: textColor, font: { family: 'Inter', size: 10 } }
+                                ticks: { color: textColor, font: { family: 'Inter', size: 9 } }
                             }
                         }
                     }
                 });
             }
 
-            // ----------------------------------------------------
-            // CHART 4: CATEGORY DISTRIBUTION (POLAR AREA)
-            // ----------------------------------------------------
+            // Category polar area
             if (categoryCanvasRef.current && categoryData) {
                 const { catLabels, catViews } = categoryData;
                 categoryChartRef.current = new Chart(categoryCanvasRef.current, {
@@ -442,14 +391,14 @@ export default function AnalyticsTab() {
                         datasets: [{
                             data: catViews,
                             backgroundColor: [
-                                'rgba(94, 106, 210, 0.65)',
-                                'rgba(26, 174, 57, 0.65)',
-                                'rgba(223, 139, 0, 0.65)',
-                                'rgba(235, 87, 87, 0.65)',
-                                'rgba(0, 117, 222, 0.65)',
-                                'rgba(127, 0, 255, 0.65)'
+                                'rgba(16, 185, 129, 0.65)',
+                                'rgba(137, 206, 255, 0.65)',
+                                'rgba(163, 230, 53, 0.65)',
+                                'rgba(251, 113, 133, 0.65)',
+                                'rgba(251, 191, 36, 0.65)',
+                                'rgba(99, 102, 241, 0.65)'
                             ],
-                            borderColor: darkMode ? '#0f1011' : '#ffffff',
+                            borderColor: '#131b2e',
                             borderWidth: 1
                         }]
                     },
@@ -459,13 +408,13 @@ export default function AnalyticsTab() {
                         plugins: {
                             legend: { 
                                 position: 'right',
-                                labels: { color: textColor, font: { family: 'Inter', size: 11 } } 
+                                labels: { color: textColor, font: { family: 'Inter', size: 10 } } 
                             }
                         },
                         scales: {
                             r: {
                                 grid: { color: gridColor },
-                                ticks: { color: textColor, backdropColor: 'transparent', font: { family: 'Inter', size: 9 } }
+                                ticks: { color: textColor, backdropColor: 'transparent', font: { family: 'Inter', size: 8 } }
                             }
                         }
                     }
@@ -480,327 +429,350 @@ export default function AnalyticsTab() {
             if (picChartRef.current) picChartRef.current.destroy();
             if (categoryChartRef.current) categoryChartRef.current.destroy();
         };
-    }, [hasData, activeData, darkMode]);
+    }, [hasData, activeData]);
 
     if (!isUnlocked) {
         return <LockScreen sectionName="Analytics" />;
     }
 
+
+
     return (
-        <section className="charts-section" id="chartsSection" style={{ display: 'block' }}>
+        <div className="space-y-6">
+            
+            {/* Header banner */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-surface-container/30 border border-outline-variant/20 rounded-xl p-5 gap-4">
+                <div className="space-y-1">
+                    <h3 className="text-headline-lg font-bold text-on-surface">Analytics</h3>
+                </div>
+            </div>
+
             {!hasData ? (
-                <div style={{
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    height: '100%', 
-                    minHeight: '400px',
-                    color: 'var(--ink-muted)',
-                    background: 'var(--canvas-subtle)',
-                    border: '1.5px dashed var(--hairline)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '30px'
-                }}>
-                    <i className="fa-solid fa-chart-simple" style={{ fontSize: '40px', marginBottom: '12px', color: 'var(--primary)' }}></i>
-                    <h4 style={{ fontWeight: 600, color: 'var(--ink-primary)', marginBottom: '4px' }}>No Data Available for Analytics</h4>
-                    <p style={{ fontSize: '12px', margin: 0, textAlign: 'center' }}>
-                        No records found in the database. Please add data to display statistical distributions.
+                <div className="p-16 text-center space-y-3 glass-panel border border-outline-variant/30 rounded-xl">
+                    <span className="material-symbols-outlined text-[64px] text-on-surface-variant/40">bar_chart</span>
+                    <h4 className="font-bold text-body-sm text-on-surface">No Data Available for Analytics</h4>
+                    <p className="text-[12px] text-on-surface-variant/70 max-w-sm mx-auto">
+                        There are no published rows in the Laporan sheet database. Populate entries to visualize statistical distributions.
                     </p>
                 </div>
             ) : (
-                <>
-                    {/* 1. STATS CARDS SECTION (Copied from Dashboard tab to be visible in Analytics view) */}
-                    <section className="stats-section" id="statsSection" style={{ display: 'block', marginBottom: '24px', padding: 0 }}>
-                        <div className="stats-grid" id="statsGrid">
-                            <div className="stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Content Titles</span>
-                                    <span className="stat-icon"><i className="fa-solid fa-hashtag text-primary"></i></span>
-                                </div>
-                                <div className="stat-value primary">{stats.contentTitlesSize}</div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Total Views</span>
-                                    <span className="stat-icon"><i className="fa-solid fa-eye text-primary"></i></span>
-                                </div>
-                                <div className="stat-value primary">{formatNumber(stats.totalViews)}</div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Total Reach</span>
-                                    <span className="stat-icon"><i className="fa-solid fa-users text-primary"></i></span>
-                                </div>
-                                <div className="stat-value primary">{formatNumber(stats.totalReach)}</div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Total Engagement</span>
-                                    <span className="stat-icon"><i className="fa-solid fa-thumbs-up text-success"></i></span>
-                                </div>
-                                <div className="stat-value success">{formatNumber(stats.totalEngagement)}</div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Avg Engagement Rate</span>
-                                    <span className="stat-icon"><i className="fa-solid fa-percent text-warning"></i></span>
-                                </div>
-                                <div className="stat-value warning">{stats.avgEngagementRate}</div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* 2. KPI DISTRIBUTION SUMMARY WIDGETS */}
-                    <section className="panel kpi-measures-panel" style={{ marginBottom: '24px', padding: '20px', borderRadius: 'var(--radius-lg, 12px)', background: 'var(--surface)', border: '1px solid var(--hairline)', boxShadow: 'var(--shadow-sm)' }}>
-                        <div className="panel-header" style={{ marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h2><span className="panel-icon"><i className="fa-solid fa-trophy text-warning"></i></span> KPI Distribution Measures</h2>
-                        </div>
-                        <div id="analyticsKpiMeasuresGrid" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                            <div style={{ background: 'rgba(94, 106, 210, 0.12)', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '8px 16px', borderRadius: '24px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                ⭐ KPI 6 (Exceptional): <span style={{ fontWeight: 800, fontSize: '15px' }}>{kpiDistribution.kpiCount6}</span>
-                            </div>
-                            <div style={{ background: 'rgba(39, 166, 68, 0.12)', color: 'var(--success)', border: '1px solid var(--success)', padding: '8px 16px', borderRadius: '24px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                🌟 KPI 5 (Excellent): <span style={{ fontWeight: 800, fontSize: '15px' }}>{kpiDistribution.kpiCount5}</span>
-                            </div>
-                            <div style={{ background: 'rgba(245, 158, 11, 0.12)', color: 'var(--warning)', border: '1px solid var(--warning)', padding: '8px 16px', borderRadius: '24px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                ✨ KPI 4 (Good): <span style={{ fontWeight: 800, fontSize: '15px' }}>{kpiDistribution.kpiCount4}</span>
-                            </div>
-                            <div style={{ background: 'rgba(239, 68, 68, 0.12)', color: 'var(--danger)', border: '1px solid var(--danger)', padding: '8px 16px', borderRadius: '24px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                🎯 KPI 3 (Average): <span style={{ fontWeight: 800, fontSize: '15px' }}>{kpiDistribution.kpiCount3}</span>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* 3. VISUAL SUMMARY WIDGETS (Leaderboard, Creator Performance) */}
-                    <div className="leaderboards-row" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', marginBottom: '24px' }}>
-                        {/* Left Column: Top 5 Content Leaderboard */}
-                        <div className="leaderboard-section">
-                            <div className="panel leaderboard-card" style={{ height: '100%' }}>
-                                <div className="panel-header">
-                                    <h2><span className="panel-icon"><i className="fa-solid fa-trophy text-warning"></i></span> Top 5 Performing Contents</h2>
-                                </div>
-                                <div className="table-container" style={{ minHeight: 'auto' }}>
-                                    <table className="leaderboard-table">
-                                        <thead>
-                                            <tr>
-                                                <th style={{ width: '70px', textAlign: 'center' }}>Rank</th>
-                                                <th>Content Title</th>
-                                                <th>PIC</th>
-                                                <th>Platform</th>
-                                                <th>Views</th>
-                                                <th>Engagement Rate</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {topContents.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan="6" style={{ textAlign: 'center', color: 'var(--ink-muted)' }}>No contents found</td>
-                                                </tr>
-                                            ) : (
-                                                topContents.map((row, idx) => {
-                                                    const rank = idx + 1;
-                                                    const rate = parseFloat(row['Engagement Rate (%)']) || 0;
-                                                    return (
-                                                        <tr key={`${row.ID}-${idx}`} className="leaderboard-row">
-                                                            <td className={`leaderboard-rank leaderboard-rank-${rank}`} style={{ textAlign: 'center' }}>
-                                                                {rank === 1 ? '🏆' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
-                                                            </td>
-                                                            <td><strong>{row['Content Title'] || 'Untitled'}</strong></td>
-                                                            <td><span className={`badge ${getPicBadgeClass(row.PIC)}`}>{normalizePicName(row.PIC)}</span></td>
-                                                            <td><span dangerouslySetInnerHTML={createSafeHtml(getPlatformBadgeHtml(row.Platform))}></span></td>
-                                                            <td><strong>{formatNumber(row.Views)}</strong></td>
-                                                            <td>{rate.toFixed(2)}%</td>
-                                                        </tr>
-                                                    );
-                                                })
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Column: Creator Performance Analysis */}
-                        <div className="leaderboard-section">
-                            <div className="panel leaderboard-card" style={{ height: '100%' }}>
-                                <div className="panel-header">
-                                    <h2><span className="panel-icon"><i className="fa-solid fa-users text-primary"></i></span> Creator Performance Analysis</h2>
-                                </div>
-                                <div className="table-container" style={{ minHeight: 'auto' }}>
-                                    <table className="leaderboard-table">
-                                        <thead>
-                                            <tr>
-                                                <th style={{ width: '70px', textAlign: 'center' }}>Rank</th>
-                                                <th>Creator Name</th>
-                                                <th>Total Views</th>
-                                                <th>Total Posts (CTD)</th>
-                                                <th>Avg. Views / Post (CTD)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {creatorLeaderboard.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan="5" style={{ textAlign: 'center', color: 'var(--ink-muted)' }}>No creators found</td>
-                                                </tr>
-                                            ) : (
-                                                creatorLeaderboard.map((creator, idx) => {
-                                                    const rank = idx + 1;
-                                                    const postCount = creator.posts.size;
-                                                    const avgViews = postCount > 0 ? Math.round(creator.views / postCount) : 0;
-                                                    return (
-                                                        <tr key={creator.name} className="leaderboard-row">
-                                                            <td className={`leaderboard-rank leaderboard-rank-${rank}`} style={{ textAlign: 'center' }}>
-                                                                {rank === 1 ? '🏆' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
-                                                            </td>
-                                                            <td><span className={`badge ${getPicBadgeClass(creator.name)}`}>{creator.name}</span></td>
-                                                            <td><strong>{formatNumber(creator.views)}</strong></td>
-                                                            <td>{postCount} items</td>
-                                                            <td><strong>{formatNumber(avgViews)}</strong></td>
-                                                        </tr>
-                                                    );
-                                                })
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                <div className="space-y-6">
+                    {/* 1. KPI distribution pills summary */}
+                    <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-4 flex flex-col gap-3">
+                        <span className="text-[10px] font-bold text-on-surface-variant/75 uppercase tracking-wider">Master KPI Distribution Measures</span>
+                        
+                        <div className="flex flex-wrap gap-2.5">
+                            <span className="px-3.5 py-1 rounded-full text-[12px] font-bold bg-emerald-500/10 text-primary border border-primary/20 flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[15px]">workspace_premium</span> KPI 6 (Exceptional): {kpiDistribution.kpiCount6}
+                            </span>
+                            <span className="px-3.5 py-1 rounded-full text-[12px] font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[15px]">star</span> KPI 5 (Excellent): {kpiDistribution.kpiCount5}
+                            </span>
+                            <span className="px-3.5 py-1 rounded-full text-[12px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[15px]">grade</span> KPI 4 (Good): {kpiDistribution.kpiCount4}
+                            </span>
+                            <span className="px-3.5 py-1 rounded-full text-[12px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[15px]">flag</span> KPI 3 (Average): {kpiDistribution.kpiCount3}
+                            </span>
                         </div>
                     </div>
 
-                    {/* 4. KPI CONTENT EXPLORER */}
-                    <div className="leaderboard-section" style={{ marginBottom: '24px' }}>
-                        <div className="panel leaderboard-card">
-                            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: 'var(--space-md)' }}>
-                                <h2 style={{ margin: 0 }}><span className="panel-icon"><i className="fa-solid fa-magnifying-glass-chart text-success"></i></span> KPI Content Explorer</h2>
-                                <div className="kpi-selector-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)', textTransform: 'uppercase' }}>Filter Category:</span>
-                                        <select 
-                                            className="form-control"
-                                            value={kpiExplorerCategory}
-                                            onChange={(e) => setKpiExplorerCategory(e.target.value)}
-                                            style={{
-                                                padding: '4px 8px',
-                                                fontSize: '12px',
-                                                height: 'auto',
-                                                minWidth: '130px',
-                                                borderRadius: 'var(--radius-sm)',
-                                                border: '1px solid var(--hairline)',
-                                                background: 'var(--surface)',
-                                                color: 'var(--ink)'
-                                            }}
-                                        >
-                                            <option value="All">All Categories</option>
-                                            {uniqueCategories.map(cat => (
-                                                <option key={cat} value={cat}>{cat}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="kpi-selector-buttons" style={{ display: 'flex', gap: '6px' }}>
-                                        <button type="button" className={`btn btn-outline btn-sm ${kpiExplorerScore === 5 ? 'active' : ''}`} onClick={() => setKpiExplorerScore(5)}>KPI 5</button>
-                                        <button type="button" className={`btn btn-outline btn-sm ${kpiExplorerScore === 4 ? 'active' : ''}`} onClick={() => setKpiExplorerScore(4)}>KPI 4</button>
-                                        <button type="button" className={`btn btn-outline btn-sm ${kpiExplorerScore === 3 ? 'active' : ''}`} onClick={() => setKpiExplorerScore(3)}>KPI 3</button>
-                                    </div>
-                                </div>
+                    {/* 2. Stats bento cards (Dynamic summary) */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className="glass-panel p-4 rounded-xl flex flex-col gap-3 group hover:border-primary transition-all">
+                            <div className="flex justify-between items-start">
+                                <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold">Titles</span>
+                                <span className="material-symbols-outlined text-primary text-[18px]">tag</span>
                             </div>
-                            <div id="kpiExplorerCategorySummary" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: 'var(--space-md)', fontSize: '13px', padding: '0 var(--space-lg)' }}>
-                                <span style={{ fontWeight: 600, marginRight: '8px' }}>Content Types:</span>
-                                {explorerCategories.length === 0 ? (
-                                    <span style={{ color: 'var(--ink-muted)' }}>No contents in this KPI range</span>
-                                ) : (
-                                    explorerCategories.map(([cat, count]) => (
-                                        <span key={cat} className="badge" style={{ background: 'var(--canvas)', border: '1px solid var(--hairline-strong)', padding: '4px 8px', borderRadius: '12px', fontWeight: 500, fontSize: '11px' }}>
-                                            {cat}: {count}
-                                        </span>
-                                    ))
-                                )}
+                            <h4 className="font-display-lg text-headline-md font-bold text-on-surface">{stats.contentTitlesSize}</h4>
+                        </div>
+                        <div className="glass-panel p-4 rounded-xl flex flex-col gap-3 group hover:border-primary transition-all">
+                            <div className="flex justify-between items-start">
+                                <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold">Total Views</span>
+                                <span className="material-symbols-outlined text-primary text-[18px]">trending_up</span>
                             </div>
-                            <div className="table-container" id="kpiExplorerTableContainer" style={{ minHeight: 'auto' }}>
-                                <table className="leaderboard-table">
-                                    <thead>
+                            <h4 className="font-display-lg text-headline-md font-bold text-on-surface">{formatNumber(stats.totalViews)}</h4>
+                        </div>
+                        <div className="glass-panel p-4 rounded-xl flex flex-col gap-3 group hover:border-primary transition-all">
+                            <div className="flex justify-between items-start">
+                                <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold">Total Reach</span>
+                                <span className="material-symbols-outlined text-primary text-[18px]">public</span>
+                            </div>
+                            <h4 className="font-display-lg text-headline-md font-bold text-on-surface">{formatNumber(stats.totalReach)}</h4>
+                        </div>
+                        <div className="glass-panel p-4 rounded-xl flex flex-col gap-3 group hover:border-primary transition-all">
+                            <div className="flex justify-between items-start">
+                                <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold">Engagement</span>
+                                <span className="material-symbols-outlined text-secondary text-[18px]">favorite</span>
+                            </div>
+                            <h4 className="font-display-lg text-headline-md font-bold text-on-surface">{formatNumber(stats.totalEngagement)}</h4>
+                        </div>
+                        <div className="glass-panel p-4 rounded-xl flex flex-col gap-3 group hover:border-primary transition-all">
+                            <div className="flex justify-between items-start">
+                                <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold">Eng. Rate</span>
+                                <span className="material-symbols-outlined text-tertiary text-[18px]">percent</span>
+                            </div>
+                            <h4 className="font-display-lg text-headline-md font-bold text-on-surface">{stats.avgEngagementRate}</h4>
+                        </div>
+                    </div>
+
+                    {/* 3. Leaderboards: Content vs Creator */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+                        
+                        {/* Top 5 content list */}
+                        <div className="glass-panel border border-outline-variant/30 rounded-xl overflow-hidden shadow-xl">
+                            <div className="px-5 py-4 border-b border-outline-variant/20 bg-surface-container-low flex items-center gap-2">
+                                <span className="material-symbols-outlined text-amber-400">emoji_events</span>
+                                <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider">Top 5 Content Leaders</h4>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-body-sm">
+                                    <thead className="bg-surface-container-lowest text-on-surface-variant uppercase text-[9px] tracking-wider border-b border-outline-variant/20">
                                         <tr>
-                                            <th>Content Title</th>
-                                            <th>Category</th>
-                                            <th>Creator (PIC)</th>
-                                            <th>Platform</th>
-                                            <th>Views</th>
+                                            <th className="px-4 py-3 text-center w-14">Rank</th>
+                                            <th className="px-4 py-3">Content Title</th>
+                                            <th className="px-4 py-3">PIC</th>
+                                            <th className="px-4 py-3">Platform</th>
+                                            <th className="px-4 py-3 text-right">Views</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        {explorerRows.length === 0 ? (
-                                            <tr>
-                                                <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: 'var(--ink-muted)' }}>No contents found.</td>
+                                    <tbody className="divide-y divide-outline-variant/15">
+                                        {topContents.map((row, idx) => (
+                                            <tr key={`${row.ID}-${idx}`} className="hover:bg-surface-container/10">
+                                                <td className="px-4 py-3 text-center">
+                                                    {idx === 0 ? (
+                                                        <span className="material-symbols-outlined text-[18px] text-amber-400" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
+                                                    ) : idx === 1 ? (
+                                                        <span className="material-symbols-outlined text-[18px] text-slate-300" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
+                                                    ) : idx === 2 ? (
+                                                        <span className="material-symbols-outlined text-[18px] text-amber-600" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
+                                                    ) : (
+                                                        <span className="text-[11px] font-bold text-on-surface-variant">{idx + 1}</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 font-semibold text-on-surface max-w-[160px] truncate" title={row['Content Title']}>
+                                                    {row['Content Title']}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${getPicBadgeClasses(row.PIC)}`}>
+                                                        {normalizePicName(row.PIC)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span dangerouslySetInnerHTML={createSafeHtml(getPlatformBadgeHtml(row.Platform))}></span>
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-bold text-on-surface">
+                                                    {formatNumber(row.Views)}
+                                                </td>
                                             </tr>
-                                        ) : (
-                                            explorerRows.map((row, idx) => (
-                                                <tr key={`${row.ID}-${idx}`} className="leaderboard-row">
-                                                    <td><strong>{row['Content Title'] || 'Untitled'}</strong></td>
-                                                    <td>{row.Category || '-'}</td>
-                                                    <td><span className={`badge ${getPicBadgeClass(row.PIC)}`}>{normalizePicName(row.PIC)}</span></td>
-                                                    <td><span dangerouslySetInnerHTML={createSafeHtml(getPlatformBadgeHtml(row.Platform))}></span></td>
-                                                    <td><strong>{formatNumber(row.Views)}</strong></td>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Creator performance leaderboard */}
+                        <div className="glass-panel border border-outline-variant/30 rounded-xl overflow-hidden shadow-xl">
+                            <div className="px-5 py-4 border-b border-outline-variant/20 bg-surface-container-low flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary">groups</span>
+                                <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider">Creator Analytics Performance</h4>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-body-sm">
+                                    <thead className="bg-surface-container-lowest text-on-surface-variant uppercase text-[9px] tracking-wider border-b border-outline-variant/20">
+                                        <tr>
+                                            <th className="px-4 py-3 text-center w-14">Rank</th>
+                                            <th className="px-4 py-3">Creator Name</th>
+                                            <th className="px-4 py-3 text-right">Total Views</th>
+                                            <th className="px-4 py-3 text-center">Total Posts</th>
+                                            <th className="px-4 py-3 text-right">Avg Views</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-outline-variant/15">
+                                        {creatorLeaderboard.map((creator, idx) => {
+                                            const postCount = creator.posts.size;
+                                            const avgViews = postCount > 0 ? Math.round(creator.views / postCount) : 0;
+
+                                            return (
+                                                <tr key={creator.name} className="hover:bg-surface-container/10">
+                                                    <td className="px-4 py-3 text-center">
+                                                        {idx === 0 ? (
+                                                            <span className="material-symbols-outlined text-[18px] text-amber-400" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
+                                                        ) : idx === 1 ? (
+                                                            <span className="material-symbols-outlined text-[18px] text-slate-300" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
+                                                        ) : idx === 2 ? (
+                                                            <span className="material-symbols-outlined text-[18px] text-amber-600" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
+                                                        ) : (
+                                                            <span className="text-[11px] font-bold text-on-surface-variant">{idx + 1}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${getPicBadgeClasses(creator.name)}`}>
+                                                            {creator.name}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-bold text-on-surface">
+                                                        {formatNumber(creator.views)}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center text-on-surface-variant">
+                                                        {postCount} posts
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-semibold text-primary">
+                                                        {formatNumber(avgViews)}
+                                                    </td>
                                                 </tr>
-                                            ))
-                                        )}
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
 
-                    {/* 5. CHARTS GRID */}
-                    <div className="charts-grid">
-                        {/* Chart 1: Performance Trend */}
-                        <div className="panel chart-card full-width">
-                            <div className="panel-header">
-                                <h2>
-                                    <span className="panel-icon"><i className="fa-solid fa-chart-line"></i></span> Performance Trend
-                                </h2>
+                    {/* 4. KPI Content Explorer */}
+                    <div className="glass-panel border border-outline-variant/30 rounded-xl overflow-hidden shadow-xl space-y-4">
+                        <div className="px-5 py-4 border-b border-outline-variant/20 bg-surface-container-low flex flex-col sm:flex-row gap-4 items-center justify-between">
+                            <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-primary">manage_search</span> KPI Content Explorer
+                            </h4>
+
+                            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                                {/* Category Filter select */}
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Category:</span>
+                                    <select 
+                                        className="bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1 text-body-sm text-on-surface focus:outline-none"
+                                        value={kpiExplorerCategory}
+                                        onChange={(e) => setKpiExplorerCategory(e.target.value)}
+                                    >
+                                        <option value="All">All Categories</option>
+                                        {uniqueCategories.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* KPI Selector buttons */}
+                                <div className="flex bg-surface-container-high border border-outline-variant/20 rounded p-0.5 text-[9px] font-bold uppercase tracking-wider">
+                                    {[6, 5].map(k => (
+                                        <button
+                                            key={k}
+                                            type="button"
+                                            className={`px-3 py-1 rounded cursor-pointer transition-all ${
+                                                kpiExplorerScore === k ? 'bg-surface text-primary shadow' : 'text-on-surface-variant hover:text-on-surface'
+                                            }`}
+                                            onClick={() => setKpiExplorerScore(k)}
+                                        >
+                                            KPI {k}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="chart-container" style={{ position: 'relative', height: '300px' }}>
+                        </div>
+
+                        {/* Content categories breakdown for selected KPI filter */}
+                        <div className="flex flex-wrap gap-2 px-5 py-0.5 text-[12px] items-center text-on-surface-variant/80">
+                            <span className="font-bold text-on-surface">Categories summary:</span>
+                            {explorerCategories.length === 0 ? (
+                                <span className="text-[11px] italic text-on-surface-variant/50">No contents in this scope</span>
+                            ) : (
+                                explorerCategories.map(([cat, count]) => (
+                                    <span key={cat} className="px-2 py-0.5 rounded bg-surface-container border border-outline-variant/25 text-[10.5px] font-medium text-on-surface">
+                                        {cat}: {count}
+                                    </span>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Explorer items table */}
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-body-sm border-t border-outline-variant/15">
+                                <thead className="bg-surface-container-lowest text-on-surface-variant uppercase text-[9px] tracking-wider border-b border-outline-variant/20">
+                                    <tr>
+                                        <th className="px-5 py-3">Content Title</th>
+                                        <th className="px-5 py-3">Category</th>
+                                        <th className="px-5 py-3">Creator (PIC)</th>
+                                        <th className="px-5 py-3">Platform</th>
+                                        <th className="px-5 py-3 text-right">Views</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-outline-variant/15">
+                                    {explorerRows.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="5" className="p-8 text-center text-on-surface-variant/65 italic">
+                                                No database entries matching KPI {kpiExplorerScore} and {kpiExplorerCategory} category filter.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        explorerRows.map((row, idx) => (
+                                            <tr key={`${row.ID}-${idx}`} className="hover:bg-surface-container/10">
+                                                <td className="px-5 py-3 font-semibold text-on-surface max-w-[260px] truncate" title={row['Content Title']}>
+                                                    {row['Content Title']}
+                                                </td>
+                                                <td className="px-5 py-3 text-on-surface-variant">{row.Category || 'Story Telling'}</td>
+                                                <td className="px-5 py-3">
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${getPicBadgeClasses(row.PIC)}`}>
+                                                        {normalizePicName(row.PIC)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-3">
+                                                    <span dangerouslySetInnerHTML={createSafeHtml(getPlatformBadgeHtml(row.Platform))}></span>
+                                                </td>
+                                                <td className="px-5 py-3 text-right font-bold text-on-surface">
+                                                    {formatNumber(row.Views)}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* 5. Charts Grid sections */}
+                    <div className="space-y-6">
+                        {/* Line Chart */}
+                        <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
+                            <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-primary">timeline</span> Views & Engagement Trend
+                            </h4>
+                            <div className="h-80 w-full relative">
                                 <canvas ref={trendCanvasRef}></canvas>
                             </div>
                         </div>
 
-                        {/* Chart 2: Platform Distribution */}
-                        <div className="panel chart-card">
-                            <div className="panel-header">
-                                <h2>
-                                    <span className="panel-icon"><i className="fa-solid fa-chart-pie"></i></span> Platform Share (Views)
-                                </h2>
+                        {/* Two columns charts */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+                            <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
+                                <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider flex items-center gap-1.5">
+                                    <span className="material-symbols-outlined text-primary">pie_chart</span> Platform Distribution
+                                </h4>
+                                <div className="h-64 w-full relative">
+                                    <canvas ref={platformCanvasRef}></canvas>
+                                </div>
                             </div>
-                            <div className="chart-container" style={{ position: 'relative', height: '240px' }}>
-                                <canvas ref={platformCanvasRef}></canvas>
-                            </div>
-                        </div>
-
-                        {/* Chart 3: PIC Performance */}
-                        <div className="panel chart-card">
-                            <div className="panel-header">
-                                <h2>
-                                    <span className="panel-icon"><i className="fa-solid fa-chart-simple"></i></span> Views by PIC
-                                </h2>
-                            </div>
-                            <div className="chart-container" style={{ position: 'relative', height: '240px' }}>
-                                <canvas ref={picCanvasRef}></canvas>
+                            <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
+                                <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider flex items-center gap-1.5">
+                                    <span className="material-symbols-outlined text-primary">bar_chart</span> Total Views by Creator
+                                </h4>
+                                <div className="h-64 w-full relative">
+                                    <canvas ref={picCanvasRef}></canvas>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Chart 4: Category Distribution */}
-                        <div className="panel chart-card full-width">
-                            <div className="panel-header">
-                                <h2>
-                                    <span className="panel-icon"><i className="fa-solid fa-chart-simple"></i></span> Category Distribution (Views)
-                                </h2>
-                            </div>
-                            <div className="chart-container" style={{ position: 'relative', height: '300px' }}>
+                        {/* Polar Area chart */}
+                        <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
+                            <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-primary">bubble_chart</span> Category Share (Views)
+                            </h4>
+                            <div className="h-80 w-full relative">
                                 <canvas ref={categoryCanvasRef}></canvas>
                             </div>
                         </div>
                     </div>
-                </>
+                </div>
             )}
-        </section>
+        </div>
     );
 }

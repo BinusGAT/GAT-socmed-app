@@ -14,6 +14,23 @@ export function useDashboard() {
     return useContext(DashboardContext);
 }
 
+const normalizeMeetingsList = (rawMeetings) => {
+    return (rawMeetings || []).map(m => {
+        const rawAttendees = m.Attendees ?? m.attendees ?? '';
+        const parsedAttendees = typeof rawAttendees === 'string'
+            ? rawAttendees.split(',').map(a => a.trim()).filter(Boolean)
+            : (Array.isArray(rawAttendees) ? rawAttendees : []);
+        return {
+            id: m.ID ?? m.id ?? `MEET${Math.random().toString(36).substr(2,5)}`,
+            date: m.Date ?? m.date ?? '',
+            agenda: m.Agenda ?? m.agenda ?? '',
+            attendees: Array.from(new Set(parsedAttendees)),
+            recap: m.Recap ?? m.recap ?? '',
+            videoRecap: m.VideoRecap ?? m.videoRecap ?? m.Video_Recap ?? m.Video ?? ''
+        };
+    });
+};
+
 export function DashboardProvider({ children }) {
     // UI States
     const [currentView, setCurrentView] = useState('dashboard');
@@ -21,7 +38,8 @@ export function DashboardProvider({ children }) {
     const [userRole, setUserRole] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [globalAlert, setGlobalAlert] = useState(null); // { message, type }
-    const [darkMode, setDarkMode] = useState(false);
+    const [darkMode, setDarkMode] = useState(true);
+    const [isNewPostDrawerOpen, setIsNewPostDrawerOpen] = useState(false);
 
     // Filter States
     const [dateRange, setDateRange] = useState({ start: '', end: '', mode: 'auto' });
@@ -41,7 +59,19 @@ export function DashboardProvider({ children }) {
     const [memberListData, setMemberListData] = useState([]);
     const [draftsData, setDraftsData] = useState([]);
     const [meetingsData, setMeetingsData] = useState([]);
+    const [notificationsData, setNotificationsData] = useState([]);
     const [selectedMeetingId, setSelectedMeetingId] = useState(null);
+    const [gaSummaryData, setGaSummaryData] = useState({
+        visitors: '± 6K',
+        pageviews: '201',
+        new_visits: '± 6K',
+        avg_time_on_site: '00:01:24',
+        engagement_rate: '48%'
+    });
+    const [gaItemsData, setGaItemsData] = useState([]);
+    const [appSettingsData, setAppSettingsData] = useState({});
+    const [platformsData, setPlatformsData] = useState([]);
+    const [categoriesData, setCategoriesData] = useState([]);
 
     // Lockdown settings
     const MAX_ATTEMPTS = 5;
@@ -50,35 +80,74 @@ export function DashboardProvider({ children }) {
     // Load initial states
     useEffect(() => {
         // Dark Mode
-        const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+        const localDarkSetting = localStorage.getItem('darkMode');
+        const savedDarkMode = localDarkSetting === null ? true : localDarkSetting === 'true';
         setDarkMode(savedDarkMode);
         if (savedDarkMode) {
             document.body.classList.add('dark-mode');
+            document.documentElement.classList.add('dark-mode');
         } else {
             document.body.classList.remove('dark-mode');
+            document.documentElement.classList.remove('dark-mode');
         }
 
-        // CUD Unlock: Lock on page refresh for maximum security (token is in-memory)
-        sessionStorage.removeItem('cud_unlocked');
-        sessionStorage.removeItem('user_role');
-        setIsUnlocked(false);
-        setUserRole(null);
+        // Restore session if within time limit (6 hours)
+        const limitMs = 6 * 60 * 60 * 1000;
+        const unlockedAt = localStorage.getItem('unlocked_at');
+        const isSessionValid = unlockedAt && (Date.now() - parseInt(unlockedAt, 10) < limitMs);
+
+        if (localStorage.getItem('cud_unlocked') === 'true' && isSessionValid) {
+            setIsUnlocked(true);
+            const savedRole = localStorage.getItem('user_role');
+            setUserRole(savedRole);
+            const savedToken = localStorage.getItem('session_token');
+            setSessionToken(savedToken || '');
+        } else {
+            setIsUnlocked(false);
+            setUserRole(null);
+            setSessionToken('');
+            localStorage.removeItem('cud_unlocked');
+            localStorage.removeItem('user_role');
+            localStorage.removeItem('session_token');
+            localStorage.removeItem('unlocked_at');
+        }
 
         // Load Offline Member Defaults
         setMemberListData([
-            { NAMA: 'Kelvin', STREAM: 'Product Manager' },
-            { NAMA: 'Felix', STREAM: 'Content Creator' },
-            { NAMA: 'Eduard', STREAM: 'Content Creator' },
-            { NAMA: 'Anthoni', STREAM: 'Content Creator' },
-            { NAMA: 'Leonardi', STREAM: 'Content Creator' },
-            { NAMA: 'Ruliyanto', STREAM: 'Content Creator' },
-            { NAMA: 'Rafael', STREAM: 'Content Creator' }
+            { NAMA: 'User A', STREAM: 'Product Manager' },
+            { NAMA: 'User B', STREAM: 'Content Creator' },
+            { NAMA: 'User C', STREAM: 'Content Creator' },
+            { NAMA: 'User D', STREAM: 'Content Creator' },
+            { NAMA: 'User E', STREAM: 'Content Creator' }
         ]);
 
         setScheduleData([]);
         setDraftsData([]);
         setMeetingsData([]);
         setCurrentData([]);
+
+        setAppSettingsData({
+            app_name: 'GAT',
+            app_subtitle: 'Content Suite',
+            app_full_name: 'GAT Content Suite',
+            company_name: 'GAT Internal Content Team',
+            app_version: 'v0.1.0-alpha'
+        });
+
+        setPlatformsData([
+            { id: 'instagram', name: 'Instagram', logo_url: '/img/icons/instagram-logo.png', color_class: 'badge-platform-instagram' },
+            { id: 'tiktok', name: 'TikTok', logo_url: '/img/icons/tiktok-logo.png', color_class: 'badge-platform-tiktok' },
+            { id: 'youtube', name: 'YouTube', logo_url: '/img/icons/youtube-logo.webp', color_class: 'badge-platform-youtube' }
+        ]);
+
+        setCategoriesData([
+            { name: 'Article Reels', color_class: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' },
+            { name: 'Story Telling', color_class: 'bg-sky-500/10 text-sky-400 border border-sky-500/20' },
+            { name: 'News', color_class: 'bg-purple-500/10 text-purple-400 border border-purple-500/20' },
+            { name: 'Talking Head', color_class: 'bg-pink-500/10 text-pink-400 border border-pink-500/20' },
+            { name: 'Clipper', color_class: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
+            { name: 'Motion', color_class: 'bg-rose-500/10 text-rose-400 border border-rose-500/20' }
+        ]);
     }, []);
 
     // Global listener for API authorization failures (session expired/invalid)
@@ -86,9 +155,11 @@ export function DashboardProvider({ children }) {
         const handleUnauthorized = () => {
             setIsUnlocked(false);
             setUserRole(null);
-            sessionStorage.setItem('cud_unlocked', 'false');
-            sessionStorage.setItem('user_role', '');
             setSessionToken('');
+            localStorage.removeItem('cud_unlocked');
+            localStorage.removeItem('user_role');
+            localStorage.removeItem('session_token');
+            localStorage.removeItem('unlocked_at');
             showAlert('🔒 Session expired. Please unlock the workspace again.', 'error');
         };
 
@@ -101,7 +172,10 @@ export function DashboardProvider({ children }) {
     // Load data from Google Sheets when unlock status changes
     useEffect(() => {
         if (isUnlocked) {
-            loadFromGoogleSheets();
+            // Load local storage cache instantly to populate UI
+            loadOfflineData(true);
+            // Sync database from server in the background
+            loadFromGoogleSheets(true);
         } else {
             // Clear all data states when locked so no data is shown
             setCurrentData([]);
@@ -109,6 +183,23 @@ export function DashboardProvider({ children }) {
             setDraftsData([]);
             setMeetingsData([]);
         }
+    }, [isUnlocked]);
+
+    // Periodically check if session limit has been exceeded
+    useEffect(() => {
+        if (!isUnlocked) return;
+
+        const interval = setInterval(() => {
+            const unlockedAt = localStorage.getItem('unlocked_at');
+            const limitMs = 6 * 60 * 60 * 1000; // 6 hours
+
+            if (unlockedAt && Date.now() - parseInt(unlockedAt, 10) >= limitMs) {
+                lockWorkspace();
+                showAlert('🔒 Session expired. Workspace locked.', 'info');
+            }
+        }, 15000); // Check every 15 seconds
+
+        return () => clearInterval(interval);
     }, [isUnlocked]);
 
     // Reset Task List filters whenever the view changes
@@ -137,8 +228,10 @@ export function DashboardProvider({ children }) {
         localStorage.setItem('darkMode', String(nextDark));
         if (nextDark) {
             document.body.classList.add('dark-mode');
+            document.documentElement.classList.add('dark-mode');
         } else {
             document.body.classList.remove('dark-mode');
+            document.documentElement.classList.remove('dark-mode');
         }
         
         // Force layout repaint
@@ -208,8 +301,8 @@ export function DashboardProvider({ children }) {
     };
 
     // Load offline datasets
-    const loadOfflineData = () => {
-        if (!isUnlocked) return;
+    const loadOfflineData = (force = false) => {
+        if (!isUnlocked && !force) return;
         const localLaporan = localStorage.getItem('laporan_data_local');
         if (localLaporan) {
             try {
@@ -236,34 +329,77 @@ export function DashboardProvider({ children }) {
         if (localMeetings) {
             try {
                 const data = JSON.parse(localMeetings);
-                setMeetingsData(data || []);
-                if (!data || data.length === 0) {
+                const normalized = normalizeMeetingsList(data || []);
+                setMeetingsData(normalized);
+                if (normalized.length === 0) {
                     // Fallback sample meeting memo data when none present
-                    const sampleMeetings = [
+                    const sampleMeetings = normalizeMeetingsList([
                         {
                             id: 'MEET001',
                             date: new Date().toISOString().split('T')[0],
                             agenda: 'Project Kickoff',
-                            attendees: 'Kelvin, Felix',
+                            attendees: 'User A, User B',
                             recap: 'Discussed project scope, deliverables, and timelines.'
                         },
                         {
                             id: 'MEET002',
                             date: new Date().toISOString().split('T')[0],
                             agenda: 'Design Review',
-                            attendees: 'Andre, Kelvin',
+                            attendees: 'User C, User A',
                             recap: 'Reviewed UI mockups, feedback collected, next steps defined.'
                         }
-                    ];
+                    ]);
                     setMeetingsData(sampleMeetings);
                 }
+            } catch (e) {}
+        }
+        const localNotifications = localStorage.getItem('GAT_notifications');
+        if (localNotifications) {
+            try {
+                const data = JSON.parse(localNotifications);
+                setNotificationsData(data || []);
+            } catch (e) {}
+        }
+        const localGaSummary = localStorage.getItem('GAT_ga_summary_local');
+        if (localGaSummary) {
+            try {
+                setGaSummaryData(JSON.parse(localGaSummary));
+            } catch (e) {}
+        }
+        const localGaItems = localStorage.getItem('GAT_ga_items_local');
+        if (localGaItems) {
+            try {
+                setGaItemsData(JSON.parse(localGaItems));
+            } catch (e) {}
+        }
+        const localAppSettings = localStorage.getItem('GAT_app_settings');
+        if (localAppSettings) {
+            try {
+                setAppSettingsData(JSON.parse(localAppSettings));
+            } catch (e) {}
+        }
+        const localPlatforms = localStorage.getItem('GAT_platforms');
+        if (localPlatforms) {
+            try {
+                setPlatformsData(JSON.parse(localPlatforms));
+            } catch (e) {}
+        }
+        const localCategories = localStorage.getItem('GAT_categories');
+        if (localCategories) {
+            try {
+                setCategoriesData(JSON.parse(localCategories));
             } catch (e) {}
         }
     };
 
     // Load live database from Google Sheets
     const loadFromGoogleSheets = async (quiet = false) => {
-        setIsLoading(true);
+        const hasLocalData = typeof window !== 'undefined' && !!localStorage.getItem('laporan_data_local');
+        const showLoading = !quiet || !hasLocalData;
+        
+        if (showLoading) {
+            setIsLoading(true);
+        }
 
         try {
             const result = await callSheetsAPI('read_all');
@@ -273,6 +409,7 @@ export function DashboardProvider({ children }) {
                 const memberList = result.memberList?.data || [];
                 const rawScripts = result.scripts?.data || [];
                 const rawMeetings = result.meetings?.data || [];
+                const rawNotifications = result.notifications?.data || [];
 
                 // Normalize script drafts to expected field names
                 const scripts = rawScripts.map(s => ({
@@ -287,52 +424,93 @@ export function DashboardProvider({ children }) {
                 }));
 
                 // Normalize meeting memos
-                const meetings = rawMeetings.map(m => ({
-                    id: m.ID ?? m.id ?? `MEET${Math.random().toString(36).substr(2,5)}`,
-                    date: m.Date ?? m.date ?? '',
-                    agenda: m.Agenda ?? m.agenda ?? '',
-                    attendees: m.Attendees ?? m.attendees ?? '',
-                    recap: m.Recap ?? m.recap ?? '',
-                    videoRecap: m.VideoRecap ?? m.videoRecap ?? m.Video_Recap ?? m.Video ?? ''
-                }));
+                const meetings = normalizeMeetingsList(rawMeetings);
 
                 const processedLaporan = preprocessLaporanData(laporan);
                 setCurrentData(processedLaporan);
                 setScheduleData(schedule);
                 setMemberListData(memberList);
                 setDraftsData(scripts);
+                setNotificationsData(rawNotifications);
+
+                const rawAppSettings = result.appSettings?.data || [];
+                const appSettingsObj = {};
+                rawAppSettings.forEach(row => {
+                    appSettingsObj[row.key] = row.value;
+                });
+                const platforms = result.platforms?.data || [];
+                const categories = result.categories?.data || [];
+
+                if (Object.keys(appSettingsObj).length > 0) {
+                    setAppSettingsData(appSettingsObj);
+                    localStorage.setItem('GAT_app_settings', JSON.stringify(appSettingsObj));
+                }
+                if (platforms.length > 0) {
+                    setPlatformsData(platforms);
+                    localStorage.setItem('GAT_platforms', JSON.stringify(platforms));
+                }
+                if (categories.length > 0) {
+                    setCategoriesData(categories);
+                    localStorage.setItem('GAT_categories', JSON.stringify(categories));
+                }
+                
                 if (meetings.length === 0) {
-                    const sampleMeetings = [
+                    const sampleMeetings = normalizeMeetingsList([
                         {
                             id: 'MEET001',
                             date: new Date().toISOString().split('T')[0],
                             agenda: 'Project Kickoff',
-                            attendees: 'Kelvin, Felix',
+                            attendees: 'User A, User B',
                             recap: 'Discussed project scope, deliverables, and timelines.'
                         },
                         {
                             id: 'MEET002',
                             date: new Date().toISOString().split('T')[0],
                             agenda: 'Design Review',
-                            attendees: 'Andre, Kelvin',
+                            attendees: 'User C, User A',
                             recap: 'Reviewed UI mockups, feedback collected, next steps defined.'
                         }
-                    ];
+                    ]);
                     setMeetingsData(sampleMeetings);
+                    localStorage.setItem('GAT_meeting_memos', JSON.stringify(sampleMeetings));
                 } else {
                     setMeetingsData(meetings);
+                    localStorage.setItem('GAT_meeting_memos', JSON.stringify(meetings));
                 }
+
+                const gaSummary = result.gaSummary?.data?.[0] || {
+                    visitors: '± 6K',
+                    pageviews: '201',
+                    new_visits: '± 6K',
+                    avg_time_on_site: '00:01:24',
+                    engagement_rate: '48%'
+                };
+                const gaItems = result.gaItems?.data || [];
+
+                setGaSummaryData(gaSummary);
+                setGaItemsData(gaItems);
 
                 // Cache locally
                 localStorage.setItem('laporan_data_local', JSON.stringify(processedLaporan));
                 localStorage.setItem('schedule_data_local', JSON.stringify(schedule));
                 localStorage.setItem('GAT_storyboard_drafts', JSON.stringify(scripts));
-                localStorage.setItem('GAT_meeting_memos', JSON.stringify(meetings));
+                localStorage.setItem('GAT_notifications', JSON.stringify(rawNotifications));
+                localStorage.setItem('GAT_ga_summary_local', JSON.stringify(gaSummary));
+                localStorage.setItem('GAT_ga_items_local', JSON.stringify(gaItems));
 
                 if (!quiet) showAlert('Database synchronized successfully!', 'success');
             }
         } catch (error) {
-            console.error('Failed to sync live data:', error);
+            const isAuthError = error.message && (
+                error.message.includes('Unauthorized') || 
+                error.message.includes('Access token') ||
+                error.message.includes('401')
+            );
+            if (isAuthError) {
+                console.warn('⚠️ Session expired or invalid. Locking workspace.');
+            } else {
+                console.error('Failed to sync live data:', error);
+            }
             // Load local caches
             loadOfflineData();
             if (!quiet) {
@@ -357,7 +535,7 @@ export function DashboardProvider({ children }) {
     };
 
     // Submit unlock passcode
-    const unlockWorkspace = async (role, passcode) => {
+    const unlockWorkspace = async (role, passcode, sessionLimitHours = 6) => {
         if (getLockdownTimeRemaining() > 0) {
             throw new Error('System is locked down due to too many failed attempts.');
         }
@@ -370,8 +548,11 @@ export function DashboardProvider({ children }) {
                 localStorage.setItem('failed_attempts', '0');
                 setIsUnlocked(true);
                 setUserRole(role);
-                sessionStorage.setItem('cud_unlocked', 'true');
-                sessionStorage.setItem('user_role', role);
+                localStorage.setItem('cud_unlocked', 'true');
+                localStorage.setItem('user_role', role);
+                localStorage.setItem('session_token', result.token || '');
+                localStorage.setItem('unlocked_at', Date.now().toString());
+                localStorage.setItem('session_limit_hours', '6');
                 setSessionToken(result.token || '');
                 showAlert(`🔓 Workspace unlocked successfully as ${role}!`, 'success');
                 return true;
@@ -400,9 +581,11 @@ export function DashboardProvider({ children }) {
     const lockWorkspace = () => {
         setIsUnlocked(false);
         setUserRole(null);
-        sessionStorage.setItem('cud_unlocked', 'false');
-        sessionStorage.setItem('user_role', '');
         setSessionToken('');
+        localStorage.removeItem('cud_unlocked');
+        localStorage.removeItem('user_role');
+        localStorage.removeItem('session_token');
+        localStorage.removeItem('unlocked_at');
         showAlert('🔒 Workspace locked. Session ended.', 'info');
     };
 
@@ -593,6 +776,212 @@ export function DashboardProvider({ children }) {
         return false;
     };
 
+    const saveNotification = async (notif) => {
+        setIsLoading(true);
+        try {
+            const result = await callSheetsAPI('save_notification', notif);
+            if (result && result.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('📢 Notification broadcasted successfully!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to send notification: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
+    const deleteNotification = async (id) => {
+        setIsLoading(true);
+        try {
+            const result = await callSheetsAPI('delete_notification', { id });
+            if (result && result.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('🗑️ Notification removed!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to delete notification: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
+    // CRUD: Google Analytics
+    const saveGaSummary = async (summary) => {
+        setIsLoading(true);
+        try {
+            const result = await callSheetsAPI('save_ga_summary', summary);
+            if (result && result.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('💾 Google Analytics summary updated!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to update summary: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
+    const saveGaItem = async (item) => {
+        setIsLoading(true);
+        try {
+            const result = await callSheetsAPI('save_ga_item', item);
+            if (result && result.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('💾 Google Analytics item saved!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to save item: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
+    const deleteGaItem = async (id) => {
+        setIsLoading(true);
+        try {
+            const result = await callSheetsAPI('delete_ga_item', { id });
+            if (result && result.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('🗑️ Google Analytics item deleted!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to delete item: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
+    // Settings CRUD
+    const saveAppSetting = async (key, value) => {
+        setIsLoading(true);
+        try {
+            const result = await callSheetsAPI('save_app_setting', { key, value });
+            if (result && result.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('💾 Settings updated!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to save setting: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
+    const savePlatform = async (platform) => {
+        setIsLoading(true);
+        try {
+            const result = await callSheetsAPI('save_platform', platform);
+            if (result && result.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('💾 Platform saved!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to save platform: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
+    const deletePlatform = async (id) => {
+        setIsLoading(true);
+        try {
+            const result = await callSheetsAPI('delete_platform', { id });
+            if (result && result.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('🗑️ Platform deleted!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to delete platform: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
+    const saveCategory = async (category) => {
+        setIsLoading(true);
+        try {
+            const result = await callSheetsAPI('save_category', category);
+            if (result && result.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('💾 Category saved!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to save category: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
+    const deleteCategory = async (name) => {
+        setIsLoading(true);
+        try {
+            const result = await callSheetsAPI('delete_category', { name });
+            if (result && result.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('🗑️ Category deleted!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to delete category: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
+    const saveMember = async (oldNama, nama, stream) => {
+        setIsLoading(true);
+        try {
+            const result = await callSheetsAPI('save_member', { oldNama, NAMA: nama, STREAM: stream });
+            if (result && result.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('💾 Member saved!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to save member: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
+    const deleteMember = async (nama) => {
+        setIsLoading(true);
+        try {
+            const result = await callSheetsAPI('delete_member', { NAMA: nama });
+            if (result && result.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('🗑️ Member removed!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to delete member: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
     return (
         <DashboardContext.Provider value={{
             // States
@@ -603,6 +992,7 @@ export function DashboardProvider({ children }) {
             globalAlert, showAlert,
             darkMode, toggleDarkMode,
             selectedMeetingId, setSelectedMeetingId,
+            isNewPostDrawerOpen, setIsNewPostDrawerOpen,
 
             // Filters
             dateRange, setDateRange,
@@ -621,6 +1011,12 @@ export function DashboardProvider({ children }) {
             memberListData,
             draftsData,
             meetingsData,
+            notificationsData,
+            gaSummaryData,
+            gaItemsData,
+            appSettingsData,
+            platformsData,
+            categoriesData,
 
             // Lockdown/Auth
             unlockWorkspace,
@@ -638,6 +1034,18 @@ export function DashboardProvider({ children }) {
             deleteScriptDraft,
             saveMeetingMemo,
             deleteMeetingMemo,
+            saveNotification,
+            deleteNotification,
+            saveGaSummary,
+            saveGaItem,
+            deleteGaItem,
+            saveAppSetting,
+            savePlatform,
+            deletePlatform,
+            saveCategory,
+            deleteCategory,
+            saveMember,
+            deleteMember,
             refreshData: () => loadFromGoogleSheets(false)
         }}>
             {children}

@@ -6,10 +6,14 @@ import LockScreen from './LockScreen';
 import { DeleteConfirmModal, LinkModal } from './Modals';
 import { 
     normalizePicName, 
-    getPicBadgeClass,
     getLocalDateInputValue,
-    parseDate
+    parseDate,
+    getPicBadgeClasses
 } from '../utils/helpers';
+
+const getToolbarBtnStyle = (isActive) => {
+    return isActive ? { backgroundColor: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-primary)' } : {};
+};
 
 export default function MeetingsTab({ onOpenDatePicker }) {
     const {
@@ -29,7 +33,6 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     const [isEditing, setIsEditing] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const editorRef = useRef(null);
-
 
     // Scroll selected meeting item into view
     useEffect(() => {
@@ -76,10 +79,6 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         });
     };
 
-    const getToolbarBtnStyle = (isActive) => {
-        return isActive ? { backgroundColor: 'var(--primary-bg)', color: 'var(--primary)', fontWeight: 'bold' } : {};
-    };
-
     // Ensure all links in the viewing recap container target _blank (new tab)
     useEffect(() => {
         if (typeof document === 'undefined') return;
@@ -98,11 +97,10 @@ export default function MeetingsTab({ onOpenDatePicker }) {
             const meeting = (meetingsData || []).find(m => m.id === selectedMeetingId);
             if (meeting) {
                 setFormDate(parseDate(meeting.date) || getLocalDateInputValue());
-                const rawAttList = meeting.attendees 
-                    ? meeting.attendees.split(',').map(a => a.trim()).filter(Boolean)
-                    : [];
-                const attList = Array.from(new Set(rawAttList));
-                setFormAttendees(attList);
+                const attList = Array.isArray(meeting.attendees)
+                    ? meeting.attendees
+                    : (meeting.attendees ? meeting.attendees.split(',').map(a => a.trim()).filter(Boolean) : []);
+                setFormAttendees(Array.from(new Set(attList)));
                 setFormRecap(meeting.recap || '');
                 setFormVideoRecap(meeting.videoRecap || '');
                 setIsEditing(false); // Default to view mode when switching memos
@@ -326,6 +324,49 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         }
     };
 
+    const handleEditorPaste = (e) => {
+        e.preventDefault();
+        const html = e.clipboardData.getData('text/html');
+        if (html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const allElements = doc.body.querySelectorAll('*');
+            allElements.forEach(el => {
+                el.removeAttribute('class');
+                const style = el.getAttribute('style');
+                if (style) {
+                    const cleanedStyle = style
+                        .split(';')
+                        .map(prop => prop.trim())
+                        .filter(prop => {
+                            const lower = prop.toLowerCase();
+                            return !(
+                                lower.startsWith('color') || 
+                                lower.startsWith('background') || 
+                                lower.startsWith('font-') ||
+                                lower.includes('color:') ||
+                                lower.includes('background:') ||
+                                lower.includes('font-')
+                            );
+                        })
+                        .join(';');
+                    if (cleanedStyle) {
+                        el.setAttribute('style', cleanedStyle);
+                    } else {
+                        el.removeAttribute('style');
+                    }
+                }
+            });
+            document.execCommand('insertHTML', false, doc.body.innerHTML);
+        } else {
+            const text = e.clipboardData.getData('text/plain');
+            document.execCommand('insertText', false, text);
+        }
+        if (editorRef.current) {
+            setFormRecap(editorRef.current.innerHTML);
+        }
+    };
+
     const handleEditorKeyUp = (e) => {
         if (e.key === ' ' || e.code === 'Space') {
             const selection = window.getSelection();
@@ -388,7 +429,28 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                         if (attr === 'href' && /^\s*javascript:/i.test(val)) {
                             continue;
                         }
-                        cleanEl.setAttribute(attr, val);
+                        if (attr === 'style') {
+                             const cleanedVal = val
+                                 .split(';')
+                                 .map(prop => prop.trim())
+                                 .filter(prop => {
+                                     const lower = prop.toLowerCase();
+                                     return !(
+                                         lower.startsWith('color') || 
+                                         lower.startsWith('background') || 
+                                         lower.startsWith('font-') ||
+                                         lower.includes('color:') ||
+                                         lower.includes('background:') ||
+                                         lower.includes('font-')
+                                     );
+                                 })
+                                 .join(';');
+                             if (cleanedVal) {
+                                 cleanEl.setAttribute('style', cleanedVal);
+                             }
+                         } else {
+                             cleanEl.setAttribute(attr, val);
+                         }
                     }
                 }
                 node.childNodes.forEach(child => {
@@ -425,50 +487,75 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         return <LockScreen sectionName="Meetings" />;
     }
 
+
+
     return (
-        <section className="panel panel-meeting" style={{ display: 'flex' }}>
-            <div className="panel-header">
-                <h2>
-                    <span className="panel-icon"><i className="fa-solid fa-handshake"></i></span> Meeting Memos
-                </h2>
-                <div className="panel-actions">
+        <div className="space-y-6">
+            
+            {/* Header banner */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-surface-container/30 border border-outline-variant/20 rounded-xl p-5 gap-4">
+                <div className="space-y-1">
+                    <h3 className="text-headline-lg font-bold text-on-surface">Meeting Memos</h3>
+                    <p className="text-on-surface-variant font-body-sm">Document action items, attendee presences, and video recaps.</p>
+                </div>
+                <div className="flex items-center gap-3">
                     {isUnlocked && userRole !== 'Creator' && (
-                        <button type="button" className="btn btn-primary" onClick={handleCreateNewMemo}>
-                            <i className="fa-solid fa-plus"></i> Create Meeting Memo
+                        <button 
+                            type="button" 
+                            className="bg-primary text-on-primary hover:opacity-90 font-bold py-2 px-4 rounded text-body-sm transition-opacity flex items-center gap-1.5 cursor-pointer micro-interaction shadow-md" 
+                            onClick={handleCreateNewMemo}
+                        >
+                            <span className="material-symbols-outlined text-[18px]">add</span> Create Memo
                         </button>
                     )}
+                    <span className="px-2.5 py-1 bg-surface-container border border-outline-variant/30 text-on-surface-variant rounded text-[11px] font-bold uppercase">
+                        {(meetingsData || []).length} Memos
+                    </span>
                 </div>
             </div>
 
-            <div className="meeting-split-container">
-                {/* Memo Sidebar */}
-                <div className="meeting-sidebar">
-                    <div className="drafts-sidebar-header" style={{ flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-                        <h3>Memo Directory</h3>
+            {/* Split layout Directory sidebar & detail editor */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter items-start">
+                
+                {/* Left Side: Memo Directory sidebar (col-span-1) */}
+                <div className="glass-panel border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-outline-variant/20 pb-2">
+                        <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider">Memo Directory</h4>
                     </div>
 
-                    <div className="meeting-search-wrapper" style={{ marginBottom: '12px', display: 'flex', gap: '8px' }}>
-                        <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
+                    {/* Date filter field with clear filter option */}
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 flex items-center">
+                                <span className="material-symbols-outlined text-[18px]">date_range</span>
+                            </span>
                             <input 
                                 type="text" 
-                                className="form-control custom-date-input" 
-                                style={{ flex: 1 }}
+                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded pl-9 pr-3 py-1.5 text-body-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary cursor-pointer" 
                                 placeholder="Filter by date..." 
                                 readOnly
                                 value={dateFilter}
                                 onClick={handleFilterDateClick}
                             />
-                            {dateFilter && (
-                                <button className="btn btn-outline btn-sm" onClick={() => setDateFilter('')} title="Clear filters">
-                                    <i className="fa-solid fa-filter-circle-xmark"></i>
-                                </button>
-                            )}
                         </div>
+                        {dateFilter && (
+                            <button 
+                                className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest px-3 py-1.5 rounded text-[11px] font-bold uppercase transition-colors cursor-pointer" 
+                                onClick={() => setDateFilter('')} 
+                                title="Clear filters"
+                            >
+                                <span className="material-symbols-outlined text-[14px]">clear</span>
+                            </button>
+                        )}
                     </div>
 
-                    <div className="meeting-list-container">
+                    {/* Memos list stack */}
+                    <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                         {filteredMeetings.length === 0 ? (
-                            <p style={{ color: 'var(--ink-muted)', fontSize: '12px', textAlign: 'center', padding: '20px' }}>No memos found</p>
+                            <div className="py-12 text-center text-on-surface-variant/50 text-[12px] space-y-2">
+                                <span className="material-symbols-outlined text-[32px] text-on-surface-variant/30">event_busy</span>
+                                <p>No memos found</p>
+                            </div>
                         ) : (
                             filteredMeetings.map((memo) => {
                                 const isSelected = selectedMeetingId === memo.id;
@@ -489,24 +576,31 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                                 }
                                             }, 50);
                                         }}
-                                        className={`meeting-item ${isSelected ? 'active' : ''}`}
+                                        className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer flex flex-col gap-2 relative ${
+                                            isSelected 
+                                                ? 'bg-surface-container-high border-primary/40 shadow-md ring-1 ring-primary/30 active' 
+                                                : 'bg-surface-container-low border-outline-variant/15 hover:bg-surface-container'
+                                        }`}
                                     >
-                                        <div className="meeting-item-date">
-                                            <i className="fa-solid fa-calendar-day"></i> {parseDate(memo.date)}
+                                        <div className="flex items-center gap-1.5 text-on-surface-variant text-[11px] font-semibold">
+                                            <span className="material-symbols-outlined text-[13px] text-primary">calendar_today</span>
+                                            {parseDate(memo.date)}
                                         </div>
-                                        <div className="meeting-item-meta" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', marginTop: '4px' }}>
-                                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                                <span className={`badge ${countAtt > 0 ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: '10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                                    {countAtt === 1 ? '1 Attendee' : `${countAtt} Attendees`}
-                                                </span>
-                                            </div>
-                                            <span className="badge-status badge-status-completed" style={{ fontSize: '9px', padding: '1px 4px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                        
+                                        <div className="flex justify-between items-center gap-2 mt-0.5">
+                                            <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-bold uppercase ${
+                                                countAtt > 0 ? 'bg-emerald-500/10 text-primary border border-primary/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                            }`}>
+                                                {countAtt === 1 ? '1 Attendee' : `${countAtt} Attendees`}
+                                            </span>
+                                            <span className="px-1.5 py-0.2 rounded text-[8.5px] font-bold uppercase bg-emerald-500/15 text-primary border border-primary/25">
                                                 Done
                                             </span>
                                         </div>
-                                        <div className="meeting-item-snippet" style={{ marginTop: '6px' }}>
+
+                                        <p className="text-[11.5px] text-on-surface-variant/80 italic leading-snug line-clamp-2">
                                             {snippet || 'No recap written yet.'}
-                                        </div>
+                                        </p>
                                     </button>
                                 );
                             })
@@ -514,69 +608,86 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                     </div>
                 </div>
 
-                {/* Main Area: Details / Editor */}
-                <div className="meeting-main-content">
+                {/* Right Side: Main Detail Viewer or Form Editor (col-span-2) */}
+                <div className="meeting-main-content lg:col-span-2 glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl min-h-[400px]">
                     {!selectedMeetingId ? (
-                        <div className="meeting-placeholder-state">
-                            <i className="fa-solid fa-handshake" style={{ fontSize: '48px', color: 'var(--ink-muted)', marginBottom: '12px' }}></i>
-                            <h3>No Meeting Selected</h3>
-                            <p>Select a meeting memo from the sidebar list to view its details, attendees, and recaps.</p>
+                        <div className="h-full flex flex-col justify-center items-center text-center p-12 space-y-4">
+                            <span className="material-symbols-outlined text-[64px] text-on-surface-variant/30">handshake</span>
+                            <div className="space-y-1">
+                                <h3 className="font-bold text-body-sm text-on-surface uppercase tracking-wider">No Memo Selected</h3>
+                                <p className="text-[12px] text-on-surface-variant/80 max-w-xs">Select a meeting memo from the directory list sidebar or create a new memo to view recap contents.</p>
+                            </div>
                         </div>
                     ) : !isEditing ? (
                         /* VIEW MODE */
-                        <div className="meeting-detail-card">
-                            <div className="meeting-details-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--hairline)', paddingBottom: '12px', marginBottom: '20px' }}>
-                                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <i className="fa-solid fa-calendar-day" style={{ color: 'var(--primary)' }}></i> Date: {parseDate(formDate)}
-                                </h3>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button type="button" className="btn btn-outline btn-sm mobile-close-btn" onClick={() => {
-                                        setSelectedMeetingId(null);
-                                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                                    }}>
-                                        <i className="fa-solid fa-xmark"></i> Close
+                        <div className="space-y-6">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-outline-variant/20 pb-3 gap-3">
+                                <h4 className="font-bold text-body-md text-on-surface flex items-center gap-1.5">
+                                    <span className="material-symbols-outlined text-primary">calendar_today</span>
+                                    Date: {parseDate(formDate)}
+                                </h4>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        type="button" 
+                                        className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer" 
+                                        onClick={() => setSelectedMeetingId(null)}
+                                    >
+                                        <span className="material-symbols-outlined text-[15px]">close</span> Close
                                     </button>
-                                    {userRole !== 'Creator' && (
-                                        <button type="button" className="btn btn-outline btn-sm" onClick={() => setIsEditing(true)}>
-                                            <i className="fa-solid fa-pen"></i> Edit
+                                    {userRole !== 'Creator' && !actionsDisabled && (
+                                        <button 
+                                            type="button" 
+                                            className="bg-primary text-on-primary hover:opacity-90 font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-opacity flex items-center gap-1 cursor-pointer" 
+                                            onClick={() => setIsEditing(true)}
+                                        >
+                                            <span className="material-symbols-outlined text-[15px]">edit</span> Edit
                                         </button>
                                     )}
                                     {userRole !== 'Creator' && (
-                                        <button type="button" className="btn btn-danger btn-sm" onClick={() => setIsDeleteConfirmOpen(true)}>
-                                            <i className="fa-solid fa-trash-can"></i> Delete
+                                        <button 
+                                            type="button" 
+                                            className="bg-error-container/20 text-error border border-error/25 hover:bg-error-container/30 font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer" 
+                                            onClick={() => setIsDeleteConfirmOpen(true)}
+                                        >
+                                            <span className="material-symbols-outlined text-[15px]">delete</span> Delete
                                         </button>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="meeting-meta-section" style={{ display: 'flex', gap: '20px', marginBottom: '24px', flexWrap: 'wrap' }}>
-                                <div className="meta-block" style={{ flex: 1, minWidth: '200px' }}>
-                                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Attendees</label>
-                                    <div className="meeting-badge-list" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            {/* Attendance grids info block */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-3.5 space-y-2">
+                                    <label className="text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-wider">Attendees</label>
+                                    <div className="flex flex-wrap gap-1.5">
                                         {formAttendees.length === 0 ? (
-                                            <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>None present</span>
+                                            <span className="text-[11.5px] text-on-surface-variant/60 italic">None present</span>
                                         ) : (
                                             formAttendees.map(att => (
-                                                <span key={att} className={`badge ${getPicBadgeClass(att)}`} style={{ fontSize: '10px', padding: '2px 6px' }}>{normalizePicName(att)}</span>
+                                                <span key={att} className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getPicBadgeClasses(att)}`}>
+                                                    {normalizePicName(att)}
+                                                </span>
                                             ))
                                         )}
                                     </div>
                                 </div>
-                                <div className="meta-block" style={{ flex: 1, minWidth: '200px' }}>
-                                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Absentees</label>
-                                    <div className="meeting-badge-list" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-3.5 space-y-2">
+                                    <label className="text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-wider">Absentees</label>
+                                    <div className="flex flex-wrap gap-1.5">
                                         {absentees.length === 0 ? (
-                                            <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>None absent</span>
+                                            <span className="text-[11.5px] text-on-surface-variant/60 italic">None absent</span>
                                         ) : (
                                             absentees.map(name => (
-                                                <span key={name} className="badge badge-pic-default" style={{ fontSize: '10px', padding: '2px 6px', opacity: 0.7 }}>{normalizePicName(name)}</span>
+                                                <span key={name} className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-surface-container border border-outline-variant/35 text-on-surface-variant/60">
+                                                    {normalizePicName(name)}
+                                                </span>
                                             ))
                                         )}
                                     </div>
                                 </div>
-                                <div className="meta-block" style={{ flex: 1, minWidth: '200px' }}>
-                                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>Video Recap</label>
-                                    <div className="meeting-badge-list" style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                                <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-3.5 space-y-2">
+                                    <label className="text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-wider">Video Recap</label>
+                                    <div className="flex flex-col gap-1 items-start">
                                         {(() => {
                                             const links = formVideoRecap ? formVideoRecap.split(/[\s,]+/).map(l => l.trim()).filter(Boolean) : [];
                                             return links.length > 0 ? (
@@ -586,58 +697,53 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                                         href={link} 
                                                         target="_blank" 
                                                         rel="noopener noreferrer" 
-                                                        style={{ fontSize: '12px', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'underline' }}
+                                                        className="text-[12px] text-primary hover:underline inline-flex items-center gap-1 font-semibold"
                                                     >
-                                                        <i className="fa-solid fa-video"></i> Watch Video Recap {links.length > 1 ? `#${idx + 1}` : ''}
+                                                        <span className="material-symbols-outlined text-[13px]">videocam</span> Video Recap {links.length > 1 ? `#${idx + 1}` : ''}
                                                     </a>
                                                 ))
                                             ) : (
-                                                <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>None provided</span>
+                                                <span className="text-[11.5px] text-on-surface-variant/60 italic">None provided</span>
                                             );
                                         })()}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="meeting-recap-section">
-                                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)', textTransform: 'uppercase', marginBottom: '8px', borderBottom: '1px solid var(--hairline)', paddingBottom: '6px' }}>Meeting Recap</label>
+                            {/* Recap details */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-wider pb-1.5 border-b border-outline-variant/20 block">
+                                    Meeting Recap Detail Notes
+                                </label>
                                 <div 
-                                    className="meeting-recap-text-container" 
-                                    style={{
-                                        fontSize: '13px', 
-                                        lineHeight: '1.6', 
-                                        color: 'var(--ink)', 
-                                        background: 'var(--surface)', 
-                                        padding: '16px', 
-                                        borderRadius: 'var(--radius-md)', 
-                                        border: '1px solid var(--hairline)'
-                                    }}
+                                    className="meeting-recap-text-container bg-surface-container-lowest border border-outline-variant/35 rounded-lg p-5 text-body-sm leading-relaxed text-on-surface prose dark:prose-invert max-w-none"
                                     dangerouslySetInnerHTML={createSafeHtml(formRecap)}
                                 />
                             </div>
                         </div>
                     ) : (
                         /* EDIT MODE */
-                        <form onSubmit={handleSaveMemo} className="meeting-detail-card" autoComplete="off">
-                            <div className="meeting-details-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--hairline)', paddingBottom: '12px', marginBottom: '20px' }}>
-                                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <i className="fa-solid fa-file-pen" style={{ color: 'var(--primary)' }}></i> {selectedMeetingId === 'NEW' ? 'Create Meeting Memo' : 'Edit Meeting Memo'}
-                                </h3>
-                                <button type="button" className="btn btn-outline btn-sm mobile-close-btn" onClick={() => {
-                                    handleCancelEdit();
-                                    setSelectedMeetingId(null);
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}>
-                                    <i className="fa-solid fa-xmark"></i> Close
+                        <form onSubmit={handleSaveMemo} className="space-y-5" autoComplete="off">
+                            <div className="flex justify-between items-center border-b border-outline-variant/20 pb-3">
+                                <h4 className="font-bold text-body-md text-on-surface flex items-center gap-1.5">
+                                    <span className="material-symbols-outlined text-primary">edit_note</span>
+                                    {selectedMeetingId === 'NEW' ? 'Create Meeting Memo' : 'Edit Meeting Memo'}
+                                </h4>
+                                <button 
+                                    type="button" 
+                                    className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer" 
+                                    onClick={handleCancelEdit}
+                                >
+                                    <span className="material-symbols-outlined text-[15px]">close</span> Close
                                 </button>
                             </div>
 
-                            <div className="form-row">
-                                <div className="form-group full">
-                                    <label>Date <span className="required">*</span></label>
+                            <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-body-sm font-semibold text-on-surface-variant">Date <span className="text-error">*</span></label>
                                     <input 
                                         type="text" 
-                                        className="form-control custom-date-input" 
+                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer" 
                                         placeholder="YYYY-MM-DD" 
                                         readOnly
                                         required
@@ -646,106 +752,114 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                         disabled={actionsDisabled}
                                     />
                                 </div>
-                            </div>
 
-                            <div className="form-row">
-                                <div className="form-group full">
-                                    <label>Video Recap URL(s) <span style={{ color: 'var(--ink-muted)', fontSize: '11px', fontWeight: 'normal' }}>(Optional, separate multiple links with commas)</span></label>
+                                <div className="space-y-1">
+                                    <label className="text-body-sm font-semibold text-on-surface-variant">Video Recap URL(s)</label>
                                     <input 
                                         type="text" 
-                                        className="form-control" 
+                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary" 
                                         placeholder="e.g. https://link1.com, https://link2.com" 
                                         value={formVideoRecap}
                                         onChange={(e) => setFormVideoRecap(e.target.value)}
                                         disabled={actionsDisabled}
-                                        style={{ width: '100%' }}
                                     />
                                 </div>
-                            </div>
 
-                            {/* Attendees checkboxes */}
-                            <div className="form-group">
-                                <label style={{ display: 'block', marginBottom: '8px' }}>Attendees (Check who attended the meeting)</label>
-                                <div className="member-checkbox-grid">
-                                    {meetingMembers.map(name => {
-                                        const isChecked = formAttendees.includes(name);
-                                        return (
-                                            <label 
-                                                key={name} 
-                                                style={{ 
-                                                    display: 'flex', 
-                                                    alignItems: 'center', 
-                                                    gap: '8px', 
-                                                    cursor: 'pointer',
-                                                    margin: 0,
-                                                    padding: '2px 0',
-                                                    userSelect: 'none'
-                                                }}
-                                            >
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={isChecked}
-                                                    onChange={() => handleAttendeeToggle(name)}
-                                                    disabled={actionsDisabled}
-                                                    style={{ 
-                                                        width: '16px', 
-                                                        height: '16px', 
-                                                        margin: 0,
-                                                        flexShrink: 0,
-                                                        cursor: 'pointer'
-                                                    }}
-                                                />
-                                                <span className={`badge ${getPicBadgeClass(name)}`} style={{ fontSize: '11px', padding: '3px 8px', display: 'inline-block' }}>
-                                                    {normalizePicName(name)}
-                                                </span>
-                                            </label>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Recap Rich Text Editor */}
-                            <div className="form-row">
-                                <div className="form-group full">
-                                    <label>Meeting Recap <span className="required">*</span></label>
-                                    <div className="rich-text-toolbar" style={{ marginBottom: '6px' }}>
-                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.bold)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('bold'); }} title="Bold"><i className="fa-solid fa-bold"></i></button>
-                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.italic)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('italic'); }} title="Italic"><i className="fa-solid fa-italic"></i></button>
-                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.underline)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('underline'); }} title="Underline"><i className="fa-solid fa-underline"></i></button>
-                                        <div className="toolbar-separator"></div>
-                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.insertUnorderedList)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('insertUnorderedList'); }} title="Bulleted List"><i className="fa-solid fa-list-ul"></i></button>
-                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.insertOrderedList)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('insertOrderedList'); }} title="Numbered List"><i className="fa-solid fa-list-ol"></i></button>
-                                        <div className="toolbar-separator"></div>
-                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.justifyLeft)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyLeft'); }} title="Align Left"><i className="fa-solid fa-align-left"></i></button>
-                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.justifyCenter)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyCenter'); }} title="Align Center"><i className="fa-solid fa-align-center"></i></button>
-                                        <button type="button" className="btn btn-sm" style={getToolbarBtnStyle(activeStyles.justifyRight)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyRight'); }} title="Align Right"><i className="fa-solid fa-align-right"></i></button>
-                                        <div className="toolbar-separator"></div>
-                                        <button type="button" className="btn btn-sm" onMouseDown={handleLinkClick} title="Insert Link"><i className="fa-solid fa-link"></i></button>
+                                {/* Attendees checkboxes */}
+                                <div className="space-y-2">
+                                    <label className="text-body-sm font-semibold text-on-surface-variant">Attendees Presence Checklist</label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-surface-container-low/40 border border-outline-variant/20 rounded p-4">
+                                        {meetingMembers.map(name => {
+                                            const isChecked = formAttendees.includes(name);
+                                            return (
+                                                <label 
+                                                    key={name} 
+                                                    className="flex items-center gap-2 cursor-pointer select-none text-[12px] text-on-surface font-medium"
+                                                >
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={isChecked}
+                                                        onChange={() => handleAttendeeToggle(name)}
+                                                        disabled={actionsDisabled}
+                                                        className="rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                                                    />
+                                                    <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${getPicBadgeClasses(name)}`}>
+                                                        {normalizePicName(name)}
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
                                     </div>
+                                </div>
+
+                                {/* Rich Text Editor Recap */}
+                                <div className="space-y-1">
+                                    <label className="text-body-sm font-semibold text-on-surface-variant">Meeting Recap Notes <span className="text-error">*</span></label>
+                                    
+                                    {/* Format toolbar using Material symbols */}
+                                    <div className="flex flex-wrap gap-1 bg-surface-container-low border border-outline-variant/35 rounded-t p-1">
+                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.bold)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('bold'); }} title="Bold">
+                                            <span className="material-symbols-outlined text-[18px]">format_bold</span>
+                                        </button>
+                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.italic)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('italic'); }} title="Italic">
+                                            <span className="material-symbols-outlined text-[18px]">format_italic</span>
+                                        </button>
+                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.underline)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('underline'); }} title="Underline">
+                                            <span className="material-symbols-outlined text-[18px]">format_underlined</span>
+                                        </button>
+                                        
+                                        <div className="w-[1px] bg-outline-variant/30 my-1 self-stretch mx-1"></div>
+                                        
+                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.insertUnorderedList)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('insertUnorderedList'); }} title="Bulleted List">
+                                            <span className="material-symbols-outlined text-[18px]">format_list_bulleted</span>
+                                        </button>
+                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.insertOrderedList)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('insertOrderedList'); }} title="Numbered List">
+                                            <span className="material-symbols-outlined text-[18px]">format_list_numbered</span>
+                                        </button>
+                                        
+                                        <div className="w-[1px] bg-outline-variant/30 my-1 self-stretch mx-1"></div>
+                                        
+                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.justifyLeft)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyLeft'); }} title="Align Left">
+                                            <span className="material-symbols-outlined text-[18px]">format_align_left</span>
+                                        </button>
+                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.justifyCenter)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyCenter'); }} title="Align Center">
+                                            <span className="material-symbols-outlined text-[18px]">format_align_center</span>
+                                        </button>
+                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.justifyRight)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyRight'); }} title="Align Right">
+                                            <span className="material-symbols-outlined text-[18px]">format_align_right</span>
+                                        </button>
+                                        
+                                        <div className="w-[1px] bg-outline-variant/30 my-1 self-stretch mx-1"></div>
+                                        
+                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} onMouseDown={handleLinkClick} title="Insert Link">
+                                            <span className="material-symbols-outlined text-[18px]">link</span>
+                                        </button>
+                                    </div>
+                                    
                                     <div 
                                         ref={editorRef}
                                         id="meetingFormRecap" 
-                                        className="form-control rich-text-editor" 
+                                        className="w-full bg-surface-container-low border border-outline-variant/35 border-t-0 rounded-b p-4 text-body-sm text-on-surface focus:outline-none focus:border-primary min-h-[220px]" 
                                         contentEditable={!actionsDisabled} 
                                         onBlur={(e) => setFormRecap(e.currentTarget.innerHTML)}
                                         onKeyUp={handleEditorKeyUp}
                                         onMouseUp={updateActiveStyles}
-                                        style={{ minHeight: '200px', fontFamily: 'inherit', resize: 'vertical', padding: '12px' }}
+                                        onPaste={handleEditorPaste}
                                         placeholder="Write down the details of what was discussed, action items, next steps..."
                                         data-placeholder="Write down the details of what was discussed, action items, next steps..."
                                     />
                                 </div>
                             </div>
 
-                            {/* Form actions */}
-                            <div className="form-actions editor-actions" style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                            {/* Form submit/cancel actions */}
+                            <div className="flex gap-3 pt-2">
                                 {isUnlocked && userRole !== 'Creator' && (
-                                    <button type="submit" className="btn btn-primary">
-                                        <i className="fa-solid fa-floppy-disk"></i> Save Memo
+                                    <button type="submit" className="flex-1 bg-primary text-on-primary hover:opacity-90 font-bold py-2.5 px-4 rounded-lg text-body-sm transition-opacity flex items-center justify-center gap-1.5 cursor-pointer micro-interaction shadow-md">
+                                        <span className="material-symbols-outlined text-[18px]">save</span> Save Memo
                                     </button>
                                 )}
-                                <button type="button" className="btn btn-outline" onClick={handleCancelEdit}>
-                                    <i className="fa-solid fa-xmark"></i> Cancel
+                                <button type="button" className="flex-1 bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-2.5 px-4 rounded-lg text-body-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5 micro-interaction" onClick={handleCancelEdit}>
+                                    <span className="material-symbols-outlined text-[18px]">close</span> Cancel
                                 </button>
                             </div>
                         </form>
@@ -765,6 +879,6 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                 onClose={() => setIsLinkModalOpen(false)}
                 onConfirm={handleLinkConfirm}
             />
-        </section>
+        </div>
     );
 }

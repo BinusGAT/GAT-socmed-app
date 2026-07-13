@@ -1,52 +1,4 @@
-// Constant mappings for GAT Content Manager
-export const PIC_NAME_MAP = {
-    KELVIN: 'Kelvin',
-    ANTHONI: 'Anthoni',
-    EDUARD: 'Eduard',
-    FELIX: 'Felix',
-    RULIYANTO: 'Ruliyanto',
-    LEONARDI: 'Leonardi',
-    RAFAEL: 'Rafael',
-    'ANDRE JOE LIENARDI': 'Andre',
-    'FELIX OLIVIER': 'Felix',
-    'EDUARD SUTANTO': 'Eduard',
-    'ANTHONI GIOVANNI': 'Anthoni',
-    'RULIYANTO RASYID HUDA': 'Ruliyanto',
-    'RAFAEL WIRASANA WIJAYA': 'Rafael',
-    'PAK FAJAR': 'Pak Fajar'
-};
-
-export const PIC_BADGE_CLASS_MAP = {
-    Kelvin: 'badge-pic-kelvin',
-    Anthoni: 'badge-pic-anthoni',
-    Eduard: 'badge-pic-eduard',
-    Felix: 'badge-pic-felix',
-    Ruliyanto: 'badge-pic-ruliyanto',
-    Leonardi: 'badge-pic-leonardi',
-    Rafael: 'badge-pic-rafael',
-    'Pak Fajar': 'badge-pic-fajar',
-    Andre: 'badge-pic-andre'
-};
-
-export const PLATFORM_NAME_MAP = {
-    INSTAGRAM: 'Instagram',
-    TIKTOK: 'TikTok',
-    YOUTUBE: 'YouTube',
-    TWITTER: 'Twitter'
-};
-
-export const PLATFORM_BADGE_CLASS_MAP = {
-    Instagram: 'badge-platform-instagram',
-    TikTok: 'badge-platform-tiktok',
-    YouTube: 'badge-platform-youtube',
-    Twitter: 'badge-platform-twitter'
-};
-
-export const PLATFORM_LOGO_MAP = {
-    Instagram: '/img/icons/instagram-logo.png',
-    TikTok: '/img/icons/tiktok-logo.png',
-    YouTube: '/img/icons/youtube-logo.webp'
-};
+export const PIC_NAME_MAP = {};
 
 
 export const HEADERS = [
@@ -221,34 +173,45 @@ export function resolveMemberName(pic, memberList) {
     return pic; // fallback
 }
 
-export function getPicBadgeClass(picName) {
-    return PIC_BADGE_CLASS_MAP[normalizePicName(picName)] || 'badge-pic-default';
-}
+
 
 export function normalizePlatformName(platformName) {
     const value = String(platformName || '').trim();
     if (!value) return '';
 
-    const upperValue = value.toUpperCase();
-    if (PLATFORM_NAME_MAP[upperValue]) {
-        return PLATFORM_NAME_MAP[upperValue];
-    }
+    const lower = value.toLowerCase();
+    if (lower === 'instagram') return 'Instagram';
+    if (lower === 'tiktok') return 'TikTok';
+    if (lower === 'youtube') return 'YouTube';
 
-    return value;
+    return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 export function getPlatformBadgeClass(platformName) {
-    return PLATFORM_BADGE_CLASS_MAP[normalizePlatformName(platformName)] || 'badge-platform-default';
+    const norm = normalizePlatformName(platformName).toLowerCase();
+    if (norm === 'instagram') return 'badge-platform-instagram';
+    if (norm === 'tiktok') return 'badge-platform-tiktok';
+    if (norm === 'youtube') return 'badge-platform-youtube';
+    return `badge-platform-${norm}`;
 }
 
 export function getPlatformLogoHtml(platformName) {
     const norm = normalizePlatformName(platformName);
-    const logoUrl = PLATFORM_LOGO_MAP[norm];
     const badgeClass = getPlatformBadgeClass(platformName);
-    if (logoUrl) {
-        return `<span class="badge ${badgeClass} platform-badge-with-logo" style="display:inline-flex; align-items:center; gap:6px; vertical-align:middle; line-height:1.2; padding:3px 8px;"><img src="${logoUrl}" alt="${norm}" class="platform-logo-img" style="width:14px; height:14px; object-fit:contain; flex-shrink:0; display:inline-block;" />${norm}</span>`;
+    const normLower = norm.toLowerCase();
+    
+    let iconHtml = '';
+    if (normLower === 'instagram') {
+        iconHtml = '<i class="fa-brands fa-instagram text-rose-400" style="font-size: 13px; margin-right: 5px; vertical-align: middle;"></i>';
+    } else if (normLower === 'tiktok') {
+        iconHtml = '<i class="fa-brands fa-tiktok text-teal-400" style="font-size: 12px; margin-right: 5px; vertical-align: middle;"></i>';
+    } else if (normLower === 'youtube') {
+        iconHtml = '<i class="fa-brands fa-youtube text-red-500" style="font-size: 12px; margin-right: 5px; vertical-align: middle;"></i>';
+    } else {
+        iconHtml = '<i class="fa-solid fa-globe text-primary" style="font-size: 12px; margin-right: 5px; vertical-align: middle;"></i>';
     }
-    return `<span class="badge ${badgeClass}">${norm}</span>`;
+    
+    return `<span class="badge ${badgeClass} platform-badge-with-logo" style="display:inline-flex; align-items:center; vertical-align:middle; line-height:1.2; padding:3.5px 8px;">${iconHtml}${norm}</span>`;
 }
 
 export const getPlatformBadgeHtml = getPlatformLogoHtml;
@@ -423,5 +386,29 @@ export function aggregateAllChartsData(activeData) {
     const trendData = aggregateTrendData(activeData);
 
     return { trendData, platformData, picData, categoryData };
+}
+
+export function getPicBadgeClasses(picName) {
+    const name = normalizePicName(picName).toLowerCase();
+    if (!name) return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    const colors = [
+        'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+        'bg-sky-500/10 text-sky-400 border border-sky-500/20',
+        'bg-purple-500/10 text-purple-400 border border-purple-500/20',
+        'bg-pink-500/10 text-pink-400 border border-pink-500/20',
+        'bg-amber-500/10 text-amber-400 border border-amber-500/20',
+        'bg-rose-500/10 text-rose-400 border border-rose-500/20',
+        'bg-teal-500/10 text-teal-400 border border-teal-500/20',
+        'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+    ];
+
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
 }
 

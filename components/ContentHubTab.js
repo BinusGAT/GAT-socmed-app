@@ -5,8 +5,8 @@ import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import { 
     normalizePicName, 
-    getPicBadgeClass,
-    parseDate
+    parseDate,
+    getPicBadgeClasses
 } from '../utils/helpers';
 
 export default function ContentHubTab() {
@@ -18,7 +18,9 @@ export default function ContentHubTab() {
         userRole,
         saveScriptDraft,
         deleteScriptDraft,
-        showAlert
+        showAlert,
+        memberListData,
+        categoriesData
     } = useDashboard();
 
     const [selectedDraftTitle, setSelectedDraftTitle] = useState(null);
@@ -221,18 +223,24 @@ export default function ContentHubTab() {
         if (links.length === 0) return null;
 
         return (
-            <div style={{ marginTop: '8px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)' }}>Resource Links:</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+            <div className="space-y-1">
+                <span className="text-[10px] font-bold text-on-surface-variant/75 uppercase tracking-wider">Resource Links</span>
+                <div className="flex flex-col gap-1">
                     {links.map((link, i) => {
                         let shortUrl = link;
                         try {
                             const urlObj = new URL(link);
-                            shortUrl = urlObj.hostname + (urlObj.pathname.length > 15 ? urlObj.pathname.slice(0, 15) + '...' : urlObj.pathname);
+                            shortUrl = urlObj.hostname + (urlObj.pathname.length > 20 ? urlObj.pathname.slice(0, 20) + '...' : urlObj.pathname);
                         } catch (e) {}
                         return (
-                            <a key={i} href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: 'var(--primary)', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                <i className="fa-solid fa-link" style={{ fontSize: '10px' }}></i> {shortUrl}
+                            <a 
+                                key={i} 
+                                href={link} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-[12px] text-primary hover:underline inline-flex items-center gap-1.5 font-medium"
+                            >
+                                <span className="material-symbols-outlined text-[12px]">link</span> {shortUrl}
                             </a>
                         );
                     })}
@@ -243,71 +251,112 @@ export default function ContentHubTab() {
 
     const schedule = getResolvedSchedule(formTitle);
 
+    if (!isUnlocked) {
+        return <LockScreen sectionName="Content Hub" />;
+    }
+
+
+
     return (
-        <section className="panel panel-content-hub" style={{ display: 'flex' }}>
-            <div className="panel-header">
-                <h2>
-                    <span className="panel-icon"><i className="fa-solid fa-pen-to-square"></i></span> Content Hub
-                </h2>
-                <div className="panel-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div className="space-y-6">
+            
+            {/* Header banner */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-surface-container/30 border border-outline-variant/20 rounded-xl p-5 gap-4">
+                <div className="space-y-1">
+                    <h3 className="text-headline-lg font-bold text-on-surface">Content Hub</h3>
+                    <p className="text-on-surface-variant font-body-sm">Brainstorm ideas, compose scripts, and preview copy directions.</p>
+                </div>
+                <div className="flex items-center gap-3">
                     {isUnlocked && userRole !== 'Creator' && (
-                        <button type="button" className="btn btn-primary btn-sm" onClick={handleCreateDraft}>
-                            <i className="fa-solid fa-plus"></i> New Draft
+                        <button 
+                            type="button" 
+                            className="bg-primary text-on-primary hover:opacity-90 font-bold py-2 px-4 rounded text-body-sm transition-opacity flex items-center gap-1.5 cursor-pointer micro-interaction shadow-md" 
+                            onClick={handleCreateDraft}
+                        >
+                            <span className="material-symbols-outlined text-[18px]">add</span> New Draft
                         </button>
                     )}
-                    <span className="data-count">{(draftsData || []).length} drafts</span>
+                    <span className="px-2.5 py-1 bg-surface-container border border-outline-variant/30 text-on-surface-variant rounded text-[11px] font-bold uppercase">
+                        {(draftsData || []).length} Drafts
+                    </span>
                 </div>
             </div>
 
-            <div className="content-hub-shell">
-                {/* Left Column: Drafts List */}
-                <div className="drafts-sidebar">
-                    <div className="drafts-sidebar-header" style={{ flexWrap: 'wrap', gap: '8px' }}>
-                        <h3>Idea Backlog</h3>
-                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            {/* Backlog Grid & Editor Container */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter items-start">
+                
+                {/* Left Side: Idea Backlog (col-span-1) */}
+                <div className="glass-panel border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-outline-variant/20 pb-2">
+                        <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider">Idea Backlog</h4>
+                        
+                        {/* PIC selector filter */}
+                        <div>
                             <select 
                                 value={picFilter}
                                 onChange={(e) => setPicFilter(e.target.value)}
-                                style={{
-                                    fontSize: '11px',
-                                    padding: '4px 8px',
-                                    borderRadius: 'var(--radius-sm)',
-                                    border: '1px solid var(--hairline)',
-                                    background: 'var(--canvas)',
-                                    color: 'var(--ink)'
-                                }}
+                                className="bg-surface-container-low border border-outline-variant/30 text-on-surface-variant rounded px-2 py-1 text-[11px] font-bold uppercase focus:outline-none"
                             >
                                 <option value="">All PICs</option>
-                                <option value="Kelvin">Kelvin</option>
-                                <option value="Felix">Felix</option>
-                                <option value="Eduard">Eduard</option>
-                                <option value="Anthoni">Anthoni</option>
-                                <option value="Leonardi">Leonardi</option>
-                                <option value="Ruliyanto">Ruliyanto</option>
-                                <option value="Rafael">Rafael</option>
+                                {memberListData.map(m => (
+                                    <option key={m.NAMA} value={m.NAMA}>{m.NAMA}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
 
-                    <div className="drafts-sidebar-filters" style={{ display: 'flex', gap: '6px', padding: '10px 0', borderBottom: '1px solid var(--hairline)' }}>
-                        <button type="button" className={`btn btn-sm ${categoryFilter === '' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setCategoryFilter('')}>All</button>
-                        <button type="button" className={`btn btn-sm ${categoryFilter === 'Story Telling' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setCategoryFilter('Story Telling')}>Story Telling</button>
-                        <button type="button" className={`btn btn-sm ${categoryFilter === 'Motion' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setCategoryFilter('Motion')}>Motion</button>
+                    {/* Category quick selectors */}
+                    <div className="flex gap-1.5 border-b border-outline-variant/15 pb-2.5">
+                        <button 
+                            type="button" 
+                            className={`flex-1 font-bold py-1.5 rounded text-[10px] uppercase transition-colors cursor-pointer text-center ${
+                                categoryFilter === '' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
+                            }`} 
+                            onClick={() => setCategoryFilter('')}
+                        >
+                            All
+                        </button>
+                        <button 
+                            type="button" 
+                            className={`flex-1 font-bold py-1.5 rounded text-[10px] uppercase transition-colors cursor-pointer text-center ${
+                                categoryFilter === 'Story Telling' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
+                            }`} 
+                            onClick={() => setCategoryFilter('Story Telling')}
+                        >
+                            Story Telling
+                        </button>
+                        <button 
+                            type="button" 
+                            className={`flex-1 font-bold py-1.5 rounded text-[10px] uppercase transition-colors cursor-pointer text-center ${
+                                categoryFilter === 'Motion' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
+                            }`} 
+                            onClick={() => setCategoryFilter('Motion')}
+                        >
+                            Motion
+                        </button>
                     </div>
 
-                    <div style={{ padding: '0 0 10px 0' }}>
+                    {/* Search query input */}
+                    <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 flex items-center">
+                            <span className="material-symbols-outlined text-[18px]">search</span>
+                        </span>
                         <input 
                             type="text" 
-                            className="form-control" 
-                            placeholder="Search drafts..." 
+                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded pl-9 pr-3 py-1.5 text-body-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-all" 
+                            placeholder="Search backlog drafts..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
 
-                    <div className="drafts-list">
+                    {/* Draft backlog items list */}
+                    <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                         {filteredDrafts.length === 0 ? (
-                            <p style={{ color: 'var(--ink-muted)', fontSize: '12px', textAlign: 'center', padding: '20px' }}>No drafts found</p>
+                            <div className="py-12 text-center text-on-surface-variant/50 text-[12px] space-y-2">
+                                <span className="material-symbols-outlined text-[32px] text-on-surface-variant/30">find_in_page</span>
+                                <p>No storyboard drafts found</p>
+                            </div>
                         ) : (
                             filteredDrafts.map(({ d, index }) => {
                                 const sched = getResolvedSchedule(d.title);
@@ -318,11 +367,11 @@ export default function ContentHubTab() {
                                     displayStatus = 'Uploaded';
                                 }
 
-                                let badgeClass = 'badge-status-progress'; // Idea (blue)
+                                let badgeClass = 'bg-sky-500/10 text-sky-400 border border-sky-500/20'; // Idea
                                 if (displayStatus === 'Scripting') {
-                                    badgeClass = 'badge-status-today'; // Scripting (yellow)
+                                    badgeClass = 'bg-amber-500/10 text-amber-400 border border-amber-500/20'; // Scripting
                                 } else if (displayStatus === 'Uploaded') {
-                                    badgeClass = 'badge-status-completed'; // Uploaded (green)
+                                    badgeClass = 'bg-emerald-500/15 text-primary border border-primary/25'; // Uploaded
                                 }
 
                                 return (
@@ -338,28 +387,29 @@ export default function ContentHubTab() {
                                                 }
                                             }, 50);
                                         }}
-                                        className={`draft-item ${isSelected ? 'active' : ''}`}
+                                        className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer flex flex-col gap-2 relative ${
+                                            isSelected 
+                                                ? 'bg-surface-container-high border-primary/40 shadow-md ring-1 ring-primary/30' 
+                                                : 'bg-surface-container-low border-outline-variant/15 hover:bg-surface-container'
+                                        }`}
                                     >
-                                        <div className="draft-item-title">{d.title || 'Untitled Draft'}</div>
-                                        <div className="draft-item-meta">
-                                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                                <span style={{ color: 'var(--ink-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                                    <span style={{
-                                                        width: '6px',
-                                                        height: '6px',
-                                                        borderRadius: '50%',
-                                                        backgroundColor: d.category === 'Motion' ? 'var(--primary)' : 'var(--success)',
-                                                        display: 'inline-block'
-                                                    }}></span>
+                                        <p className="font-semibold text-on-surface text-body-sm leading-snug">{d.title || 'Untitled Draft'}</p>
+                                        
+                                        <div className="flex justify-between items-center gap-2 mt-0.5">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="flex items-center gap-1 text-[10px] font-bold text-on-surface-variant/80 uppercase">
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${
+                                                        d.category === 'Motion' ? 'bg-primary' : 'bg-emerald-400'
+                                                    }`}></span>
                                                     {d.category}
                                                 </span>
                                                 {sched && (
-                                                    <span className={`badge ${getPicBadgeClass(sched.pic)}`} style={{ fontSize: '9px', padding: '1px 4px' }}>
+                                                    <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold uppercase ${getPicBadgeClasses(sched.pic)}`}>
                                                         {normalizePicName(sched.pic)}
                                                     </span>
                                                 )}
                                             </div>
-                                            <span className={`badge-status ${badgeClass}`} style={{ fontSize: '9px', padding: '1px 4px', whiteSpace: 'nowrap' }}>
+                                            <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-bold uppercase ${badgeClass}`}>
                                                 {displayStatus}
                                             </span>
                                         </div>
@@ -370,111 +420,109 @@ export default function ContentHubTab() {
                     </div>
                 </div>
 
-                {/* Right Column: Creative Editor */}
-                <div className="creative-editor">
+                {/* Right Side: Creative Editor Panel (col-span-2) */}
+                <div className="creative-editor lg:col-span-2 glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl min-h-[400px]">
                     {!selectedDraftTitle ? (
-                        <div className="editor-placeholder">
-                            <div className="empty-state">
-                                <div className="empty-icon">📝</div>
-                                <h3>No draft selected</h3>
-                                <p>Select a draft from the backlog or click "+ New Draft" to begin scripting.</p>
+                        <div className="h-full flex flex-col justify-center items-center text-center p-12 space-y-4">
+                            <span className="material-symbols-outlined text-[64px] text-on-surface-variant/30">edit_note</span>
+                            <div className="space-y-1">
+                                <h3 className="font-bold text-body-sm text-on-surface uppercase tracking-wider">No Draft Selected</h3>
+                                <p className="text-[12px] text-on-surface-variant/80 max-w-xs">Select a draft script from the idea backlog sidebar or create a new draft to begin writing.</p>
                             </div>
                         </div>
                     ) : (
-                        <form onSubmit={handleFormSubmit} className="draft-form" autoComplete="off">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--hairline)', paddingBottom: '12px', marginBottom: '16px' }}>
+                        <form onSubmit={handleFormSubmit} className="space-y-5" autoComplete="off">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-outline-variant/20 pb-3 gap-3">
                                 <div>
-                                    <h3 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>Storyboard Script Editor</h3>
+                                    <h4 className="font-bold text-body-md text-on-surface">Storyboard Script Editor</h4>
                                     {schedule ? (
-                                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>
-                                            Assigned to <span className={`badge ${getPicBadgeClass(schedule.pic)}`} style={{ fontSize: '9px', padding: '1px 4px' }}>{schedule.pic}</span> scheduled on {schedule.date}
-                                        </span>
+                                        <p className="text-[11px] text-on-surface-variant/80 mt-1">
+                                            Mapped to schedule: <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${getPicBadgeClasses(schedule.pic)}`}>{schedule.pic}</span> on {schedule.date}
+                                        </p>
                                     ) : (
-                                        <span style={{ fontSize: '11px', color: 'var(--danger)' }}>
-                                            ⚠️ Draft is not currently mapped to any Scheduled Task.
-                                        </span>
+                                        <p className="text-[11px] text-error flex items-center gap-1 mt-1 font-semibold">
+                                            <span className="material-symbols-outlined text-[14px]">warning</span> Draft is not currently mapped to any Scheduled Task.
+                                        </p>
                                     )}
                                 </div>
-                                <div style={{ display: 'flex', gap: '8px' }}>
+                                <div className="flex items-center gap-2">
                                     {isUnlocked && userRole !== 'Creator' && (
-                                        <button type="button" className="btn btn-outline btn-danger-hover btn-sm" onClick={handleDeleteDraft}>
-                                            <i className="fa-solid fa-trash-can"></i> Delete
+                                        <button 
+                                            type="button" 
+                                            className="bg-error-container/20 text-error border border-error/25 hover:bg-error-container/30 font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer" 
+                                            onClick={handleDeleteDraft}
+                                        >
+                                            <span className="material-symbols-outlined text-[15px]">delete</span> Delete
                                         </button>
                                     )}
-                                    <button type="button" className="btn btn-outline btn-sm mobile-close-btn" onClick={() => {
-                                        setSelectedDraftTitle(null);
-                                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                                    }}>
-                                        <i className="fa-solid fa-xmark"></i> Close
+                                    <button 
+                                        type="button" 
+                                        className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer" 
+                                        onClick={() => setSelectedDraftTitle(null)}
+                                    >
+                                        <span className="material-symbols-outlined text-[15px]">close</span> Close
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="form-row">
-                                <div className="form-group full">
-                                    <label>Draft Title <span className="required">*</span></label>
+                            <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-body-sm font-semibold text-on-surface-variant">Draft Title <span className="text-error">*</span></label>
                                     <input 
                                         type="text" 
-                                        className="form-control"
+                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface-variant/70 focus:outline-none cursor-not-allowed opacity-75"
                                         value={formTitle}
                                         onChange={(e) => setFormTitle(e.target.value)}
                                         required
-                                        disabled={!isUnlocked}
+                                        disabled={true}
                                         placeholder="Enter content title..."
                                     />
                                 </div>
-                            </div>
 
-                            <div className="form-row">
-                                <div className="form-group full">
-                                    <label>Category <span className="required">*</span></label>
+                                <div className="space-y-1">
+                                    <label className="text-body-sm font-semibold text-on-surface-variant">Category <span className="text-error">*</span></label>
                                     <select 
-                                        className="form-control"
+                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface-variant/70 focus:outline-none cursor-not-allowed opacity-75"
                                         value={formCategory}
                                         onChange={(e) => setFormCategory(e.target.value)}
-                                        disabled={!isUnlocked}
+                                        disabled={true}
                                         required
                                     >
-                                        <option value="Story Telling">Story Telling</option>
-                                        <option value="Motion">Motion</option>
+                                        {categoriesData.map(c => (
+                                            <option key={c.name} value={c.name}>{c.name}</option>
+                                        ))}
                                     </select>
                                 </div>
-                            </div>
 
-                            <div className="form-row">
-                                <div className="form-group full">
-                                    <label>Viral Hook Template / Caption Hook</label>
+                                <div className="space-y-1">
+                                    <label className="text-body-sm font-semibold text-on-surface-variant">Viral Hook Template / Caption Hook</label>
                                     <input 
                                         type="text"
-                                        className="form-control"
+                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                         placeholder="e.g. Stop doing X, do this instead..."
                                         value={formHook}
                                         onChange={(e) => setFormHook(e.target.value)}
                                         disabled={!isUnlocked}
                                     />
                                 </div>
-                            </div>
 
-                            <div className="form-row">
-                                <div className="form-group full">
-                                    <label>Script</label>
+                                <div className="space-y-1">
+                                    <label className="text-body-sm font-semibold text-on-surface-variant">Script Voiceover / Audio Directions</label>
                                     <textarea 
-                                        className="form-control"
-                                        rows={5}
-                                        placeholder="Write your video script, speaking notes, or visual storyboard directions here..."
+                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary font-mono"
+                                        rows={6}
+                                        placeholder="Write video dialogue, voiceover cues, or visual notes here..."
                                         value={formScript}
                                         onChange={(e) => setFormScript(e.target.value)}
                                         disabled={!isUnlocked}
                                     />
                                 </div>
-                            </div>
 
-                            <div className="form-row">
-                                <div className="form-group full">
-                                    <label>Hashtags <span className="required">*</span></label>
+                                <div className="space-y-1">
+                                    <label className="text-body-sm font-semibold text-on-surface-variant">Hashtags <span className="text-error">*</span></label>
                                     <input 
                                         type="text" 
-                                        className="form-control"
+                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                         placeholder="e.g. #technology #learning #tutorial"
                                         value={formHashtags}
                                         onChange={(e) => setFormHashtags(e.target.value)}
@@ -482,29 +530,25 @@ export default function ContentHubTab() {
                                         required
                                     />
                                 </div>
-                            </div>
 
-                            <div className="form-row">
-                                <div className="form-group full">
-                                    <label>Caption / Post Description</label>
+                                <div className="space-y-1">
+                                    <label className="text-body-sm font-semibold text-on-surface-variant">Caption / Post Description</label>
                                     <textarea 
-                                        className="form-control"
+                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                         rows={3}
-                                        placeholder="Write your post caption, social media description, or secondary copy here..."
+                                        placeholder="Write the accompanying caption, description copy, or call to actions..."
                                         value={formCaption}
                                         onChange={(e) => setFormCaption(e.target.value)}
                                         disabled={!isUnlocked}
                                     />
                                 </div>
-                            </div>
 
-                            <div className="form-row">
-                                <div className="form-group full">
-                                    <label>Reference Links (one URL per line) <span className="required">*</span></label>
+                                <div className="space-y-1">
+                                    <label className="text-body-sm font-semibold text-on-surface-variant">Reference Links (comma separated)</label>
                                     <textarea 
-                                        className="form-control"
+                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary font-mono"
                                         rows={2}
-                                        placeholder="e.g. https://instagram.com/reel/...&#10;https://youtube.com/watch?..."
+                                        placeholder="e.g. https://instagram.com/reel/123, https://youtube.com/watch?v=abc"
                                         value={formReferences}
                                         onChange={(e) => setFormReferences(e.target.value)}
                                         disabled={!isUnlocked}
@@ -513,29 +557,32 @@ export default function ContentHubTab() {
                                 </div>
                             </div>
 
-                            {/* Live Preview Panel */}
-                            <div className="panel" style={{ background: 'var(--canvas-subtle)', border: '1px solid var(--hairline)', padding: '16px', borderRadius: 'var(--radius-sm)', marginBottom: '16px' }}>
-                                <h4 style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-secondary)', display: 'flex', alignItems: 'center', gap: '6px', margin: '0 0 12px 0', borderBottom: '1px solid var(--hairline)', paddingBottom: '6px' }}>
-                                    <i className="fa-solid fa-magnifying-glass-chart"></i> Live Content Storyboard Preview
-                                </h4>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {/* Live Preview Panel Card */}
+                            <div className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 space-y-4">
+                                <h5 className="text-[10px] font-bold text-on-surface-variant/75 uppercase tracking-wider flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[16px] text-primary">analytics</span> Live Preview Panel
+                                </h5>
+                                
+                                <div className="space-y-3 text-body-sm">
                                     {formHook && (
                                         <div>
-                                            <strong style={{ fontSize: '11px', color: 'var(--danger)', textTransform: 'uppercase' }}>🪝 Visual Hook:</strong>
-                                            <p style={{ fontSize: '13px', margin: '2px 0 0 0', fontStyle: 'italic', fontWeight: 500 }}>"{formHook}"</p>
+                                            <p className="text-[9px] font-bold text-error uppercase tracking-wider mb-0.5">🪝 Visual Hook</p>
+                                            <p className="font-semibold text-on-surface italic">"{formHook}"</p>
                                         </div>
                                     )}
                                     {formScript && (
                                         <div>
-                                            <strong style={{ fontSize: '11px', color: 'var(--primary)', textTransform: 'uppercase' }}>📝 Voiceover Script:</strong>
-                                            <p style={{ fontSize: '12px', margin: '2px 0 0 0', whiteSpace: 'pre-wrap', lineHeight: '1.5', background: 'var(--canvas)', padding: '8px 12px', borderLeft: '3px solid var(--primary)', borderRadius: 'var(--radius-xs)' }}>{formScript}</p>
+                                            <p className="text-[9px] font-bold text-primary uppercase tracking-wider mb-0.5">📝 Voiceover Script</p>
+                                            <div className="bg-surface-container-lowest border-l-2 border-primary rounded p-3 text-[12px] font-mono leading-relaxed whitespace-pre-wrap text-on-surface">
+                                                {formScript}
+                                            </div>
                                         </div>
                                     )}
                                     {(formCaption || formHashtags) && (
                                         <div>
-                                            <strong style={{ fontSize: '11px', color: 'var(--success)', textTransform: 'uppercase' }}>📱 Post Caption:</strong>
-                                            <p style={{ fontSize: '12px', margin: '2px 0 0 0', fontWeight: 500 }}>
-                                                {formCaption} <span style={{ color: 'var(--primary)' }}>{formHashtags}</span>
+                                            <p className="text-[9px] font-bold text-primary uppercase tracking-wider mb-0.5">📱 Caption & Tags</p>
+                                            <p className="text-on-surface text-[12px] leading-relaxed">
+                                                {formCaption} <span className="text-primary font-semibold">{formHashtags}</span>
                                             </p>
                                         </div>
                                     )}
@@ -543,21 +590,22 @@ export default function ContentHubTab() {
                                 </div>
                             </div>
 
-                            {/* Save Draft & Copy Copywriting */}
-                            <div className="form-actions editor-actions" style={{ display: 'flex', gap: '10px' }}>
+                            {/* Save Draft & Copy Copywriting Actions */}
+                            <div className="flex flex-col sm:flex-row gap-3 pt-2">
                                 {isUnlocked && (
-                                    <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                                        <i className="fa-solid fa-floppy-disk"></i> Save Script Draft
+                                    <button type="submit" className="flex-1 bg-primary text-on-primary hover:opacity-90 font-bold py-2.5 px-4 rounded-lg text-body-sm transition-opacity flex items-center justify-center gap-1.5 cursor-pointer micro-interaction shadow-sm">
+                                        <span className="material-symbols-outlined text-[18px]">save</span> Save Script Draft
                                     </button>
                                 )}
-                                <button type="button" className="btn btn-success" onClick={handleCopyCopywriting} style={{ flex: 1 }}>
-                                    <i className="fa-solid fa-copy"></i> Copy Copywriting
+                                <button type="button" className="flex-1 bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-2.5 px-4 rounded-lg text-body-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer micro-interaction" onClick={handleCopyCopywriting}>
+                                    <span className="material-symbols-outlined text-[18px]">content_copy</span> Copy Copywriting
                                 </button>
                             </div>
                         </form>
                     )}
                 </div>
             </div>
-        </section>
+
+        </div>
     );
 }

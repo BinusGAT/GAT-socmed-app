@@ -45,6 +45,7 @@ export function UnlockModal({ isOpen, onClose }) {
     }, [isOpen]);
 
     if (!isOpen) return null;
+    if (typeof window === 'undefined') return null;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -55,13 +56,15 @@ export function UnlockModal({ isOpen, onClose }) {
             return;
         }
 
-        if (!passcode) {
+        const activePasscode = role === 'Viewer' ? 'viewer' : passcode;
+
+        if (!activePasscode) {
             setErrorMsg('Please enter the access key.');
             return;
         }
 
         try {
-            const success = await unlockWorkspace(role, passcode);
+            const success = await unlockWorkspace(role, activePasscode);
             if (success) {
                 onClose();
             }
@@ -70,90 +73,86 @@ export function UnlockModal({ isOpen, onClose }) {
         }
     };
 
-    return (
-        <div className="modal-overlay" style={{ display: 'flex' }}>
-            <div className="gate-modal-card">
-                <div className="gate-modal-header">
-                    <h2><i className="fa-solid fa-user-lock"></i> CC Internal Gate</h2>
-                    <button className="gate-modal-close" onClick={onClose} aria-label="Close modal">
-                        <i className="fa-solid fa-xmark"></i>
+    return createPortal(
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
+            <div className="w-full max-w-md bg-surface-container border border-outline-variant/30 rounded-xl p-stack-lg shadow-2xl space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-outline-variant/20 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-primary-container rounded flex items-center justify-center text-on-primary">
+                            <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>lock</span>
+                        </div>
+                        <h2 className="font-headline-md text-headline-md font-bold text-on-surface">CC Internal Gate</h2>
+                    </div>
+                    <button className="text-on-surface-variant hover:text-on-surface p-1 micro-interaction" onClick={onClose} aria-label="Close modal">
+                        <span className="material-symbols-outlined text-[20px]">close</span>
                     </button>
                 </div>
-                <form onSubmit={handleSubmit} autoComplete="off">
-                    <div className="modal-card-body" style={{ padding: '20px' }}>
-                        {lockdownTimeText && (
-                            <div className="lockdown-alert" style={{
-                                color: '#ef4444',
-                                background: 'rgba(239, 68, 68, 0.08)',
-                                border: '1px solid rgba(239, 68, 68, 0.2)',
-                                padding: '12px',
-                                borderRadius: '6px',
-                                marginBottom: '1.25rem',
-                                fontSize: '0.875rem',
-                                fontWeight: 500,
-                                textAlign: 'center',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '8px'
-                            }}>
-                                <i className="fa-solid fa-triangle-exclamation"></i>
-                                <span>{lockdownTimeText}</span>
-                            </div>
-                        )}
 
-                        {errorMsg && (
-                            <div className="unlock-alert" style={{
-                                color: '#ef4444',
-                                background: 'rgba(239, 68, 68, 0.08)',
-                                border: '1px solid rgba(239, 68, 68, 0.2)',
-                                padding: '10px 14px',
-                                borderRadius: '4px',
-                                marginBottom: '1rem',
-                                fontSize: '0.8125rem',
-                                fontWeight: 500,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}>
-                                <i className="fa-solid fa-circle-exclamation"></i>
-                                <span>{errorMsg}</span>
-                            </div>
-                        )}
+                <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
+                    {lockdownTimeText && (
+                        <div className="flex items-center gap-3 p-3 bg-error-container/20 border border-error/30 rounded text-error text-body-sm">
+                            <span className="material-symbols-outlined text-[18px]">warning</span>
+                            <span className="font-medium">{lockdownTimeText}</span>
+                        </div>
+                    )}
 
-                        <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                            <label className="gate-label">SELECT WORKSPACE ROLE</label>
-                            <div className="gate-role-grid">
-                                <div 
-                                    className={`gate-role-card ${role === 'Admin' ? 'active' : ''}`}
-                                    onClick={() => !lockdownTimeText && setRole('Admin')}
-                                >
-                                    <div className="gate-role-icon-box">
-                                        <i className="fa-solid fa-user-gear"></i>
-                                    </div>
-                                    <span className="gate-role-title">ADMIN MODE</span>
-                                </div>
-                                <div 
-                                    className={`gate-role-card ${role === 'Creator' ? 'active' : ''}`}
-                                    onClick={() => !lockdownTimeText && setRole('Creator')}
-                                >
-                                    <div className="gate-role-icon-box">
-                                        <i className="fa-solid fa-palette"></i>
-                                    </div>
-                                    <span className="gate-role-title">CREATOR MODE</span>
-                                </div>
+                    {errorMsg && !lockdownTimeText && (
+                        <div className="flex items-center gap-3 p-3 bg-error-container/10 border border-error/20 rounded text-error text-body-sm">
+                            <span className="material-symbols-outlined text-[18px]">error</span>
+                            <span className="font-medium">{errorMsg}</span>
+                        </div>
+                    )}
+
+                    <div className="space-y-2">
+                        <label className="text-label-md text-on-surface-variant uppercase tracking-widest block font-bold text-center">SELECT WORKSPACE ROLE</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            <div 
+                                className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer transition-all micro-interaction ${
+                                    role === 'Admin' 
+                                        ? 'border-primary bg-primary-container/10 text-primary' 
+                                        : 'border-outline-variant/30 bg-surface-container-low text-on-surface-variant hover:border-outline'
+                                }`}
+                                onClick={() => !lockdownTimeText && setRole('Admin')}
+                            >
+                                <span className="material-symbols-outlined text-[20px] mb-1">admin_panel_settings</span>
+                                <span className="text-[9px] font-bold tracking-wider uppercase text-center">Admin</span>
+                            </div>
+                            <div 
+                                className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer transition-all micro-interaction ${
+                                    role === 'Creator' 
+                                        ? 'border-primary bg-primary-container/10 text-primary' 
+                                        : 'border-outline-variant/30 bg-surface-container-low text-on-surface-variant hover:border-outline'
+                                }`}
+                                onClick={() => !lockdownTimeText && setRole('Creator')}
+                            >
+                                <span className="material-symbols-outlined text-[20px] mb-1">palette</span>
+                                <span className="text-[9px] font-bold tracking-wider uppercase text-center">Creator</span>
+                            </div>
+                            <div 
+                                className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer transition-all micro-interaction ${
+                                    role === 'Viewer' 
+                                        ? 'border-primary bg-primary-container/10 text-primary' 
+                                        : 'border-outline-variant/30 bg-surface-container-low text-on-surface-variant hover:border-outline'
+                                }`}
+                                onClick={() => !lockdownTimeText && setRole('Viewer')}
+                            >
+                                <span className="material-symbols-outlined text-[20px] mb-1">visibility</span>
+                                <span className="text-[9px] font-bold tracking-wider uppercase text-center">Viewer</span>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="form-group" style={{ marginBottom: '0.5rem' }}>
-                            <label htmlFor="unlockPin" className="gate-label">
-                                GAT STAFF ACCESS KEY <span className="required" style={{ color: '#ef4444' }}>*</span>
+                    {role !== 'Viewer' && (
+                        <div className="space-y-2 animate-fade-in">
+                            <label htmlFor="unlockPin" className="text-label-md text-on-surface-variant uppercase tracking-widest block font-bold">
+                                ACCESS KEY <span className="text-error">*</span>
                             </label>
-                            <div className="gate-input-wrapper">
+                            <div className="relative">
                                 <input
                                     type={showPasscode ? 'text' : 'password'}
                                     id="unlockPin"
-                                    className="gate-input"
+                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg pl-4 pr-12 py-3 text-body-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                                     placeholder={`Enter ${role} Access Key`}
                                     required
                                     value={passcode}
@@ -165,25 +164,28 @@ export function UnlockModal({ isOpen, onClose }) {
                                 />
                                 <button
                                     type="button"
-                                    className="gate-input-toggle"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface p-1 cursor-pointer"
                                     onClick={() => setShowPasscode(!showPasscode)}
                                     disabled={!!lockdownTimeText}
                                 >
-                                    <i className={`fa-solid ${showPasscode ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                                    <span className="material-symbols-outlined text-[20px]">
+                                        {showPasscode ? 'visibility_off' : 'visibility'}
+                                    </span>
                                 </button>
                             </div>
                         </div>
-                    </div>
-                    <div className="gate-modal-footer">
-                        <button type="button" className="gate-btn-cancel" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="gate-btn-submit" disabled={!!lockdownTimeText}>Enable Edit Mode</button>
-                    </div>
-                    <div className="gate-modal-bottom-text">
-                        GAT ContentManager Internal Content Team
+                    )}
+
+                    <div className="flex gap-3 pt-2">
+                        <button type="button" className="flex-1 bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-3 px-4 rounded-lg text-body-sm transition-all micro-interaction" onClick={onClose}>Cancel</button>
+                        <button type="submit" className="flex-1 bg-primary text-on-primary hover:opacity-90 font-semibold py-3 px-4 rounded-lg text-body-sm transition-all micro-interaction disabled:opacity-50" disabled={!!lockdownTimeText}>
+                            {role === 'Viewer' ? 'Enter Workspace' : 'Enable Edit Mode'}
+                        </button>
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -201,6 +203,7 @@ export function DbSettingsModal({ isOpen, onClose }) {
     }, [isOpen]);
 
     if (!isOpen) return null;
+    if (typeof window === 'undefined') return null;
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -220,42 +223,49 @@ export function DbSettingsModal({ isOpen, onClose }) {
         window.location.reload();
     };
 
-    return (
-        <div className="modal-overlay" style={{ display: 'flex' }}>
-            <div className="modal-card">
-                <div className="modal-card-header">
-                    <h2><i className="fa-solid fa-database"></i> Database Settings</h2>
-                    <button className="modal-close" onClick={onClose} aria-label="Close modal">
-                        <i className="fa-solid fa-xmark"></i>
+    return createPortal(
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
+            <div className="w-full max-w-md bg-surface-container border border-outline-variant/30 rounded-xl p-stack-lg shadow-2xl space-y-5">
+                <div className="flex items-center justify-between border-b border-outline-variant/20 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-primary-container rounded flex items-center justify-center text-on-primary">
+                            <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>database</span>
+                        </div>
+                        <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Database Settings</h2>
+                    </div>
+                    <button className="text-on-surface-variant hover:text-on-surface p-1 micro-interaction" onClick={onClose} aria-label="Close modal">
+                        <span className="material-symbols-outlined text-[20px]">close</span>
                     </button>
                 </div>
-                <form onSubmit={handleSubmit} autoComplete="off">
-                    <div className="modal-card-body">
-                        <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                            <label htmlFor="dbSettingsUrl">Google Apps Script Web App URL</label>
-                            <input
-                                type="url"
-                                id="dbSettingsUrl"
-                                className="form-control"
-                                placeholder="https://script.google.com/macros/s/.../exec"
-                                required
-                                value={url}
-                                onChange={(e) => setUrl(e.target.value)}
-                                style={{ width: '100%', marginTop: '6px' }}
-                            />
-                            <span style={{ fontSize: '11px', color: 'var(--ink-muted)', display: 'block', marginTop: '6px', lineHeight: '1.4' }}>
-                                Paste your deployed Apps Script Web App URL here. This is saved locally in your browser's localStorage and is not shared or checked into Git.
-                            </span>
-                        </div>
+
+                <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
+                    <div className="space-y-2">
+                        <label htmlFor="dbSettingsUrl" className="text-label-md text-on-surface-variant uppercase tracking-widest block font-bold">
+                            Google Apps Script Web App URL
+                        </label>
+                        <input
+                            type="url"
+                            id="dbSettingsUrl"
+                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 py-3 text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                            placeholder="https://script.google.com/macros/s/.../exec"
+                            required
+                            value={url}
+                            onChange={(e) => setUrl(e.target.value)}
+                        />
+                        <p className="text-[11px] text-on-surface-variant/70 leading-relaxed pt-1">
+                            Paste your deployed Apps Script Web App URL here. This is saved locally in your browser's localStorage and is not shared or checked into Git.
+                        </p>
                     </div>
-                    <div className="modal-card-footer" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                        <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
-                        <button type="button" className="btn btn-danger" onClick={handleClear}>Clear Custom URL</button>
-                        <button type="submit" className="btn btn-primary">Save Settings</button>
+
+                    <div className="flex gap-3 pt-2">
+                        <button type="button" className="flex-1 bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction" onClick={onClose}>Cancel</button>
+                        <button type="button" className="flex-1 bg-error-container/20 text-error border border-error/20 hover:bg-error-container/30 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction" onClick={handleClear}>Clear URL</button>
+                        <button type="submit" className="flex-1 bg-primary text-on-primary hover:opacity-90 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction">Save Settings</button>
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -275,6 +285,7 @@ export function DateRangeModal({ isOpen, onClose, onOpenDatePicker }) {
     }, [isOpen, dateRange]);
 
     if (!isOpen) return null;
+    if (typeof window === 'undefined') return null;
 
     const presets = [
         { id: 'auto', label: 'All Time' },
@@ -328,7 +339,6 @@ export function DateRangeModal({ isOpen, onClose, onOpenDatePicker }) {
                 newEnd = getIsoString(new Date(today.getFullYear(), today.getMonth(), 0));
                 break;
             default:
-                // 'auto' / 'all'
                 newStart = '';
                 newEnd = '';
                 break;
@@ -344,50 +354,52 @@ export function DateRangeModal({ isOpen, onClose, onOpenDatePicker }) {
         onClose();
     };
 
-    return (
-        <div className="modal-overlay" style={{ display: 'flex' }}>
-            <div className="modal-card" style={{ maxWidth: '420px' }}>
-                <div className="modal-card-header">
-                    <h2><i className="fa-solid fa-calendar-week"></i> Select Date Range</h2>
-                    <button className="modal-close" onClick={onClose} aria-label="Close modal">
-                        <i className="fa-solid fa-xmark"></i>
+    return createPortal(
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
+            <div className="w-full max-w-[420px] bg-surface-container border border-outline-variant/30 rounded-xl p-stack-lg shadow-2xl space-y-5">
+                <div className="flex items-center justify-between border-b border-outline-variant/20 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-primary-container rounded flex items-center justify-center text-on-primary">
+                            <span className="material-symbols-outlined text-[20px]">date_range</span>
+                        </div>
+                        <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Select Date Range</h2>
+                    </div>
+                    <button className="text-on-surface-variant hover:text-on-surface p-1 micro-interaction" onClick={onClose} aria-label="Close modal">
+                        <span className="material-symbols-outlined text-[20px]">close</span>
                     </button>
                 </div>
-                <div className="modal-card-body">
-                    {/* Preset Buttons */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1.25rem' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Quick Presets</label>
-                        {presets.map((preset) => (
-                            <button
-                                key={preset.id}
-                                type="button"
-                                className="btn btn-outline"
-                                onClick={() => applyPreset(preset.id)}
-                                style={{
-                                    textAlign: 'left',
-                                    justifyContent: 'flex-start',
-                                    padding: '8px 12px',
-                                    fontSize: '0.875rem',
-                                    fontWeight: dateRange.mode === preset.id ? '600' : '400',
-                                    borderColor: dateRange.mode === preset.id ? 'var(--primary)' : 'var(--hairline)',
-                                    color: dateRange.mode === preset.id ? 'var(--primary)' : 'inherit',
-                                    background: dateRange.mode === preset.id ? 'var(--primary-bg)' : 'none'
-                                }}
-                            >
-                                {preset.label}
-                            </button>
-                        ))}
+
+                <div className="space-y-4">
+                    {/* Presets Grid */}
+                    <div className="space-y-2">
+                        <label className="text-label-md text-on-surface-variant uppercase tracking-widest block font-bold">Quick Presets</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {presets.map((preset) => (
+                                <button
+                                    key={preset.id}
+                                    type="button"
+                                    className={`py-2 px-3 text-left rounded text-body-sm font-semibold border transition-all cursor-pointer micro-interaction truncate ${
+                                        dateRange.mode === preset.id
+                                            ? 'border-primary bg-primary-container/10 text-primary'
+                                            : 'border-outline-variant/30 bg-surface-container-low text-on-surface hover:border-outline'
+                                    }`}
+                                    onClick={() => applyPreset(preset.id)}
+                                >
+                                    {preset.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Custom Range Form */}
-                    <form onSubmit={handleCustomApply} style={{ borderTop: '1px solid var(--hairline)', paddingTop: '1rem' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Custom Range</label>
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem' }}>
-                            <div style={{ flex: 1 }}>
-                                <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px' }}>Start Date</label>
+                    <form onSubmit={handleCustomApply} className="space-y-4 pt-3 border-t border-outline-variant/20">
+                        <label className="text-label-md text-on-surface-variant uppercase tracking-widest block font-bold">Custom Range</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[10px] text-on-surface-variant uppercase font-semibold">Start Date</label>
                                 <input
                                     type="text"
-                                    className="form-control custom-date-input"
+                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface cursor-pointer text-center"
                                     placeholder="YYYY-MM-DD"
                                     value={start}
                                     onClick={() => {
@@ -396,14 +408,13 @@ export function DateRangeModal({ isOpen, onClose, onOpenDatePicker }) {
                                         }, start);
                                     }}
                                     readOnly
-                                    style={{ width: '100%', cursor: 'pointer' }}
                                 />
                             </div>
-                            <div style={{ flex: 1 }}>
-                                <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px' }}>End Date</label>
+                            <div className="space-y-1">
+                                <label className="text-[10px] text-on-surface-variant uppercase font-semibold">End Date</label>
                                 <input
                                     type="text"
-                                    className="form-control custom-date-input"
+                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface cursor-pointer text-center"
                                     placeholder="YYYY-MM-DD"
                                     value={end}
                                     onClick={() => {
@@ -412,18 +423,18 @@ export function DateRangeModal({ isOpen, onClose, onOpenDatePicker }) {
                                         }, end);
                                     }}
                                     readOnly
-                                    style={{ width: '100%', cursor: 'pointer' }}
                                 />
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                            <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
-                            <button type="submit" className="btn btn-primary">Apply Range</button>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction" onClick={onClose}>Cancel</button>
+                            <button type="submit" className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction">Apply Range</button>
                         </div>
                     </form>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -453,6 +464,7 @@ export function DatePickerModal({ isOpen, onClose, onSelect, initialDate }) {
     }, [isOpen, initialDate]);
 
     if (!isOpen) return null;
+    if (typeof window === 'undefined') return null;
 
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -478,29 +490,29 @@ export function DatePickerModal({ isOpen, onClose, onSelect, initialDate }) {
         'July', 'August', 'September', 'October', 'November', 'December'
     ];
 
-    return (
-        <div className="modal-overlay" style={{ display: 'flex', zIndex: 20000 }}>
-            <div className="modal-card" style={{ maxWidth: '340px', padding: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: 600 }}>Select Date</h3>
-                    <button type="button" className="modal-close" onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>
-                        <i className="fa-solid fa-xmark"></i>
+    return createPortal(
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+            <div className="w-full max-w-[340px] bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-2xl space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b border-outline-variant/20">
+                    <h3 className="text-body-sm font-semibold text-on-surface">Select Date</h3>
+                    <button type="button" className="text-on-surface-variant hover:text-on-surface p-0.5 micro-interaction" onClick={onClose}>
+                        <span className="material-symbols-outlined text-[18px]">close</span>
                     </button>
                 </div>
                 
                 {/* Calendar Navigation */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <button type="button" className="calendar-nav-btn" onClick={() => shiftMonth(-1)} style={{ padding: '4px 8px' }}>
-                        <i className="fa-solid fa-chevron-left" style={{ fontSize: '10px' }}></i>
+                <div className="flex justify-between items-center">
+                    <button type="button" className="w-8 h-8 flex items-center justify-center rounded border border-outline-variant/30 hover:bg-surface-container-high text-on-surface cursor-pointer" onClick={() => shiftMonth(-1)}>
+                        <span className="material-symbols-outlined text-[18px]">chevron_left</span>
                     </button>
-                    <span style={{ fontWeight: 600, fontSize: '13px' }}>{monthNames[month]} {year}</span>
-                    <button type="button" className="calendar-nav-btn" onClick={() => shiftMonth(1)} style={{ padding: '4px 8px' }}>
-                        <i className="fa-solid fa-chevron-right" style={{ fontSize: '10px' }}></i>
+                    <span className="font-semibold text-body-sm text-on-surface">{monthNames[month]} {year}</span>
+                    <button type="button" className="w-8 h-8 flex items-center justify-center rounded border border-outline-variant/30 hover:bg-surface-container-high text-on-surface cursor-pointer" onClick={() => shiftMonth(1)}>
+                        <span className="material-symbols-outlined text-[18px]">chevron_right</span>
                     </button>
                 </div>
 
                 {/* Weekday headers */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontSize: '11px', fontWeight: 600, color: 'var(--ink-muted)', marginBottom: '6px' }}>
+                <div className="grid grid-cols-7 text-center text-[10px] font-bold text-on-surface-variant uppercase tracking-widest py-1 border-b border-outline-variant/10">
                     <div>Su</div>
                     <div>Mo</div>
                     <div>Tu</div>
@@ -511,13 +523,13 @@ export function DatePickerModal({ isOpen, onClose, onSelect, initialDate }) {
                 </div>
 
                 {/* Calendar Days */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                <div className="grid grid-cols-7 gap-1">
                     {Array.from({ length: totalCells }).map((_, cellIndex) => {
                         const dayNumber = cellIndex - startOffset + 1;
                         const isInMonth = dayNumber >= 1 && dayNumber <= daysInMonth;
 
                         if (!isInMonth) {
-                            return <div key={cellIndex} style={{ height: '32px' }}></div>;
+                            return <div key={cellIndex} className="h-8"></div>;
                         }
 
                         const dayStr = String(dayNumber);
@@ -528,22 +540,11 @@ export function DatePickerModal({ isOpen, onClose, onSelect, initialDate }) {
                                 key={cellIndex}
                                 type="button"
                                 onClick={() => handleSelectDay(dayNumber)}
-                                style={{
-                                    height: '32px',
-                                    width: '100%',
-                                    border: 'none',
-                                    borderRadius: 'var(--radius-sm)',
-                                    background: isSelected ? 'var(--primary)' : 'none',
-                                    color: isSelected ? '#ffffff' : 'inherit',
-                                    fontSize: '12px',
-                                    fontWeight: isSelected ? '700' : '500',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    transition: 'background 0.15s ease'
-                                }}
-                                className="calendar-picker-day-btn"
+                                className={`h-8 w-full border-none rounded text-body-sm cursor-pointer flex items-center justify-center transition-all micro-interaction ${
+                                    isSelected 
+                                        ? 'bg-primary text-on-primary font-bold' 
+                                        : 'bg-transparent text-on-surface hover:bg-surface-container-high font-medium'
+                                }`}
                             >
                                 {dayStr}
                             </button>
@@ -551,11 +552,12 @@ export function DatePickerModal({ isOpen, onClose, onSelect, initialDate }) {
                     })}
                 </div>
 
-                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px', borderTop: '1px solid var(--hairline)', paddingTop: '8px' }}>
-                    <button type="button" className="btn btn-outline btn-sm" onClick={onClose}>Close</button>
+                <div className="flex justify-end pt-2 border-t border-outline-variant/10">
+                    <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-1.5 px-3 rounded text-body-sm transition-all micro-interaction" onClick={onClose}>Close</button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -563,21 +565,20 @@ export function DatePickerModal({ isOpen, onClose, onSelect, initialDate }) {
 // 5. CALENDAR EXPORT MODAL
 // ----------------------------------------------------
 export function CalendarExportModal({ isOpen, onClose }) {
+    const { memberListData, categoriesData } = useDashboard();
     const [exportTheme, setExportTheme] = useState('light');
     const [isLoading, setIsLoading] = useState(false);
     const [previewUrl, setPreviewUrl] = useState('');
     const [imageBlob, setImageBlob] = useState(null);
 
-    // Filter states
     const [showMeetings, setShowMeetings] = useState(true);
     const [selectedPic, setSelectedPic] = useState('All');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [hasMeetings, setHasMeetings] = useState(false);
 
-    // Regenerate preview whenever the modal opens or theme changes
     useEffect(() => {
         if (isOpen) {
-            const isBodyDark = document.body.classList.contains('dark-mode');
+            const isBodyDark = document.body.classList.contains('dark-mode') || true;
             setExportTheme(isBodyDark ? 'dark' : 'light');
             
             const target = document.querySelector('.calendar-shell');
@@ -616,10 +617,8 @@ export function CalendarExportModal({ isOpen, onClose }) {
             setPreviewUrl('');
         }
 
-        // Wait a short tick
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        // Create a hidden iframe for consistent aspect ratio
         const iframe = document.createElement('iframe');
         iframe.style.position = 'fixed';
         iframe.style.left = '-9999px';
@@ -632,12 +631,30 @@ export function CalendarExportModal({ isOpen, onClose }) {
         try {
             const doc = iframe.contentDocument || iframe.contentWindow.document;
 
-            // Copy stylesheets and inline styles
-            Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).forEach(el => {
-                doc.head.appendChild(el.cloneNode(true));
+            // Load html2canvas script inside the iframe to sandbox its style parsing
+            const script = doc.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            doc.head.appendChild(script);
+
+            await new Promise((resolve, reject) => {
+                script.onload = resolve;
+                script.onerror = () => reject(new Error('Failed to load html2canvas in iframe'));
             });
 
-            // Inject layout helper styles
+            Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).forEach(el => {
+                if (el.tagName === 'LINK') {
+                    const href = el.getAttribute('href') || '';
+                    if (href.includes('fonts.googleapis.com') || href.includes('fonts.gstatic.com')) {
+                        doc.head.appendChild(el.cloneNode(true));
+                    }
+                } else if (el.tagName === 'STYLE') {
+                    const content = el.textContent || '';
+                    if (!content.includes('oklab') && !content.includes('oklch') && !content.includes('tailwindcss')) {
+                        doc.head.appendChild(el.cloneNode(true));
+                    }
+                }
+            });
+
             const style = document.createElement('style');
             style.textContent = `
                 body {
@@ -652,14 +669,16 @@ export function CalendarExportModal({ isOpen, onClose }) {
                     max-width: 900px !important;
                     max-height: 800px !important;
                     box-shadow: none !important;
-                    border: 1.5px solid var(--hairline-strong) !important;
-                    border-radius: var(--radius-lg) !important;
+                    border: 1.5px solid #3c4a42 !important;
+                    border-radius: 8px !important;
                     margin: 0 !important;
                     padding: 24px !important;
                     display: flex !important;
                     flex-direction: column !important;
                     box-sizing: border-box !important;
                     gap: 16px !important;
+                    background-color: ${exportTheme === 'light' ? '#ffffff' : '#0b1326'} !important;
+                    color: ${exportTheme === 'light' ? '#09090b' : '#dae2fd'} !important;
                 }
                 .calendar-toolbar {
                     display: flex !important;
@@ -674,8 +693,8 @@ export function CalendarExportModal({ isOpen, onClose }) {
                     gap: 12px !important;
                     width: 100% !important;
                     padding-bottom: 8px !important;
-                    border-bottom: 1px solid var(--hairline) !important;
-                    color: var(--ink-secondary) !important;
+                    border-bottom: 1.5px solid #3c4a42 !important;
+                    color: ${exportTheme === 'light' ? '#71717a' : '#bbcabf'} !important;
                 }
                 .calendar-days {
                     display: grid !important;
@@ -689,12 +708,13 @@ export function CalendarExportModal({ isOpen, onClose }) {
                     min-height: 0 !important;
                     height: 100% !important;
                     padding: 10px 8px !important;
-                    border: 1.5px solid var(--hairline-strong) !important;
-                    border-radius: var(--radius-md) !important;
+                    border: 1px solid #1e293b !important;
+                    border-radius: 4px !important;
                     display: flex !important;
                     flex-direction: column !important;
                     justify-content: flex-start !important;
                     box-sizing: border-box !important;
+                    background-color: ${exportTheme === 'light' ? '#f4f4f6' : '#131b2e'} !important;
                 }
                 .calendar-day::after {
                     display: none !important;
@@ -715,19 +735,72 @@ export function CalendarExportModal({ isOpen, onClose }) {
                 .calendar-day-task-pill {
                     font-size: 11px !important;
                     padding: 3px 6px !important;
-                    border-radius: var(--radius-sm) !important;
+                    border-radius: 2px !important;
                     font-weight: 700 !important;
                 }
                 .calendar-day-task-category {
                     font-size: 11px !important;
                     font-weight: 600 !important;
                     margin-top: 2px !important;
+                    color: ${exportTheme === 'light' ? '#3f3f46' : '#e5e7eb'} !important;
                 }
-                body.dark-mode .calendar-day-task-category {
-                    color: #e5e7eb !important;
+                
+                /* Standard fonts and fallback styles */
+                body {
+                    font-family: 'Inter', sans-serif !important;
                 }
-                body.dark-mode .calendar-weekdays {
-                    color: #e5e7eb !important;
+                h1, h2, h3, h4, h5, h6 {
+                    font-family: 'Hanken Grotesk', sans-serif !important;
+                }
+                .material-symbols-outlined {
+                    font-family: 'Material Symbols Outlined' !important;
+                    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
+                    display: inline-block !important;
+                    line-height: 1 !important;
+                }
+
+                /* Basic color fallbacks */
+                .text-primary { color: #10b981 !important; }
+                .text-on-surface-variant { color: ${exportTheme === 'light' ? '#4b5563' : '#9ca3af'} !important; }
+                
+                /* Category/PIC badge color definitions */
+                .bg-emerald-500\\/10 { background-color: rgba(16, 185, 129, 0.1) !important; }
+                .text-emerald-400 { color: #34d399 !important; }
+                .border-emerald-500\\/20 { border-color: rgba(16, 185, 129, 0.2) !important; }
+
+                .bg-sky-500\\/10 { background-color: rgba(14, 165, 233, 0.1) !important; }
+                .text-sky-400 { color: #38bdf8 !important; }
+                .border-sky-500\\/20 { border-color: rgba(14, 165, 233, 0.2) !important; }
+
+                .bg-purple-500\\/10 { background-color: rgba(168, 85, 247, 0.1) !important; }
+                .text-purple-400 { color: #c084fc !important; }
+                .border-purple-500\\/20 { border-color: rgba(168, 85, 247, 0.2) !important; }
+
+                .bg-pink-500\\/10 { background-color: rgba(236, 72, 153, 0.1) !important; }
+                .text-pink-400 { color: #f472b6 !important; }
+                .border-pink-500\\/20 { border-color: rgba(236, 72, 153, 0.2) !important; }
+
+                .bg-amber-500\\/10 { background-color: rgba(245, 158, 11, 0.1) !important; }
+                .text-amber-400 { color: #fbbf24 !important; }
+                .border-amber-500\\/20 { border-color: rgba(245, 158, 11, 0.2) !important; }
+
+                .bg-rose-500\\/10 { background-color: rgba(244, 63, 94, 0.1) !important; }
+                .text-rose-400 { color: #fb7185 !important; }
+                .border-rose-500\\/20 { border-color: rgba(244, 63, 94, 0.2) !important; }
+
+                .bg-blue-500\\/10 { background-color: rgba(59, 130, 246, 0.1) !important; }
+                .text-blue-400 { color: #60a5fa !important; }
+                .border-blue-500\\/20 { border-color: rgba(59, 130, 246, 0.2) !important; }
+
+                /* Status day backgrounds */
+                .bg-emerald-500\\/5, .bg-rose-500\\/5, .bg-sky-500\\/5, .bg-amber-500\\/5 { 
+                    background-color: ${exportTheme === 'light' ? 'rgba(59, 130, 246, 0.04)' : 'rgba(59, 130, 246, 0.08)'} !important; 
+                }
+                .border-emerald-500\\/10, .border-rose-500\\/10, .border-sky-500\\/10, .border-amber-500\\/10 {
+                    border-color: ${exportTheme === 'light' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(59, 130, 246, 0.2)'} !important;
+                }
+                .text-emerald-400, .text-rose-400, .text-sky-400, .text-amber-400 { 
+                    color: ${exportTheme === 'light' ? '#2563eb' : '#60a5fa'} !important; 
                 }
             `;
             doc.head.appendChild(style);
@@ -743,15 +816,20 @@ export function CalendarExportModal({ isOpen, onClose }) {
             if (editorEl) {
                 editorEl.style.display = 'none';
             }
-            // Remove navigation and export/today actions in the exported image
             clone.querySelectorAll('.calendar-nav-btn').forEach(el => el.remove());
             const toolbarActions = clone.querySelector('.calendar-toolbar-actions');
             if (toolbarActions) {
                 toolbarActions.remove();
             }
             clone.removeAttribute('style');
+ 
+            // Remove the "task_alt" (uploaded checkmark icon) from the calendar days in clone
+            clone.querySelectorAll('span.material-symbols-outlined').forEach(el => {
+                if (el.textContent.trim() === 'task_alt') {
+                    el.remove();
+                }
+            });
 
-            // Filter elements based on user options
             if (!showMeetings) {
                 clone.querySelectorAll('.calendar-day-task-item[data-is-meeting="true"]').forEach(el => el.remove());
             }
@@ -774,7 +852,6 @@ export function CalendarExportModal({ isOpen, onClose }) {
                 });
             }
 
-            // Remove active highlights
             clone.querySelectorAll('.calendar-day').forEach(el => {
                 el.classList.remove('today');
                 el.classList.remove('selected');
@@ -782,7 +859,28 @@ export function CalendarExportModal({ isOpen, onClose }) {
 
             doc.body.appendChild(clone);
 
-            // Wait for stylesheet loaded
+            // Filter out any CSS rules in the iframe stylesheets that contain 'oklab' or 'oklch'
+            try {
+                for (let i = 0; i < doc.styleSheets.length; i++) {
+                    const sheet = doc.styleSheets[i];
+                    try {
+                        const rules = sheet.cssRules || sheet.rules;
+                        if (rules) {
+                            for (let j = rules.length - 1; j >= 0; j--) {
+                                const ruleText = rules[j].cssText || '';
+                                if (ruleText.includes('oklab') || ruleText.includes('oklch')) {
+                                    sheet.deleteRule(j);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // Ignore stylesheet access errors
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to filter oklab stylesheet rules:', err);
+            }
+
             await new Promise(resolve => setTimeout(resolve, 150));
 
             const captureTarget = doc.querySelector('.calendar-shell');
@@ -790,13 +888,13 @@ export function CalendarExportModal({ isOpen, onClose }) {
                 throw new Error('Capture target not found');
             }
 
-            if (typeof window === 'undefined' || !window.html2canvas) {
-                throw new Error('html2canvas library is not loaded yet');
+            if (!iframe.contentWindow || !iframe.contentWindow.html2canvas) {
+                throw new Error('html2canvas library is not loaded inside the iframe');
             }
 
-            const canvas = await window.html2canvas(captureTarget, {
-                backgroundColor: exportTheme === 'light' ? '#ffffff' : '#0c0c0e',
-                scale: 3,
+            const canvas = await iframe.contentWindow.html2canvas(captureTarget, {
+                backgroundColor: exportTheme === 'light' ? '#ffffff' : '#0b1326',
+                scale: 2,
                 logging: false,
                 useCORS: true,
                 width: 900,
@@ -847,64 +945,33 @@ export function CalendarExportModal({ isOpen, onClose }) {
     };
 
     if (!isOpen) return null;
+    if (typeof window === 'undefined') return null;
 
-    return (
-        <div className="modal-overlay" style={{ display: 'flex', zIndex: 12000 }}>
-            <div className="calendar-export-content" style={{
-                backgroundColor: 'var(--surface)',
-                border: '1px solid var(--hairline)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow-overlay)',
-                display: 'flex',
-                flexDirection: 'column',
-                maxWidth: '680px',
-                width: '100%',
-                overflow: 'hidden'
-            }}>
-                <div className="calendar-export-header" style={{
-                    padding: '16px 20px',
-                    borderBottom: '1px solid var(--hairline)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                        <i className="fa-solid fa-file-image" style={{ color: 'var(--primary)' }}></i> Export Calendar
+    return createPortal(
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
+            <div className="w-full max-w-[680px] bg-surface-container border border-outline-variant/30 rounded-xl overflow-hidden flex flex-col shadow-2xl">
+                <div className="px-5 py-4 border-b border-outline-variant/20 flex items-center justify-between">
+                    <h3 className="text-body-sm font-semibold flex items-center gap-2 text-on-surface">
+                        <span className="material-symbols-outlined text-primary text-[20px]">image</span> Export Calendar
                     </h3>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto', marginRight: '16px' }}>
-                        <span style={{ fontSize: '11px', color: 'var(--ink-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Theme:</span>
-                        <div style={{ display: 'flex', background: 'var(--canvas)', borderRadius: 'var(--radius-sm)', padding: '2px', border: '1px solid var(--hairline)' }}>
+                    <div className="flex gap-3 items-center ml-auto mr-4">
+                        <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Theme:</span>
+                        <div className="flex bg-surface-container-low rounded border border-outline-variant/20 p-0.5">
                             <button 
                                 type="button" 
                                 onClick={() => setExportTheme('light')} 
-                                style={{
-                                    padding: '4px 10px',
-                                    fontSize: '11px',
-                                    border: 'none',
-                                    borderRadius: 'var(--radius-xs)',
-                                    background: exportTheme === 'light' ? 'var(--surface)' : 'transparent',
-                                    color: exportTheme === 'light' ? 'var(--primary)' : 'var(--ink-muted)',
-                                    fontWeight: exportTheme === 'light' ? 700 : 500,
-                                    cursor: 'pointer',
-                                    boxShadow: exportTheme === 'light' ? 'var(--shadow-soft)' : 'none'
-                                }}
+                                className={`px-3 py-1 text-[10px] font-bold rounded cursor-pointer transition-all ${
+                                    exportTheme === 'light' ? 'bg-surface text-primary shadow' : 'text-on-surface-variant hover:text-on-surface'
+                                }`}
                             >
                                 Light
                             </button>
                             <button 
                                 type="button" 
                                 onClick={() => setExportTheme('dark')} 
-                                style={{
-                                    padding: '4px 10px',
-                                    fontSize: '11px',
-                                    border: 'none',
-                                    borderRadius: 'var(--radius-xs)',
-                                    background: exportTheme === 'dark' ? 'var(--surface)' : 'transparent',
-                                    color: exportTheme === 'dark' ? 'var(--primary)' : 'var(--ink-muted)',
-                                    fontWeight: exportTheme === 'dark' ? 700 : 500,
-                                    cursor: 'pointer',
-                                    boxShadow: exportTheme === 'dark' ? 'var(--shadow-soft)' : 'none'
-                                }}
+                                className={`px-3 py-1 text-[10px] font-bold rounded cursor-pointer transition-all ${
+                                    exportTheme === 'dark' ? 'bg-surface text-primary shadow' : 'text-on-surface-variant hover:text-on-surface'
+                                }`}
                             >
                                 Dark
                             </button>
@@ -912,162 +979,101 @@ export function CalendarExportModal({ isOpen, onClose }) {
                     </div>
                     <button 
                         type="button" 
-                        className="modal-close" 
+                        className="text-on-surface-variant hover:text-on-surface p-1 micro-interaction" 
                         onClick={onClose} 
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '16px', color: 'var(--ink-muted)' }}
                     >
-                        <i className="fa-solid fa-xmark"></i>
+                        <span className="material-symbols-outlined text-[20px]">close</span>
                     </button>
                 </div>
                 {/* Export filter settings */}
-                <div className="calendar-export-settings" style={{
-                    padding: '12px 20px',
-                    borderBottom: '1px solid var(--hairline)',
-                    display: 'flex',
-                    gap: '16px',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    backgroundColor: 'var(--surface)'
-                }}>
+                <div className="px-5 py-3 border-b border-outline-variant/20 flex gap-4 items-center flex-wrap bg-surface-container-lowest">
                     {hasMeetings && (
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', userSelect: 'none', margin: 0, color: 'var(--ink)', marginRight: '8px' }}>
+                        <label className="flex items-center gap-2 text-body-sm cursor-pointer select-none text-on-surface mr-2">
                             <input 
                                 type="checkbox" 
                                 checked={showMeetings} 
                                 onChange={(e) => setShowMeetings(e.target.checked)} 
-                                style={{ cursor: 'pointer', margin: 0 }} 
+                                className="cursor-pointer rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-4 w-4" 
                             />
-                            <span>Include Meetings</span>
+                            <span>Meetings</span>
                         </label>
                     )}
                     
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-muted)', margin: 0 }}>PIC:</label>
+                    <div className="flex items-center gap-2">
+                        <label className="text-body-sm font-semibold text-on-surface-variant">PIC:</label>
                         <select 
-                            className="form-control" 
+                            className="bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                             value={selectedPic} 
                             onChange={(e) => setSelectedPic(e.target.value)}
-                            style={{ 
-                                padding: '4px 8px', 
-                                fontSize: '12px', 
-                                height: 'auto', 
-                                width: '120px', 
-                                borderRadius: 'var(--radius-sm)', 
-                                border: '1px solid var(--hairline)',
-                                background: 'var(--surface)',
-                                color: 'var(--ink)'
-                            }}
                         >
                             <option value="All">All PICs</option>
-                            <option value="Kelvin">Kelvin</option>
-                            <option value="Felix">Felix</option>
-                            <option value="Eduard">Eduard</option>
-                            <option value="Anthoni">Anthoni</option>
-                            <option value="Leonardi">Leonardi</option>
-                            <option value="Ruliyanto">Ruliyanto</option>
-                            <option value="Rafael">Rafael</option>
+                            {memberListData.map(m => (
+                                <option key={m.NAMA} value={m.NAMA}>{m.NAMA}</option>
+                            ))}
                         </select>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-muted)', margin: 0 }}>Category:</label>
+                    <div className="flex items-center gap-2">
+                        <label className="text-body-sm font-semibold text-on-surface-variant">Category:</label>
                         <select 
-                            className="form-control" 
+                            className="bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                             value={selectedCategory} 
                             onChange={(e) => setSelectedCategory(e.target.value)}
-                            style={{ 
-                                padding: '4px 8px', 
-                                fontSize: '12px', 
-                                height: 'auto', 
-                                width: '140px', 
-                                borderRadius: 'var(--radius-sm)', 
-                                border: '1px solid var(--hairline)',
-                                background: 'var(--surface)',
-                                color: 'var(--ink)'
-                            }}
                         >
                             <option value="All">All Categories</option>
-                            <option value="Article Reels">Article Reels</option>
-                            <option value="Story Telling">Story Telling</option>
-                            <option value="News">News</option>
-                            <option value="Talking Head">Talking Head</option>
-                            <option value="Clipper">Clipper</option>
-                            <option value="Motion">Motion</option>
+                            {categoriesData.map(c => (
+                                <option key={c.name} value={c.name}>{c.name}</option>
+                            ))}
                         </select>
                     </div>
                 </div>
-                <div className="calendar-export-body" style={{
-                    padding: '20px',
-                    backgroundColor: 'var(--canvas-subtle)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minHeight: '300px',
-                    position: 'relative'
-                }}>
+
+                {/* Preview Canvas */}
+                <div className="p-5 bg-background flex items-center justify-center min-h-[300px] relative overflow-y-auto max-h-[420px]">
                     {isLoading && (
-                        <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '12px',
-                            color: 'var(--ink-muted)'
-                        }}>
-                            <div className="loading-spinner"></div>
-                            <p style={{ fontSize: '13px', margin: 0 }}>Generating calendar preview...</p>
+                        <div className="flex flex-col items-center gap-3 text-on-surface-variant">
+                            <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                            <p className="text-body-sm">Generating calendar preview...</p>
                         </div>
                     )}
                     {!isLoading && previewUrl && (
-                        <div style={{
-                            width: '100%',
-                            border: '1px solid var(--hairline-strong)',
-                            borderRadius: 'var(--radius-md)',
-                            backgroundColor: exportTheme === 'light' ? '#ffffff' : '#0c0c0e',
-                            padding: '8px',
-                            boxShadow: 'var(--shadow-soft)',
-                            display: 'flex',
-                            justifyContent: 'center'
-                        }}>
-                            <img src={previewUrl} alt="Calendar Export Preview" style={{ maxWidth: '100%', height: 'auto', borderRadius: 'var(--radius-sm)', objectFit: 'contain' }} />
+                        <div className={`w-full max-w-[500px] border border-outline-variant/30 rounded-lg p-2 shadow-lg flex justify-center ${
+                            exportTheme === 'light' ? 'bg-[#ffffff]' : 'bg-[#0c0c0e]'
+                        }`}>
+                            <img src={previewUrl} alt="Calendar Export Preview" className="max-w-full h-auto rounded object-contain" />
                         </div>
                     )}
                 </div>
-                <div className="calendar-export-actions" style={{
-                    display: 'flex',
-                    gap: '10px',
-                    padding: '16px 20px',
-                    borderTop: '1px solid var(--hairline)',
-                    justifyContent: 'flex-end',
-                    backgroundColor: 'var(--surface)'
-                }}>
+
+                {/* Actions Footer */}
+                <div className="flex gap-3 px-5 py-4 border-t border-outline-variant/20 justify-end bg-surface-container-lowest">
                     <button 
                         type="button" 
-                        className="btn btn-success" 
-                        onClick={handleCopy} 
-                        disabled={isLoading || !imageBlob}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                    >
-                        <i className="fa-solid fa-copy"></i> Copy Image
-                    </button>
-                    <button 
-                        type="button" 
-                        className="btn btn-primary" 
-                        onClick={handleDownload} 
-                        disabled={isLoading || !previewUrl}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                    >
-                        <i className="fa-solid fa-download"></i> Download PNG
-                    </button>
-                    <button 
-                        type="button" 
-                        className="btn btn-outline" 
+                        className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction" 
                         onClick={onClose}
                     >
-                        Close
+                        Cancel
+                    </button>
+                    <button 
+                        type="button" 
+                        className="bg-surface-container-high text-primary border border-primary/20 hover:bg-primary-container/15 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction flex items-center gap-2 disabled:opacity-50" 
+                        onClick={handleCopy} 
+                        disabled={isLoading || !imageBlob}
+                    >
+                        <span className="material-symbols-outlined text-[18px]">content_copy</span> Copy Image
+                    </button>
+                    <button 
+                        type="button" 
+                        className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction flex items-center gap-2 disabled:opacity-50" 
+                        onClick={handleDownload} 
+                        disabled={isLoading || !previewUrl}
+                    >
+                        <span className="material-symbols-outlined text-[18px]">download</span> Download PNG
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -1079,57 +1085,27 @@ export function DeleteConfirmModal({ isOpen, onClose, onConfirm, message }) {
     if (typeof window === 'undefined') return null;
 
     return createPortal(
-        <div className="modal-overlay" style={{ display: 'flex', zIndex: 12000 }}>
-            <div className="delete-confirm-content" style={{
-                backgroundColor: 'var(--surface)',
-                border: '1px solid var(--hairline)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow-overlay)',
-                padding: '24px',
-                maxWidth: '400px',
-                width: '100%',
-                textAlign: 'center',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '16px'
-            }}>
-                <div className="delete-confirm-icon" style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--danger-bg)',
-                    color: 'var(--danger)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '24px'
-                }}>
-                    <i className="fa-solid fa-triangle-exclamation"></i>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
+            <div className="w-full max-w-[400px] bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl flex flex-col items-center gap-4 text-center">
+                <div className="w-14 h-14 rounded-full bg-error-container/20 text-error border border-error/20 flex items-center justify-center text-[28px]">
+                    <span className="material-symbols-outlined text-[32px]">warning</span>
                 </div>
-                <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: 'var(--ink)' }}>Confirm Delete</h3>
-                <p style={{ fontSize: '13px', color: 'var(--ink-muted)', margin: 0, lineHeight: '1.5' }}>
-                    {message || 'Are you sure you want to delete this meeting memo?'}
+                <h3 className="text-headline-md font-bold text-on-surface">Confirm Delete</h3>
+                <p className="text-body-sm text-on-surface-variant/80 leading-relaxed">
+                    {message || 'Are you sure you want to delete this item?'}
                 </p>
-                <div className="delete-confirm-actions" style={{
-                    display: 'flex',
-                    gap: '10px',
-                    width: '100%',
-                    marginTop: '8px'
-                }}>
+                <div className="flex gap-3 w-full mt-2">
                     <button 
                         type="button" 
-                        className="btn btn-outline" 
+                        className="flex-1 bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction" 
                         onClick={onClose}
-                        style={{ flex: 1 }}
                     >
                         Cancel
                     </button>
                     <button 
                         type="button" 
-                        className="btn btn-danger" 
+                        className="flex-1 bg-error-container/20 text-error border border-error/20 hover:bg-error-container/30 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction" 
                         onClick={onConfirm}
-                        style={{ flex: 1 }}
                     >
                         Delete
                     </button>
@@ -1140,6 +1116,9 @@ export function DeleteConfirmModal({ isOpen, onClose, onConfirm, message }) {
     );
 }
 
+// ----------------------------------------------------
+// 7. LINK INSERT MODAL (Rich Text Editor Helper)
+// ----------------------------------------------------
 export function LinkModal({ isOpen, onClose, onConfirm }) {
     const [url, setUrl] = useState('https://');
 
@@ -1150,6 +1129,7 @@ export function LinkModal({ isOpen, onClose, onConfirm }) {
     }, [isOpen]);
 
     if (!isOpen) return null;
+    if (typeof window === 'undefined') return null;
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -1157,54 +1137,30 @@ export function LinkModal({ isOpen, onClose, onConfirm }) {
     };
 
     return createPortal(
-        <div className="modal-overlay" style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 15000,
-            backdropFilter: 'blur(4px)'
-        }}>
-            <div className="modal-card" style={{
-                width: '100%',
-                maxWidth: '400px',
-                background: 'var(--surface-elevated, #18181b)',
-                border: '1px solid var(--hairline, #27272a)',
-                borderRadius: '12px',
-                padding: '24px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px',
-                boxShadow: 'var(--shadow-lg, 0 10px 25px -5px rgba(0, 0, 0, 0.3))'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--hairline)', paddingBottom: '12px' }}>
-                    <i className="fa-solid fa-link" style={{ color: 'var(--primary)', fontSize: '18px' }}></i>
-                    <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--ink)' }}>Insert Link</h3>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
+            <div className="w-full max-w-[400px] bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl space-y-4">
+                <div className="flex items-center gap-3 border-b border-outline-variant/20 pb-3">
+                    <span className="material-symbols-outlined text-primary text-[20px]">link</span>
+                    <h3 className="text-body-lg font-bold text-on-surface">Insert Link</h3>
                 </div>
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink-muted)' }}>Link URL</label>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-label-md text-on-surface-variant uppercase tracking-widest block font-bold">Link URL</label>
                         <input
                             type="text"
-                            className="form-control"
+                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                             value={url}
                             onChange={(e) => setUrl(e.target.value)}
                             placeholder="https://example.com"
                             required
                             autoFocus
-                            style={{ width: '100%', fontFamily: 'inherit' }}
                         />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
-                        <button type="button" className="btn btn-outline" onClick={onClose} style={{ minWidth: '80px' }}>
+                    <div className="flex gap-3 justify-end pt-2">
+                        <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction" onClick={onClose}>
                             Cancel
                         </button>
-                        <button type="submit" className="btn btn-primary" style={{ minWidth: '80px' }}>
+                        <button type="submit" className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction">
                             Insert
                         </button>
                     </div>
@@ -1229,49 +1185,26 @@ export function HelpGuideModal({ isOpen, onClose }) {
         switch (activeTab) {
             case 'roles':
                 return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div style={{
-                            padding: '10px 14px',
-                            borderRadius: '6px',
-                            backgroundColor: 'var(--primary-bg)',
-                            border: '1px solid var(--primary-focus)',
-                            fontSize: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            color: 'var(--ink)'
-                        }}>
-                            <i className="fa-solid fa-circle-check" style={{ color: 'var(--primary)' }}></i>
-                            <span>You are currently authenticated under <strong>{userRole === 'Admin' ? 'ADMIN MODE' : 'CREATOR MODE'}</strong>.</span>
+                    <div className="space-y-4">
+                        <div className="p-3 bg-primary/10 border border-primary/25 rounded text-body-sm flex items-center gap-2.5 text-on-surface">
+                            <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                            <span>Authenticated under <strong className="text-primary">{userRole === 'Admin' ? 'ADMIN MODE' : userRole === 'Creator' ? 'CREATOR MODE' : 'VIEWER MODE'}</strong>.</span>
                         </div>
 
-                        <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.5', color: 'var(--ink-muted)' }}>
-                            GAT ContentManager dynamically adapts its interface and access controls based on the authenticated role.
+                        <p className="text-body-sm text-on-surface-variant/80 leading-relaxed">
+                            Content suite dynamically adapts its interface and access controls based on the authenticated role.
                         </p>
                         
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr 1fr',
-                            gap: '12px',
-                            marginTop: '4px'
-                        }}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
                             {/* Admin Card */}
-                            <div style={{
-                                border: userRole === 'Admin' ? '2px solid var(--primary)' : '1px solid var(--hairline-strong)',
-                                borderRadius: '8px',
-                                padding: '16px',
-                                backgroundColor: userRole === 'Admin' ? 'var(--primary-bg-strong)' : 'var(--canvas)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '8px',
-                                opacity: userRole === 'Admin' ? 1 : 0.6,
-                                transition: 'all 0.2s'
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)' }}>
-                                    <i className="fa-solid fa-user-gear" style={{ fontSize: '16px' }}></i>
-                                    <span style={{ fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em' }}>ADMIN MODE</span>
+                            <div className={`border rounded-lg p-4 bg-surface-container-lowest flex flex-col gap-2 transition-all duration-200 ${
+                                userRole === 'Admin' ? 'border-primary shadow-[0_0_8px_rgba(78,222,163,0.1)]' : 'border-outline-variant/30 opacity-60'
+                            }`}>
+                                <div className="flex items-center gap-2 text-primary font-bold text-body-sm uppercase tracking-wider">
+                                    <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+                                    <span>ADMIN MODE</span>
                                 </div>
-                                <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '11px', color: 'var(--ink-muted)', lineHeight: '1.6' }}>
+                                <ul className="list-disc pl-4 text-[10px] text-on-surface-variant/90 space-y-1.5 leading-normal">
                                     <li>Full read & write access to all tabs.</li>
                                     <li>Add, edit, or delete any task, calendar event, meeting memo, or draft.</li>
                                     <li>Authorized to sync and write back records to the main database.</li>
@@ -1279,101 +1212,100 @@ export function HelpGuideModal({ isOpen, onClose }) {
                             </div>
 
                             {/* Creator Card */}
-                            <div style={{
-                                border: userRole === 'Creator' ? '2px solid var(--primary)' : '1px solid var(--hairline-strong)',
-                                borderRadius: '8px',
-                                padding: '16px',
-                                backgroundColor: userRole === 'Creator' ? 'var(--primary-bg-strong)' : 'var(--canvas)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '8px',
-                                opacity: userRole === 'Creator' ? 1 : 0.6,
-                                transition: 'all 0.2s'
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)' }}>
-                                    <i className="fa-solid fa-palette" style={{ fontSize: '16px' }}></i>
-                                    <span style={{ fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em' }}>CREATOR MODE</span>
+                            <div className={`border rounded-lg p-4 bg-surface-container-lowest flex flex-col gap-2 transition-all duration-200 ${
+                                userRole === 'Creator' ? 'border-primary shadow-[0_0_8px_rgba(78,222,163,0.1)]' : 'border-outline-variant/30 opacity-60'
+                            }`}>
+                                <div className="flex items-center gap-2 text-primary font-bold text-body-sm uppercase tracking-wider">
+                                    <span className="material-symbols-outlined text-[18px]">palette</span>
+                                    <span>CREATOR MODE</span>
                                 </div>
-                                <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '11px', color: 'var(--ink-muted)', lineHeight: '1.6' }}>
+                                <ul className="list-disc pl-4 text-[10px] text-on-surface-variant/90 space-y-1.5 leading-normal">
                                     <li>Optimized read-focused workstation.</li>
                                     <li>Can view analytics, calendars, and dashboards without accidental edits.</li>
                                     <li>Full permissions to add and edit meeting memos and storyboard drafts.</li>
                                 </ul>
                             </div>
+
+                            {/* Viewer Card */}
+                            <div className={`border rounded-lg p-4 bg-surface-container-lowest flex flex-col gap-2 transition-all duration-200 ${
+                                userRole === 'Viewer' ? 'border-primary shadow-[0_0_8px_rgba(78,222,163,0.1)]' : 'border-outline-variant/30 opacity-60'
+                            }`}>
+                                <div className="flex items-center gap-2 text-primary font-bold text-body-sm uppercase tracking-wider">
+                                    <span className="material-symbols-outlined text-[18px]">visibility</span>
+                                    <span>VIEWER MODE</span>
+                                </div>
+                                <ul className="list-disc pl-4 text-[10px] text-on-surface-variant/90 space-y-1.5 leading-normal">
+                                    <li>Strictly read-only monitoring dashboard.</li>
+                                    <li>Can view main dashboard and performance analytics charts.</li>
+                                    <li>All content database forms, storyboards, and calendar schedulers are hidden.</li>
+                                </ul>
+                            </div>
                         </div>
                         
-                        <div style={{
-                            fontSize: '11px',
-                            color: 'var(--ink-faint)',
-                            borderTop: '1px solid var(--hairline)',
-                            paddingTop: '10px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                        }}>
-                            <i className="fa-solid fa-circle-info"></i>
+                        <div className="text-[11px] text-on-surface-variant/50 border-t border-outline-variant/10 pt-3 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[14px]">info</span>
                             <span>Workspace role can be changed on the Lock screen by re-entering the staff key.</span>
                         </div>
                     </div>
                 );
             case 'workflows':
                 return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '350px', overflowY: 'auto', paddingRight: '4px' }}>
-                        <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.5', color: 'var(--ink-muted)' }}>
+                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                        <p className="text-body-sm text-on-surface-variant/80 leading-relaxed">
                             Navigate through the sidebar to coordinate content operations:
                         </p>
                         
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                                <div style={{ minWidth: '100px', fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>
-                                    <i className="fa-solid fa-gauge-high" style={{ width: '16px', marginRight: '6px', color: 'var(--primary)' }}></i>Dashboard
+                        <div className="space-y-2 border border-outline-variant/20 rounded-lg p-3 bg-surface-container-lowest text-body-sm divide-y divide-outline-variant/15">
+                            <div className="flex gap-3 items-start pb-2">
+                                <div className="min-w-[100px] font-bold text-on-surface flex items-center gap-1.5 text-body-sm">
+                                    <span className="material-symbols-outlined text-primary text-[16px]">dashboard</span>Home
                                 </div>
-                                <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                                <div className="text-[12px] text-on-surface-variant/85 leading-normal">
                                     Overview of total publication views, reaches, follow growth, and recent performance highlights.
                                 </div>
                             </div>
                             
-                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', borderTop: '1px solid var(--hairline)', paddingTop: '8px' }}>
-                                <div style={{ minWidth: '100px', fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>
-                                    <i className="fa-solid fa-calendar-days" style={{ width: '16px', marginRight: '6px', color: 'var(--primary)' }}></i>Calendar
+                            <div className="flex gap-3 items-start py-2">
+                                <div className="min-w-[100px] font-bold text-on-surface flex items-center gap-1.5 text-body-sm">
+                                    <span className="material-symbols-outlined text-primary text-[16px]">calendar_month</span>Planner
                                 </div>
-                                <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                                <div className="text-[12px] text-on-surface-variant/85 leading-normal">
                                     Visual publication timeline. Useful for seeing scheduled posting dates. Exports clean PNGs for team updates.
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', borderTop: '1px solid var(--hairline)', paddingTop: '8px' }}>
-                                <div style={{ minWidth: '100px', fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>
-                                    <i className="fa-solid fa-list-check" style={{ width: '16px', marginRight: '6px', color: 'var(--primary)' }}></i>Task List
+                            <div className="flex gap-3 items-start py-2">
+                                <div className="min-w-[100px] font-bold text-on-surface flex items-center gap-1.5 text-body-sm">
+                                    <span className="material-symbols-outlined text-primary text-[16px]">assignment</span>Task List
                                 </div>
-                                <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                                <div className="text-[12px] text-on-surface-variant/85 leading-normal">
                                     Tracks action items, priorities, and deadlines. Filter by "Due Today", status, or PIC.
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', borderTop: '1px solid var(--hairline)', paddingTop: '8px' }}>
-                                <div style={{ minWidth: '100px', fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>
-                                    <i className="fa-solid fa-pen-to-square" style={{ width: '16px', marginRight: '6px', color: 'var(--primary)' }}></i>Content Hub
+                            <div className="flex gap-3 items-start py-2">
+                                <div className="min-w-[100px] font-bold text-on-surface flex items-center gap-1.5 text-body-sm">
+                                    <span className="material-symbols-outlined text-primary text-[16px]">folder_open</span>Library
                                 </div>
-                                <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                                <div className="text-[12px] text-on-surface-variant/85 leading-normal">
                                     Where storyboards, hooks, and drafts are written. Helps refine scripts before filming.
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', borderTop: '1px solid var(--hairline)', paddingTop: '8px' }}>
-                                <div style={{ minWidth: '100px', fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>
-                                    <i className="fa-solid fa-handshake" style={{ width: '16px', marginRight: '6px', color: 'var(--primary)' }}></i>Meeting Memos
+                            <div className="flex gap-3 items-start py-2">
+                                <div className="min-w-[100px] font-bold text-on-surface flex items-center gap-1.5 text-body-sm">
+                                    <span className="material-symbols-outlined text-primary text-[16px]">description</span>Memos
                                 </div>
-                                <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                                <div className="text-[12px] text-on-surface-variant/85 leading-normal">
                                     Log meeting notes and action points. Click any card to instantly scroll down and edit its content.
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', borderTop: '1px solid var(--hairline)', paddingTop: '8px' }}>
-                                <div style={{ minWidth: '100px', fontWeight: 600, fontSize: '12px', color: 'var(--ink)' }}>
-                                    <i className="fa-solid fa-chart-line" style={{ width: '16px', marginRight: '6px', color: 'var(--primary)' }}></i>Analytics
+                            <div className="flex gap-3 items-start pt-2">
+                                <div className="min-w-[100px] font-bold text-on-surface flex items-center gap-1.5 text-body-sm">
+                                    <span className="material-symbols-outlined text-primary text-[16px]">analytics</span>Analytics
                                 </div>
-                                <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                                <div className="text-[12px] text-on-surface-variant/85 leading-normal">
                                     Detailed trend breakdown (monthly/weekly), engagement metrics, and rank lists for PICs and platforms.
                                 </div>
                             </div>
@@ -1382,37 +1314,37 @@ export function HelpGuideModal({ isOpen, onClose }) {
                 );
             case 'security':
                 return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.5', color: 'var(--ink-muted)' }}>
-                            Understanding the security systems and offline capabilities of the dashboard:
+                    <div className="space-y-4">
+                        <p className="text-body-sm text-on-surface-variant/80 leading-relaxed">
+                            Security controls and offline caching mechanisms of the platform:
                         </p>
                         
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <i className="fa-solid fa-lock" style={{ color: 'var(--primary)', marginTop: '3px', fontSize: '14px', width: '16px' }}></i>
+                        <div className="space-y-3">
+                            <div className="flex gap-3">
+                                <span className="material-symbols-outlined text-primary text-[18px] mt-0.5">lock</span>
                                 <div>
-                                    <strong style={{ fontSize: '12px', color: 'var(--ink)', display: 'block' }}>Automatic Session Locking</strong>
-                                    <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>
-                                        To protect sensitive information, refreshing the page or closing the tab automatically locks the database access. This is an intentional security control.
+                                    <strong className="text-[12px] text-on-surface block font-bold uppercase tracking-wide">Automatic Session Locking</strong>
+                                    <span className="text-[11px] text-on-surface-variant/85 leading-normal block">
+                                        Refreshing the page or closing the tab automatically locks database access. This is an intentional security control to safeguard database credentials.
                                     </span>
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ef4444', marginTop: '3px', fontSize: '14px', width: '16px' }}></i>
+                            <div className="flex gap-3">
+                                <span className="material-symbols-outlined text-error text-[18px] mt-0.5">warning</span>
                                 <div>
-                                    <strong style={{ fontSize: '12px', color: 'var(--ink)', display: 'block' }}>Brute Force Lockdown</strong>
-                                    <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>
+                                    <strong className="text-[12px] text-on-surface block font-bold uppercase tracking-wide">Brute Force Lockdown</strong>
+                                    <span className="text-[11px] text-on-surface-variant/85 leading-normal block">
                                         Entering incorrect access passcodes 5 consecutive times triggers an automatic 6-hour browser lockdown where no credentials will be accepted.
                                     </span>
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <i className="fa-solid fa-cloud-sun" style={{ color: 'var(--primary)', marginTop: '3px', fontSize: '14px', width: '16px' }}></i>
+                            <div className="flex gap-3">
+                                <span className="material-symbols-outlined text-primary text-[18px] mt-0.5">cloud_sync</span>
                                 <div>
-                                    <strong style={{ fontSize: '12px', color: 'var(--ink)', display: 'block' }}>Local Sync & Caching</strong>
-                                    <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>
+                                    <strong className="text-[12px] text-on-surface block font-bold uppercase tracking-wide">Local Sync & Caching</strong>
+                                    <span className="text-[11px] text-on-surface-variant/85 leading-normal block">
                                         Database tables are automatically cached in your browser. If offline or facing connection trouble, the dashboard loads using local backup data.
                                     </span>
                                 </div>
@@ -1426,120 +1358,58 @@ export function HelpGuideModal({ isOpen, onClose }) {
     };
 
     return createPortal(
-        <div className="modal-overlay" style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 16000,
-            backdropFilter: 'blur(4px)'
-        }}>
-            <div className="modal-card" style={{
-                width: '100%',
-                maxWidth: '560px',
-                background: 'var(--surface-elevated, #18181b)',
-                border: '1px solid var(--hairline, #27272a)',
-                borderRadius: '12px',
-                padding: '24px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '20px',
-                boxShadow: 'var(--shadow-lg, 0 10px 25px -5px rgba(0, 0, 0, 0.3))'
-            }}>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
+            <div className="w-full max-w-[560px] bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl flex flex-col gap-4">
                 {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--hairline)', paddingBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <i className="fa-solid fa-circle-question" style={{ color: 'var(--primary)', fontSize: '20px' }}></i>
-                        <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--ink)' }}>Help & Operations Guide</h3>
+                <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+                    <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-primary text-[22px]">help</span>
+                        <h3 className="text-body-lg font-bold text-on-surface">Help & Operations Guide</h3>
                     </div>
-                    <button className="gate-modal-close" onClick={onClose} aria-label="Close modal" style={{ padding: '4px', cursor: 'pointer' }}>
-                        <i className="fa-solid fa-xmark" style={{ fontSize: '18px' }}></i>
+                    <button className="text-on-surface-variant hover:text-on-surface p-1 micro-interaction" onClick={onClose} aria-label="Close modal">
+                        <span className="material-symbols-outlined text-[20px]">close</span>
                     </button>
                 </div>
 
                 {/* Tabs */}
-                <div style={{
-                    display: 'flex',
-                    borderBottom: '1px solid var(--hairline)',
-                    gap: '16px',
-                    paddingBottom: '2px'
-                }}>
+                <div className="flex border-b border-outline-variant/20 gap-4 pb-0.5">
                     <button 
                         onClick={() => setActiveTab('roles')}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            borderBottom: activeTab === 'roles' ? '2px solid var(--primary)' : '2px solid transparent',
-                            color: activeTab === 'roles' ? 'var(--ink)' : 'var(--ink-muted)',
-                            padding: '8px 4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: activeTab === 'roles' ? 600 : 500,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            transition: 'all 0.2s'
-                        }}
+                        className={`bg-transparent border-none pb-2 text-[12px] font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all border-b-2 ${
+                            activeTab === 'roles' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant'
+                        }`}
                     >
-                        <i className="fa-solid fa-user-lock"></i> Workspace Roles
+                        <span className="material-symbols-outlined text-[16px]">lock</span> Roles
                     </button>
                     <button 
                         onClick={() => setActiveTab('workflows')}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            borderBottom: activeTab === 'workflows' ? '2px solid var(--primary)' : '2px solid transparent',
-                            color: activeTab === 'workflows' ? 'var(--ink)' : 'var(--ink-muted)',
-                            padding: '8px 4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: activeTab === 'workflows' ? 600 : 500,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            transition: 'all 0.2s'
-                        }}
+                        className={`bg-transparent border-none pb-2 text-[12px] font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all border-b-2 ${
+                            activeTab === 'workflows' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant'
+                        }`}
                     >
-                        <i className="fa-solid fa-route"></i> Workflows
+                        <span className="material-symbols-outlined text-[16px]">route</span> Workflows
                     </button>
                     <button 
                         onClick={() => setActiveTab('security')}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            borderBottom: activeTab === 'security' ? '2px solid var(--primary)' : '2px solid transparent',
-                            color: activeTab === 'security' ? 'var(--ink)' : 'var(--ink-muted)',
-                            padding: '8px 4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: activeTab === 'security' ? 600 : 500,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            transition: 'all 0.2s'
-                        }}
+                        className={`bg-transparent border-none pb-2 text-[12px] font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all border-b-2 ${
+                            activeTab === 'security' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant'
+                        }`}
                     >
-                        <i className="fa-solid fa-shield-halved"></i> Security & Sync
+                        <span className="material-symbols-outlined text-[16px]">shield</span> Security
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="help-modal-body">
+                <div className="py-2">
                     {renderTabContent()}
                 </div>
 
                 {/* Footer */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--hairline)', paddingTop: '14px', marginTop: '4px' }}>
+                <div className="flex justify-end border-t border-outline-variant/20 pt-4 mt-2">
                     <button 
                         type="button" 
-                        className="btn btn-primary" 
+                        className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-5 rounded-lg text-body-sm transition-all micro-interaction min-w-[100px]" 
                         onClick={onClose}
-                        style={{ minWidth: '100px' }}
                     >
                         Got it
                     </button>
@@ -1549,4 +1419,3 @@ export function HelpGuideModal({ isOpen, onClose }) {
         document.body
     );
 }
-

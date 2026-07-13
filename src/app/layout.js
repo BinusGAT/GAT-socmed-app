@@ -2,7 +2,7 @@ import Script from 'next/script';
 import "./globals.css";
 
 export const metadata = {
-  title: "GAT ContentManager",
+  title: "Content suite",
   description: "An independent internal content performance management tool for tracking publication metrics and team analytics.",
 };
 
@@ -15,37 +15,39 @@ export default function RootLayout({ children }) {
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function () {
-                try {
-                  if (localStorage.getItem('darkMode') === 'true') {
-                    document.documentElement.classList.add('dark-mode');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+        <Script id="theme-html-initializer">
+          {`
+            (function () {
+              try {
+                const localDark = localStorage.getItem('darkMode');
+                if (localDark === null || localDark === 'true') {
+                  document.documentElement.classList.add('dark-mode');
+                }
+              } catch (e) {}
+            })();
+          `}
+        </Script>
       </head>
       <body suppressHydrationWarning>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function () {
-                try {
-                  if (localStorage.getItem('darkMode') === 'true') {
-                    document.body.classList.add('dark-mode');
-                  }
-                  if (sessionStorage.getItem('cud_unlocked') !== 'true') {
-                    document.body.classList.add('cud-locked');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
+        <Script id="theme-body-initializer">
+          {`
+            (function () {
+              try {
+                const localDark = localStorage.getItem('darkMode');
+                if (localDark === null || localDark === 'true') {
+                  document.body.classList.add('dark-mode');
+                }
+                if (sessionStorage.getItem('cud_unlocked') !== 'true') {
+                  document.body.classList.add('cud-locked');
+                }
+              } catch (e) {}
+            })();
+          `}
+        </Script>
         {children}
         
         {/* Load CDN Dependencies securely using Next.js Script component */}

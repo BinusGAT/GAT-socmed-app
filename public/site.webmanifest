@@ -1,6 +1,6 @@
 {
-  "name": "GAT Content Manager",
-  "short_name": "GAT CM",
+  "name": "contentmanager",
+  "short_name": "contentmanager",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
