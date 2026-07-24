@@ -562,7 +562,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
         }
     };
 
-    // Audience growth line chart
+    // Audience growth line chart (differentiated by platform, starting from 0)
     useEffect(() => {
         if (currentData.length === 0) return;
 
@@ -571,65 +571,73 @@ export default function DashboardTab({ onOpenDatePicker }) {
 
             const Chart = window.Chart;
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const monthlyValues = Array(12).fill(0);
+            
+            // Per-platform monthly arrays (12 items each, initialized to 0)
+            const platformValues = {
+                Instagram: Array(12).fill(0),
+                TikTok: Array(12).fill(0),
+                YouTube: Array(12).fill(0),
+            };
 
-            // Accumulate actual database metrics by month
+            // Accumulate actual database metrics by month and platform
             currentData.forEach(row => {
                 if (!row.Date) return;
                 const d = parseDate(row.Date);
                 if (d) {
                     const monthIdx = parseInt(d.split('-')[1], 10) - 1;
                     if (monthIdx >= 0 && monthIdx < 12) {
+                        let val = 0;
                         if (activeChartTab === 'Followers') {
-                            monthlyValues[monthIdx] += parseCleanInt(row.Follows);
+                            val = parseCleanInt(row.Follows);
                         } else if (activeChartTab === 'Engagement') {
-                            monthlyValues[monthIdx] += parseCleanInt(row['Total Engagement']);
+                            val = parseCleanInt(row['Total Engagement']);
                         } else {
-                            monthlyValues[monthIdx] += parseCleanInt(row['Account Reach']);
+                            val = parseCleanInt(row['Account Reach']);
+                        }
+
+                        const platRaw = String(row.Platform || '').trim().toLowerCase();
+                        if (platRaw.includes('insta')) {
+                            platformValues.Instagram[monthIdx] += val;
+                        } else if (platRaw.includes('tik')) {
+                            platformValues.TikTok[monthIdx] += val;
+                        } else if (platRaw.includes('you') || platRaw.includes('yt')) {
+                            platformValues.YouTube[monthIdx] += val;
+                        } else {
+                            platformValues.Instagram[monthIdx] += val;
                         }
                     }
                 }
             });
 
-            let cumulativeActual = 0;
-            const actualGrowth = [];
-            const plannedGrowth = [];
-
-            const totalSum = monthlyValues.reduce((a, b) => a + b, 0);
-
-            if (totalSum === 0) {
-                months.forEach((m, idx) => {
-                    let factor = 100;
-                    if (activeChartTab === 'Followers') factor = 150;
-                    else if (activeChartTab === 'Engagement') factor = 80;
-                    else factor = 1000;
-
-                    const basePlanned = [12, 18, 24, 30, 36, 45, 52, 60, 72, 85, 96, 115][idx];
-                    const baseActual = [10, 16, 26, 28, 42, 62, 50, 58, 70, 92, 94, 118][idx];
-                    plannedGrowth.push(basePlanned * factor);
-                    actualGrowth.push(baseActual * factor);
-                });
-            } else {
+            // Compute series (starting from 0)
+            const computeSeries = (monthlyArr) => {
                 if (activeChartTab === 'Followers') {
-                    const startingBaseline = 25000;
-                    let cumulativeActual = startingBaseline;
-                    for (let i = 0; i < 12; i++) {
-                        cumulativeActual += monthlyValues[i];
-                        actualGrowth.push(cumulativeActual);
-                    }
+                    // Cumulative growth starting from 0
+                    let cum = 0;
+                    return monthlyArr.map(v => {
+                        cum += v;
+                        return cum;
+                    });
                 } else {
-                    for (let i = 0; i < 12; i++) {
-                        actualGrowth.push(monthlyValues[i]);
-                    }
+                    return [...monthlyArr];
                 }
-            }
+            };
+
+            const igData = computeSeries(platformValues.Instagram);
+            const ttData = computeSeries(platformValues.TikTok);
+            const ytData = computeSeries(platformValues.YouTube);
+
+            // Compute total combined series
+            const totalMonthly = Array(12).fill(0).map((_, i) => 
+                platformValues.Instagram[i] + platformValues.TikTok[i] + platformValues.YouTube[i]
+            );
+            const totalData = computeSeries(totalMonthly);
 
             if (activityChartRef.current) {
                 activityChartRef.current.destroy();
             }
 
             const ctx = activityCanvasRef.current.getContext('2d');
-            const isDark = true;
 
             activityChartRef.current = new Chart(ctx, {
                 type: 'line',
@@ -637,14 +645,36 @@ export default function DashboardTab({ onOpenDatePicker }) {
                     labels: months,
                     datasets: [
                         {
-                            label: 'Actual Performance',
-                            data: actualGrowth,
-                            borderColor: '#10b981', // primary Emerald
-                            backgroundColor: 'rgba(16, 185, 129, 0.04)',
-                            borderWidth: 3,
-                            pointRadius: 0,
+                            label: 'Instagram',
+                            data: igData,
+                            borderColor: '#E1306C',
+                            backgroundColor: 'rgba(225, 48, 108, 0.1)',
+                            borderWidth: 2.5,
+                            pointRadius: 2,
                             pointHoverRadius: 5,
-                            fill: true,
+                            fill: false,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'TikTok',
+                            data: ttData,
+                            borderColor: '#00F2FE',
+                            backgroundColor: 'rgba(0, 242, 254, 0.1)',
+                            borderWidth: 2.5,
+                            pointRadius: 2,
+                            pointHoverRadius: 5,
+                            fill: false,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'YouTube',
+                            data: ytData,
+                            borderColor: '#FF0000',
+                            backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                            borderWidth: 2.5,
+                            pointRadius: 2,
+                            pointHoverRadius: 5,
+                            fill: false,
                             tension: 0.4
                         }
                     ]
@@ -684,6 +714,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
                             }
                         },
                         y: {
+                            beginAtZero: true,
+                            min: 0,
                             grid: {
                                 color: 'rgba(255, 255, 255, 0.04)'
                             },
@@ -807,87 +839,69 @@ export default function DashboardTab({ onOpenDatePicker }) {
                 {/* Left/Center 3 Columns */}
                 <div className="col-span-3 space-y-6">
                     {/* Performance Overview header strip */}
-                    <div className="bg-gradient-to-r from-surface-container/40 to-transparent border border-outline-variant/20 rounded-xl p-5 relative overflow-hidden">
-                        <div className="noise-overlay"></div>
-                        <div className="space-y-1 relative z-10">
-                            <h3 className="text-headline-lg font-bold text-on-surface">Performance Overview</h3>
-                            <p className="text-on-surface-variant font-body-sm">Monthly content team metrics tracked with Absolute Precision.</p>
-                        </div>
-                    </div>
-
-                    {/* Stats Bento Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-12 gap-4">
+                    {/* Stats Bento Grid - Equal 5 Column Box Sizes */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
                         {/* Stat Card 1 - Titles */}
-                        <div className="glass-panel p-4 rounded-xl flex flex-col justify-between gap-3 group hover:border-primary/50 transition-all duration-300 lg:col-span-2 shadow-sm">
+                        <div className="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 border border-outline-variant/30 hover:border-outline/50 transition-all duration-150 shadow-xs">
                             <div className="flex justify-between items-start">
-                                <span className="text-[11px] text-on-surface-variant font-semibold">Active Titles</span>
-                                <span className="material-symbols-outlined text-primary text-[18px]">tag</span>
+                                <span className="text-[11px] sm:text-xs text-on-surface-variant font-medium">Active Titles</span>
+                                <span className="material-symbols-outlined text-indigo-400 text-[18px]">tag</span>
                             </div>
                             <div>
-                                <h4 className="font-display-lg text-headline-md font-bold text-on-surface font-tabular">{stats.contentTitlesSize}</h4>
-                                <p className="text-[10px] text-on-surface-variant/75 mt-1">Active campaigns</p>
+                                <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-on-surface font-tabular tracking-tight">{stats.contentTitlesSize}</h4>
+                                <p className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5">Active campaigns</p>
                             </div>
                         </div>
                         {/* Stat Card 2 - Total Views */}
-                        <div className="glass-panel p-4 rounded-xl flex flex-col justify-between gap-3 group hover:border-primary/50 transition-all duration-300 lg:col-span-3 border-l-2 border-l-primary/40 bg-gradient-to-r from-primary/5 to-transparent shadow-sm">
+                        <div className="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 border border-outline-variant/30 hover:border-outline/50 transition-all duration-150 shadow-xs">
                             <div className="flex justify-between items-start">
-                                <span className="text-[11px] text-on-surface-variant font-semibold">Total Views</span>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px] font-bold">arrow_upward</span>12.4%</span>
-                                    <span className="material-symbols-outlined text-primary text-[18px]">trending_up</span>
-                                </div>
+                                <span className="text-[11px] sm:text-xs text-on-surface-variant font-medium">Total Views</span>
+                                <span className="material-symbols-outlined text-indigo-400 text-[18px]">trending_up</span>
                             </div>
                             <div>
-                                <h4 className="font-display-lg text-headline-md font-bold text-on-surface font-tabular">{formatNumber(stats.totalViews)}</h4>
-                                <p className="text-[10px] text-on-surface-variant/75 mt-1">Across all platforms</p>
+                                <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-on-surface font-tabular tracking-tight">{formatNumber(stats.totalViews)}</h4>
+                                <p className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5">Across all platforms</p>
                             </div>
                         </div>
                         {/* Stat Card 3 - Total Reach */}
-                        <div className="glass-panel p-4 rounded-xl flex flex-col justify-between gap-3 group hover:border-primary/50 transition-all duration-300 lg:col-span-2 shadow-sm">
+                        <div className="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 border border-outline-variant/30 hover:border-outline/50 transition-all duration-150 shadow-xs">
                             <div className="flex justify-between items-start">
-                                <span className="text-[11px] text-on-surface-variant font-semibold">Total Reach</span>
-                                <span className="material-symbols-outlined text-primary text-[18px]">public</span>
+                                <span className="text-[11px] sm:text-xs text-on-surface-variant font-medium">Total Reach</span>
+                                <span className="material-symbols-outlined text-indigo-400 text-[18px]">public</span>
                             </div>
                             <div>
-                                <h4 className="font-display-lg text-headline-md font-bold text-on-surface font-tabular">{formatNumber(stats.totalReach)}</h4>
-                                <p className="text-[10px] text-on-surface-variant/75 mt-1">Unique accounts</p>
+                                <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-on-surface font-tabular tracking-tight">{formatNumber(stats.totalReach)}</h4>
+                                <p className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5">Unique accounts</p>
                             </div>
                         </div>
                         {/* Stat Card 4 - Engagement */}
-                        <div className="glass-panel p-4 rounded-xl flex flex-col justify-between gap-3 group hover:border-secondary/50 transition-all duration-300 lg:col-span-3 border-l-2 border-l-secondary/40 bg-gradient-to-r from-secondary/5 to-transparent shadow-sm">
+                        <div className="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 border border-outline-variant/30 hover:border-outline/50 transition-all duration-150 shadow-xs">
                             <div className="flex justify-between items-start">
-                                <span className="text-[11px] text-on-surface-variant font-semibold">Total Engagement</span>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px] font-bold">arrow_upward</span>5.1%</span>
-                                    <span className="material-symbols-outlined text-secondary text-[18px]">favorite</span>
-                                </div>
+                                <span className="text-[11px] sm:text-xs text-on-surface-variant font-medium">Total Engagement</span>
+                                <span className="material-symbols-outlined text-indigo-400 text-[18px]">favorite</span>
                             </div>
                             <div>
-                                <h4 className="font-display-lg text-headline-md font-bold text-on-surface font-tabular">{formatNumber(stats.totalEngagement)}</h4>
-                                <p className="text-[10px] text-on-surface-variant/75 mt-1">Likes, comments, shares</p>
+                                <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-on-surface font-tabular tracking-tight">{formatNumber(stats.totalEngagement)}</h4>
+                                <p className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5">Likes, comments, shares</p>
                             </div>
                         </div>
                         {/* Stat Card 5 - Eng. Rate */}
-                        <div className="glass-panel p-4 rounded-xl flex flex-col justify-between gap-3 group hover:border-tertiary/50 transition-all duration-300 lg:col-span-2 shadow-sm">
+                        <div className="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 border border-outline-variant/30 hover:border-outline/50 transition-all duration-150 shadow-xs">
                             <div className="flex justify-between items-start">
-                                <span className="text-[11px] text-on-surface-variant font-semibold">Engagement Rate</span>
-                                <span className="material-symbols-outlined text-tertiary text-[18px]">percent</span>
+                                <span className="text-[11px] sm:text-xs text-on-surface-variant font-medium">Engagement Rate</span>
+                                <span className="material-symbols-outlined text-indigo-400 text-[18px]">percent</span>
                             </div>
                             <div>
-                                <h4 className="font-display-lg text-headline-md font-bold text-on-surface font-tabular">{stats.avgEngagementRate}</h4>
-                                <p className="text-[10px] text-on-surface-variant/75 mt-1">Avg. engagement ratio</p>
+                                <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-on-surface font-tabular tracking-tight">{stats.avgEngagementRate}</h4>
+                                <p className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5">Avg. engagement ratio</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Promo Banner and traffic channels */}
                     <div className="grid grid-cols-3 gap-gutter">
-                        {/* Quote Card */}
-                        <div className="col-span-2 bg-gradient-to-br from-surface-container-low via-surface-container to-surface-container-high border border-outline-variant/30 rounded-xl p-5 flex items-center gap-5 relative overflow-hidden shadow-sm">
-                            <div className="noise-overlay"></div>
-                            {/* Blurred radial decoration */}
-                            <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[150px] h-[150px] rounded-full bg-primary/4 blur-[60px] pointer-events-none"></div>
-                            <span className="absolute top-2 left-4 text-[72px] leading-none font-serif text-primary/15 select-none pointer-events-none">&ldquo;</span>
+                        <div className="col-span-2 bg-surface-container border border-outline-variant/30 rounded-xl p-5 flex items-center gap-5 relative overflow-hidden shadow-xs">
+                            <span className="absolute top-2 left-4 text-[72px] leading-none font-serif text-on-surface-variant/15 select-none pointer-events-none">&ldquo;</span>
                             <div className="z-10 flex flex-col gap-3 pl-4">
                                 <p className="text-body-md font-medium text-on-surface/80 italic leading-relaxed tracking-wide text-pretty">
                                     "Consistency is the foundation of trust — and trust is what turns viewers into community."
@@ -1195,7 +1209,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                     {/* Scheduled timeline card */}
                     <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
                         <div className="flex justify-between items-center pb-2 border-b border-outline-variant/20">
-                            <h3 className="text-body-sm font-bold text-on-surface uppercase tracking-wider">Scheduled for this day</h3>
+                            <h3 className="text-[11px] sm:text-xs font-bold text-on-surface-variant uppercase tracking-wider">Scheduled for this day</h3>
                             {userRole === 'Admin' && (
                                 <button 
                                     className="w-7 h-7 flex items-center justify-center bg-primary-container text-on-primary-container rounded-lg hover:opacity-90 cursor-pointer transition-opacity" 
@@ -1216,14 +1230,14 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                 scheduledTimeline.map((task) => (
                                     <div key={task.ID} className="flex gap-3 items-start relative group">
                                         <div className="flex flex-col items-center pt-1.5">
-                                            <span className="w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-primary/10"></span>
+                                            <span className="w-2.5 h-2.5 rounded-full bg-primary"></span>
                                             <span className="w-[1.5px] bg-outline-variant/30 flex-1 my-1 min-h-[40px]"></span>
                                         </div>
-                                        <div className="flex-1 bg-surface-container-low border border-outline-variant/20 rounded p-3 text-body-sm space-y-1">
-                                            <p className="text-[10px] text-primary uppercase font-bold tracking-wider">Upload: {task.Category}</p>
-                                            <p className="font-semibold text-on-surface leading-tight line-clamp-2">{task['Content Title']}</p>
-                                            <p className="text-[11px] text-on-surface-variant/80">
-                                                PIC: <span className="font-bold">{normalizePicName(task.PIC)}</span> | {task.Status ? 'Published' : 'Pending'}
+                                        <div className="flex-1 bg-surface-container-low border border-outline-variant/20 rounded-lg p-2.5 space-y-1">
+                                            <p className="text-[9.5px] text-primary uppercase font-bold tracking-wider">Upload: {task.Category}</p>
+                                            <p className="text-xs font-semibold text-on-surface leading-snug line-clamp-2">{task['Content Title']}</p>
+                                            <p className="text-[10px] text-on-surface-variant/80">
+                                                PIC: <span className="font-semibold">{normalizePicName(task.PIC)}</span> | {task.Status ? 'Published' : 'Pending'}
                                             </p>
                                         </div>
                                     </div>
@@ -1235,7 +1249,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                     {/* Chart Container Card */}
                     <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
                         <div className="flex justify-between items-center pb-2 border-b border-outline-variant/20">
-                            <h3 className="text-body-sm font-bold text-on-surface uppercase tracking-wider">Growth Performance</h3>
+                            <h3 className="text-[11px] sm:text-xs font-bold text-on-surface-variant uppercase tracking-wider">Growth Performance</h3>
                             <div className="flex bg-surface-container-low border border-outline-variant/20 rounded p-0.5 text-[9px] font-bold uppercase tracking-wider">
                                 {['Followers', 'Engagement', 'Reach'].map(tab => (
                                     <button
@@ -1253,8 +1267,10 @@ export default function DashboardTab({ onOpenDatePicker }) {
                         <div className="h-52 w-full relative">
                             <canvas ref={activityCanvasRef}></canvas>
                         </div>
-                        <div className="flex justify-center gap-5 text-[11px] text-on-surface-variant/80 font-semibold">
-                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary"></span> Actual Performance</span>
+                        <div className="flex flex-wrap justify-center gap-4 text-[11px] text-on-surface-variant/80 font-semibold">
+                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#E1306C' }}></span> Instagram</span>
+                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#00F2FE' }}></span> TikTok</span>
+                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#FF0000' }}></span> YouTube</span>
                         </div>
                     </div>
                 </div>

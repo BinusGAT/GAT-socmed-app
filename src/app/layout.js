@@ -25,7 +25,7 @@ export default function RootLayout({ children }) {
               try {
                 const localDark = localStorage.getItem('darkMode');
                 if (localDark === null || localDark === 'true') {
-                  document.documentElement.classList.add('dark-mode');
+                  document.documentElement.classList.add('dark-mode', 'dark');
                 }
               } catch (e) {}
             })();
@@ -39,7 +39,7 @@ export default function RootLayout({ children }) {
               try {
                 const localDark = localStorage.getItem('darkMode');
                 if (localDark === null || localDark === 'true') {
-                  document.body.classList.add('dark-mode');
+                  document.body.classList.add('dark-mode', 'dark');
                 }
                 if (sessionStorage.getItem('cud_unlocked') !== 'true') {
                   document.body.classList.add('cud-locked');

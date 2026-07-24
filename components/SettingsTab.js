@@ -12,6 +12,7 @@ export default function SettingsTab() {
         platformsData,
         categoriesData,
         saveAppSetting,
+        saveAppSettingsBatch,
         savePlatform,
         deletePlatform,
         saveCategory,
@@ -83,11 +84,13 @@ export default function SettingsTab() {
     // Submit General Settings
     const handleGeneralSubmit = async (e) => {
         e.preventDefault();
-        await saveAppSetting('app_name', appName);
-        await saveAppSetting('app_subtitle', appSubtitle);
-        await saveAppSetting('app_full_name', appFullName);
-        await saveAppSetting('company_name', companyName);
-        await saveAppSetting('app_version', appVersion);
+        await saveAppSettingsBatch({
+            app_name: appName,
+            app_subtitle: appSubtitle,
+            app_full_name: appFullName,
+            company_name: companyName,
+            app_version: appVersion || 'v0.2.0-alpha'
+        });
     };
 
     // Open Add Modals
@@ -185,23 +188,16 @@ export default function SettingsTab() {
 
     return (
         <div className="space-y-6">
-            {/* Header banner */}
-            <div className="flex justify-between items-center bg-surface-container/30 border border-outline-variant/20 rounded-xl p-5">
-                <div className="space-y-1">
-                    <h3 className="text-headline-lg font-bold text-on-surface">Workspace Settings</h3>
-                    <p className="text-body-sm text-on-surface-variant">Customize your branding, team members, social networks, and content filters.</p>
-                </div>
-            </div>
 
             {/* Settings subnavigation */}
             <div className="flex bg-surface-container-low border border-outline-variant/20 rounded-xl p-1 max-w-md">
-                {['general', 'members', 'platforms', 'categories'].map(tab => (
+                {['general', 'members', 'categories'].map(tab => (
                     <button
                         key={tab}
                         type="button"
                         onClick={() => setActiveSubTab(tab)}
-                        className={`flex-1 py-2 text-center text-body-sm font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
-                            activeSubTab === tab ? 'bg-primary text-on-primary shadow-lg' : 'text-on-surface-variant hover:text-on-surface'
+                        className={`flex-1 py-1.5 px-2 text-center text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+                            activeSubTab === tab ? 'bg-primary text-on-primary shadow-xs' : 'text-on-surface-variant hover:text-on-surface'
                         }`}
                     >
                         {tab}
@@ -264,13 +260,16 @@ export default function SettingsTab() {
                         </div>
 
                         <div className="space-y-1 max-w-xs">
-                            <label className="text-body-sm font-semibold text-on-surface-variant">Version Label</label>
+                            <div className="flex items-center justify-between">
+                                <label className="text-body-sm font-semibold text-on-surface-variant">Version Label</label>
+                                <span className="text-[10px] text-on-surface-variant/60 font-mono">(System Controlled)</span>
+                            </div>
                             <input
                                 type="text"
-                                required
-                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
-                                value={appVersion}
-                                onChange={(e) => setAppVersion(e.target.value)}
+                                readOnly
+                                disabled
+                                className="w-full bg-surface-container-high/40 border border-outline-variant/20 rounded px-3 py-2 text-body-sm text-on-surface-variant font-mono cursor-not-allowed select-none opacity-80"
+                                value={appVersion || 'v0.2.0-alpha'}
                             />
                         </div>
 
@@ -330,66 +329,6 @@ export default function SettingsTab() {
                                                 onClick={() => triggerDelete('member', member.NAMA)}
                                                 className="text-error hover:bg-error/15 p-1 rounded transition-colors cursor-pointer"
                                                 title="Delete member"
-                                            >
-                                                <span className="material-symbols-outlined text-[18px]">delete</span>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            {/* 3. PLATFORMS TAB */}
-            {activeSubTab === 'platforms' && (
-                <div className="glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h4 className="font-bold text-body-lg text-on-surface flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary">language</span> Social Networks
-                        </h4>
-                        <button
-                            type="button"
-                            onClick={() => openAddModal('platform')}
-                            className="bg-primary text-on-primary hover:opacity-90 font-semibold py-1.5 px-3 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center gap-1"
-                        >
-                            <span className="material-symbols-outlined text-[16px]">add</span> Add Platform
-                        </button>
-                    </div>
-
-                    <div className="overflow-x-auto border border-outline-variant/20 rounded-xl">
-                        <table className="w-full text-left border-collapse text-body-sm">
-                            <thead className="bg-surface-container-low text-on-surface-variant uppercase text-[10px] tracking-wider border-b border-outline-variant/20">
-                                <tr>
-                                    <th className="px-5 py-4">Name</th>
-                                    <th className="px-5 py-4">Database Key</th>
-                                    <th className="px-5 py-4">Logo Icon URL</th>
-                                    <th className="px-5 py-4">CSS Class</th>
-                                    <th className="px-5 py-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-outline-variant/10">
-                                {platformsData.map((plat) => (
-                                    <tr key={plat.id} className="hover:bg-surface-container-low/30 transition-colors">
-                                        <td className="px-5 py-4 font-semibold text-on-surface">{plat.name}</td>
-                                        <td className="px-5 py-4 text-on-surface-variant font-mono text-[11px]">{plat.id}</td>
-                                        <td className="px-5 py-4 text-on-surface-variant text-[11px] truncate max-w-xs">{plat.logo_url || 'None'}</td>
-                                        <td className="px-5 py-4 text-on-surface-variant font-mono text-[11px]">{plat.color_class}</td>
-                                        <td className="px-5 py-4 text-right flex justify-end gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => openEditModal('platform', plat)}
-                                                className="text-primary hover:bg-primary/15 p-1 rounded transition-colors cursor-pointer"
-                                                title="Edit platform"
-                                            >
-                                                <span className="material-symbols-outlined text-[18px]">edit</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => triggerDelete('platform', plat.id)}
-                                                className="text-error hover:bg-error/15 p-1 rounded transition-colors cursor-pointer"
-                                                title="Delete platform"
                                             >
                                                 <span className="material-symbols-outlined text-[18px]">delete</span>
                                             </button>

@@ -158,7 +158,7 @@ export default function Topbar({
     };
 
     return (
-        <header className="fixed top-0 right-0 left-0 lg:left-[280px] h-16 bg-surface z-40 flex items-center justify-between px-container-padding border-b border-outline-variant/20">
+        <header className="fixed top-0 right-0 left-0 lg:left-[280px] h-16 bg-surface-container-lowest border-b border-outline-variant/30 dark:bg-[#0c0d10] dark:border-[#22232a] z-40 flex items-center justify-between px-container-padding">
             {/* Header Left (Menu Toggle and Title) */}
             <div className="flex items-center gap-4">
                 <button 
@@ -202,7 +202,7 @@ export default function Topbar({
                         onClick={() => setNotificationsOpen(!notificationsOpen)}
                     >
                         <span className="material-symbols-outlined text-[24px]">notifications</span>
-                        <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-primary rounded-full border border-surface shadow-[0_0_8px_var(--color-primary)] animate-pulse"></span>
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-500 rounded-full"></span>
                     </button>
 
                     {notificationsOpen && (

@@ -248,50 +248,41 @@ export default function CalendarTab({ onOpenExport }) {
     };
 
     return (
-        <div className="space-y-6">
-            {/* Header section */}
-            <div className="flex justify-between items-center bg-surface-container/30 border border-outline-variant/20 rounded-xl p-5">
-                <div className="space-y-1">
-                    <h3 className="text-headline-lg font-bold text-on-surface">Content Planner</h3>
-                </div>
-                <div className="text-right hidden sm:block">
-                    <span className="px-3 py-1 bg-primary-container/20 text-primary border border-primary/20 rounded font-semibold text-[11px] uppercase tracking-wider">
-                        {getTasksCountForMonth()} tasks this month
-                    </span>
-                </div>
-            </div>
-
+        <div className="space-y-5">
             {/* Calendar & Form Editor Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-gutter items-start">
                 
                 {/* Main Month Grid (Left/Center 3 columns) */}
-                <div className="lg:col-span-3 glass-panel rounded-xl overflow-hidden border border-outline-variant/30 shadow-xl bg-surface-container/10 calendar-shell">
+                <div className="lg:col-span-3 rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm bg-surface-container calendar-shell">
                     
                     {/* Month Toolbar */}
-                    <div className="px-container-padding py-4 border-b border-outline-variant/20 flex flex-col sm:flex-row gap-3 items-center justify-between bg-surface-container-low">
+                    <div className="px-5 py-3.5 border-b border-outline-variant/20 flex flex-col sm:flex-row gap-3 items-center justify-between bg-surface-container-low">
                         <div className="flex items-center gap-2">
-                            <button className="h-8 w-8 rounded bg-surface-container-high border border-outline-variant/30 hover:bg-surface-container-highest text-on-surface flex items-center justify-center cursor-pointer transition-colors calendar-nav-btn" onClick={() => shiftMonth(-1)}>
+                            <button className="h-8 w-8 rounded-lg bg-surface-container-highest/50 border border-outline-variant/30 hover:bg-surface-container-highest text-on-surface flex items-center justify-center cursor-pointer transition-colors calendar-nav-btn" onClick={() => shiftMonth(-1)}>
                                 <span className="material-symbols-outlined text-[16px]">chevron_left</span>
                             </button>
-                            <h4 className="font-bold text-body-lg text-on-surface font-display px-2 min-w-[150px] text-center">
+                            <h4 className="font-semibold text-sm text-on-surface font-display px-2 min-w-[140px] text-center">
                                 {formatMonthLabel(currentMonth)}
                             </h4>
-                            <button className="h-8 w-8 rounded bg-surface-container-high border border-outline-variant/30 hover:bg-surface-container-highest text-on-surface flex items-center justify-center cursor-pointer transition-colors calendar-nav-btn" onClick={() => shiftMonth(1)}>
+                            <button className="h-8 w-8 rounded-lg bg-surface-container-highest/50 border border-outline-variant/30 hover:bg-surface-container-highest text-on-surface flex items-center justify-center cursor-pointer transition-colors calendar-nav-btn" onClick={() => shiftMonth(1)}>
                                 <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                             </button>
                         </div>
-                        <div className="flex items-center gap-2.5 calendar-toolbar-actions">
-                            <button className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1.5 cursor-pointer micro-interaction" onClick={onOpenExport}>
+                        <div className="flex items-center gap-2 calendar-toolbar-actions">
+                            <span className="px-2.5 py-1 bg-surface-container-highest/50 text-on-surface-variant border border-outline-variant/30 rounded-md font-mono text-[11px]">
+                                {getTasksCountForMonth()} Tasks
+                            </span>
+                            <button className="bg-surface-container-highest/50 border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-medium py-1.5 px-3 rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer" onClick={onOpenExport}>
                                 <span className="material-symbols-outlined text-[14px]">image</span> Export
                             </button>
-                            <button className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors cursor-pointer micro-interaction" onClick={goToToday}>
+                            <button className="bg-surface-container-highest/50 border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-medium py-1.5 px-3 rounded-lg text-xs transition-colors cursor-pointer" onClick={goToToday}>
                                 Today
                             </button>
                         </div>
                     </div>
 
                     {/* Weekdays indicator */}
-                    <div className="grid grid-cols-7 text-center py-2.5 border-b border-outline-variant/15 bg-surface-container-lowest text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-widest calendar-weekdays">
+                    <div className="grid grid-cols-7 text-center py-2.5 border-b border-outline-variant/20 bg-surface-container-low text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider calendar-weekdays">
                         <span>Sun</span>
                         <span>Mon</span>
                         <span>Tue</span>
@@ -302,7 +293,7 @@ export default function CalendarTab({ onOpenExport }) {
                     </div>
 
                     {/* Days Grid Cells */}
-                    <div className="grid grid-cols-7 bg-outline-variant/10 gap-[1px] calendar-days">
+                    <div className="grid grid-cols-7 bg-outline-variant/20 gap-[1px] calendar-days">
                         {Array.from({ length: totalCells }).map((_, cellIndex) => {
                             const dayNumber = cellIndex - startOffset + 1;
                             const isInMonth = dayNumber >= 1 && dayNumber <= daysInMonth;
@@ -316,7 +307,7 @@ export default function CalendarTab({ onOpenExport }) {
                             const isToday = cellDate === getLocalDateInputValue();
                             const hasTask = dayTasks.length > 0;
 
-                            let statusClass = 'bg-surface';
+                            let statusClass = 'bg-surface-container-lowest';
                             let isFullyUploaded = false;
 
                             if (hasTask) {
@@ -325,22 +316,22 @@ export default function CalendarTab({ onOpenExport }) {
                                 const allDone = dayTasks.every(t => t.calculatedStatus === 'Done');
 
                                 if (allDone) {
-                                    statusClass = 'bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 border-emerald-500/10';
+                                    statusClass = 'bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10';
                                 } else if (hasOverdue) {
-                                    statusClass = 'bg-rose-500/5 text-rose-400 hover:bg-rose-500/10 border-rose-500/10';
+                                    statusClass = 'bg-rose-500/5 text-rose-400 hover:bg-rose-500/10';
                                 } else if (hasToday) {
-                                    statusClass = 'bg-sky-500/5 text-sky-400 hover:bg-sky-500/10 border-sky-500/10';
+                                    statusClass = 'bg-sky-500/5 text-sky-400 hover:bg-sky-500/10';
                                 } else {
-                                    statusClass = 'bg-amber-500/5 text-amber-400 hover:bg-amber-500/10 border-amber-500/10';
+                                    statusClass = 'bg-amber-500/5 text-amber-400 hover:bg-amber-500/10';
                                 }
 
                                 isFullyUploaded = dayTasks.every(task => !task.isFromDashboard || task.status);
                             }
 
                             const activeBorder = isSelected 
-                                ? 'ring-2 ring-primary ring-inset z-10' 
+                                ? 'bg-indigo-600/15 border-2 border-indigo-500/60 shadow-xs z-10' 
                                 : isToday 
-                                ? 'ring-1 ring-primary/40 ring-inset bg-primary/2' 
+                                ? 'border border-indigo-500/30 bg-indigo-500/5' 
                                 : '';
 
                             if (!isInMonth) {

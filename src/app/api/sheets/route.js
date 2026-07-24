@@ -1,16 +1,11 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { dbExecute, dbBatch } from '../../../../utils/db';
+import { dbExecute, dbBatch, gatAppExecute } from '../../../../utils/db';
 
 const db = {
   execute: dbExecute,
   batch: dbBatch
 };
-
-const PASSCODE_SALT = process.env.PASSCODE_SALT || crypto.randomBytes(32).toString('hex');
-const PASSCODE_HASH_ADMIN = process.env.PASSCODE_HASH_ADMIN || crypto.randomBytes(32).toString('hex');
-const PASSCODE_HASH_CREATOR = process.env.PASSCODE_HASH_CREATOR || crypto.randomBytes(32).toString('hex');
-const PASSCODE_HASH_VIEWER = process.env.PASSCODE_HASH_VIEWER || crypto.randomBytes(32).toString('hex');
 
 // Server-side failed attempts tracking
 // Server-side failed attempts tracking
@@ -432,21 +427,11 @@ export async function POST(request) {
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_subtitle", "Workspace"] },
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_full_name", "Content suite"] },
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["company_name", "Internal Content Team"] },
-            { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_version", "v0.1.0-alpha"] }
+            { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_version", "v0.2.0-alpha"] }
           ]);
         }
       } catch (e) {
         console.error("Failed to seed App Settings:", e);
-      }
-
-      // Migrate existing old GAT settings to the new generic branding values
-      try {
-        await db.execute("UPDATE app_settings SET value = 'contentmanager' WHERE key = 'app_name'");
-        await db.execute("UPDATE app_settings SET value = 'Workspace' WHERE key = 'app_subtitle'");
-        await db.execute("UPDATE app_settings SET value = 'Content suite' WHERE key = 'app_full_name'");
-        await db.execute("UPDATE app_settings SET value = 'Internal Content Team' WHERE key = 'company_name'");
-      } catch (e) {
-        console.error("Failed to migrate branding settings:", e);
       }
 
       // Seed Platforms if empty
@@ -534,30 +519,59 @@ export async function POST(request) {
         );
       }
 
-      const verifyRole = params.role || 'Admin';
+      const email = (params.email || '').trim().toLowerCase();
+      const nim = (params.nim || '').trim();
       const passcode = params.passcode || '';
-      
-      let passHash = '';
-      if (passcode) {
-        passHash = sha256(passcode + PASSCODE_SALT);
-      }
-      
-      const doubleHash = sha256(passHash + PASSCODE_SALT);
-      const isAdmin = safeCompare(doubleHash, PASSCODE_HASH_ADMIN);
-      const isCreator = safeCompare(doubleHash, PASSCODE_HASH_CREATOR);
-      const isViewer = safeCompare(doubleHash, PASSCODE_HASH_VIEWER);
-      
-      const roleMatches = (verifyRole === 'Admin' && isAdmin) || (verifyRole === 'Creator' && isCreator) || (verifyRole === 'Viewer' && isViewer);
-      const matchedRole = isAdmin ? 'Admin' : (isCreator ? 'Creator' : (isViewer ? 'Viewer' : null));
-      
-      if (roleMatches && matchedRole) {
-        failedAttempts.delete(ip); // Reset attempts on success
-        
-        // Generate secure random session token
+
+      // If email and nim are provided, authenticate against GAT App DB
+      if (email && nim) {
+        let userRes;
+        try {
+          userRes = await gatAppExecute({
+            sql: `
+              SELECT 
+                u.id, 
+                u.email, 
+                u.nim, 
+                u.name, 
+                r.name AS role_name 
+              FROM users u
+              JOIN roles r ON u.role_id = r.id
+              WHERE LOWER(u.email) = ? AND u.nim = ?
+            `,
+            args: [email, nim]
+          });
+        } catch (err) {
+          console.error("GAT App DB Query Error:", err);
+          return NextResponse.json(
+            { success: false, error: 'Failed to verify credentials with GAT App DB.' },
+            { status: 500 }
+          );
+        }
+
+        if (!userRes || userRes.rows.length === 0) {
+          record.count += 1;
+          failedAttempts.set(ip, record);
+          return NextResponse.json({ 
+            success: false, 
+            error: 'Invalid Email or NIM.' 
+          });
+        }
+
+        const userRow = userRes.rows[0];
+        const roleName = String(userRow.role_name || '').toLowerCase();
+
+        if (roleName === 'student') {
+          return NextResponse.json({ 
+            success: false, 
+            error: 'Access Denied' 
+          });
+        }
+
+        const matchedRole = 'Admin';
+        failedAttempts.delete(ip);
+
         const sessionToken = crypto.randomBytes(32).toString('hex');
-        
-        // Clean up expired sessions and insert the new one
-        console.log(`[API validate_mode] Session DB operations starting at ${Date.now() - startTime}ms`);
         await db.execute({
           sql: "DELETE FROM sessions WHERE expiresAt < ?",
           args: [Date.now()]
@@ -566,31 +580,35 @@ export async function POST(request) {
           sql: "INSERT OR REPLACE INTO sessions (token, role, expiresAt) VALUES (?, ?, ?)",
           args: [sessionToken, matchedRole, Date.now() + 24 * 60 * 60 * 1000]
         });
-        console.log(`[API validate_mode] Session DB operations completed in ${Date.now() - startTime}ms`);
 
         return NextResponse.json({ 
           success: true, 
           valid: true, 
           role: matchedRole,
+          user: {
+            name: String(userRow.name),
+            email: String(userRow.email),
+            role_name: String(userRow.role_name)
+          },
           token: sessionToken
         });
+      }
+
+      record.count += 1;
+      if (record.count >= MAX_ATTEMPTS) {
+        record.lockUntil = now + LOCKDOWN_DURATION;
+        failedAttempts.set(ip, record);
+        return NextResponse.json(
+          { success: false, error: 'Too many failed attempts. Locked out for 6 hours.' },
+          { status: 429 }
+        );
       } else {
-        record.count += 1;
-        if (record.count >= MAX_ATTEMPTS) {
-          record.lockUntil = now + LOCKDOWN_DURATION;
-          failedAttempts.set(ip, record);
-          return NextResponse.json(
-            { success: false, error: 'Too many failed attempts. Locked out for 6 hours.' },
-            { status: 429 }
-          );
-        } else {
-          failedAttempts.set(ip, record);
-          return NextResponse.json({ 
-            success: true, 
-            valid: false, 
-            attemptsRemaining: MAX_ATTEMPTS - record.count 
-          });
-        }
+        failedAttempts.set(ip, record);
+        return NextResponse.json({ 
+          success: true, 
+          valid: false, 
+          attemptsRemaining: MAX_ATTEMPTS - record.count 
+        });
       }
     }
 
@@ -1093,6 +1111,20 @@ export async function POST(request) {
           args: [key, value]
         });
         result = { success: true, message: 'Setting saved successfully' };
+        break;
+      }
+
+      case 'save_app_settings': {
+        const settingsObj = params.settings || {};
+        const entries = Object.entries(settingsObj);
+        if (entries.length > 0) {
+          const statements = entries.map(([k, v]) => ({
+            sql: "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)",
+            args: [k, String(v || '')]
+          }));
+          await db.batch(statements);
+        }
+        result = { success: true, message: 'Batch settings saved successfully' };
         break;
       }
 

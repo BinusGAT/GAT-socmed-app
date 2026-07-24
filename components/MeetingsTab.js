@@ -123,6 +123,21 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         setIsEditing(false);
     }, [selectedMeetingId, meetingsData]);
 
+    // Auto-scroll left-hand directory list to position selected memo into view
+    useEffect(() => {
+        if (selectedMeetingId && selectedMeetingId !== 'NEW') {
+            setSearchQuery('');
+            setDateFilter('');
+            const timer = setTimeout(() => {
+                const memoEl = document.getElementById(`memo-item-${selectedMeetingId}`);
+                if (memoEl) {
+                    memoEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [selectedMeetingId]);
+
     // Update contenteditable element content when isEditing becomes true or when switching to editable view
     useEffect(() => {
         if (isEditing && editorRef.current) {
@@ -492,26 +507,20 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     return (
         <div className="space-y-6">
             
-            {/* Header banner */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-surface-container/30 border border-outline-variant/20 rounded-xl p-5 gap-4">
-                <div className="space-y-1">
-                    <h3 className="text-headline-lg font-bold text-on-surface">Meeting Memos</h3>
-                    <p className="text-on-surface-variant font-body-sm">Document action items, attendee presences, and video recaps.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    {isUnlocked && userRole !== 'Creator' && (
-                        <button 
-                            type="button" 
-                            className="bg-primary text-on-primary hover:opacity-90 font-bold py-2 px-4 rounded text-body-sm transition-opacity flex items-center gap-1.5 cursor-pointer micro-interaction shadow-md" 
-                            onClick={handleCreateNewMemo}
-                        >
-                            <span className="material-symbols-outlined text-[18px]">add</span> Create Memo
-                        </button>
-                    )}
-                    <span className="px-2.5 py-1 bg-surface-container border border-outline-variant/30 text-on-surface-variant rounded text-[11px] font-bold uppercase">
-                        {(meetingsData || []).length} Memos
-                    </span>
-                </div>
+            {/* Top Action Bar */}
+            <div className="flex justify-end items-center gap-3">
+                {isUnlocked && userRole !== 'Creator' && (
+                    <button 
+                        type="button" 
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm micro-interaction" 
+                        onClick={handleCreateNewMemo}
+                    >
+                        <span className="material-symbols-outlined text-[16px]">add</span> Create Memo
+                    </button>
+                )}
+                <span className="px-3 py-1.5 bg-surface-container-high border border-outline-variant/30 text-on-surface-variant rounded-xl text-xs font-bold uppercase">
+                    {(meetingsData || []).length} Memos
+                </span>
             </div>
 
             {/* Split layout Directory sidebar & detail editor */}
@@ -566,6 +575,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                 return (
                                     <button
                                         key={memo.id}
+                                        id={`memo-item-${memo.id}`}
                                         type="button"
                                         onClick={() => {
                                             setSelectedMeetingId(memo.id);
@@ -578,7 +588,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                         }}
                                         className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer flex flex-col gap-2 relative ${
                                             isSelected 
-                                                ? 'bg-surface-container-high border-primary/40 shadow-md ring-1 ring-primary/30 active' 
+                                                ? 'bg-surface-container-high border-2 border-primary active' 
                                                 : 'bg-surface-container-low border-outline-variant/15 hover:bg-surface-container'
                                         }`}
                                     >

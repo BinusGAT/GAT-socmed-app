@@ -63,14 +63,14 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
     };
 
     return (
-        <aside className={`fixed left-0 top-0 h-full w-[280px] bg-gradient-to-b from-surface-container-lowest to-surface-container-low/80 border-r border-outline-variant/30 flex flex-col justify-between py-stack-lg z-50 transition-transform duration-300 ${
+        <aside className={`fixed left-0 top-0 h-full w-[280px] bg-surface-container-lowest border-r border-outline-variant/30 dark:bg-[#0c0d10] dark:border-[#22232a] flex flex-col justify-between py-stack-lg z-50 transition-transform duration-300 ${
             isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}>
             <div>
                 {/* Brand */}
                 <div className="px-container-padding mb-stack-lg flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-xl p-1 bg-surface-container-low ring-1 ring-primary/10 shadow-sm shadow-primary/5">
+                        <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-xl p-1 bg-surface-container-low border border-outline-variant/30">
                             <img src="/apple-touch-icon.png" className="w-8 h-8 object-contain rounded-md" alt="Logo" />
                         </div>
                         <div>
@@ -86,19 +86,19 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
                 {/* + New Post Button */}
                 {userRole === 'Admin' && (
-                    <div className="px-container-padding mb-stack-lg">
+                    <div className="px-4 mb-5">
                         <button 
-                            className="w-full bg-primary text-on-primary font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/10 hover:shadow-primary/20 hover:scale-[1.01] active:scale-[0.98] transition-all duration-200 shimmer-button cursor-pointer" 
+                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 shadow-xs transition-all duration-150 cursor-pointer text-sm" 
                             onClick={handleNewPostClick}
                         >
-                            <span className="material-symbols-outlined text-[20px]">add</span>
-                            <span className="text-body-sm font-medium">New Post</span>
+                            <span className="material-symbols-outlined text-[18px]">add</span>
+                            <span>New Post</span>
                         </button>
                     </div>
                 )}
                 
                 {/* Navigation Links */}
-                <nav className="space-y-1">
+                <nav className="px-3 space-y-1">
                     {visibleItems.map((item) => {
                         const isActive = currentView === item.id;
                         return (
@@ -106,17 +106,16 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                                 key={item.id}
                                 id={item.domId}
                                 onClick={() => handleNavClick(item.id)}
-                                className={`w-full text-left px-container-padding py-3 flex items-center gap-3 transition-all duration-200 cursor-pointer relative group ${
+                                className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all duration-150 cursor-pointer relative group text-sm ${
                                     isActive 
-                                        ? 'bg-surface-container-highest/60 text-primary font-semibold' 
-                                        : 'text-on-surface-variant hover:bg-surface-container/50 hover:text-on-surface'
+                                        ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-xs border border-zinc-200 dark:bg-zinc-800/90 dark:text-white dark:border-zinc-700/50' 
+                                        : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/40 dark:hover:text-zinc-200'
                                 }`}
                             >
-                                {isActive && <div className="active-nav-indicator" />}
-                                <span className="material-symbols-outlined text-[20px] transition-transform duration-200 group-hover:scale-105 group-hover:translate-x-0.5" style={isActive && item.fillActive ? { fontVariationSettings: "'FILL' 1" } : undefined}>
+                                <span className="material-symbols-outlined text-[19px] transition-transform duration-150 text-zinc-500 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-200" style={isActive ? { color: '#6366f1', fontVariationSettings: item.fillActive ? "'FILL' 1" : undefined } : undefined}>
                                     {item.icon}
                                 </span>
-                                <span className="text-body-sm font-medium">{item.label}</span>
+                                <span>{item.label}</span>
                             </button>
                         );
                     })}

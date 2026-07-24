@@ -207,37 +207,26 @@ export default function TaskListTab({ onOpenDatePicker }) {
 
 
     return (
-        <div className="space-y-6">
-            {/* Header banner */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-surface-container/30 border border-outline-variant/20 rounded-xl p-5 gap-4">
-                <div className="space-y-1">
-                    <h3 className="text-headline-lg font-bold text-on-surface">Task Directory</h3>
-                    <p className="text-on-surface-variant font-body-sm">Track planned releases, assign tasks, and verify upload statuses.</p>
-                </div>
+        <div className="space-y-4">
+            {/* Filters panel */}
+            <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
-                    {!actionsDisabled && (
-                        <button 
-                            type="button" 
-                            className="bg-primary text-on-primary hover:opacity-90 font-bold py-2 px-4 rounded text-body-sm transition-opacity flex items-center gap-1.5 cursor-pointer micro-interaction shadow-md" 
-                            onClick={openAddModal}
-                        >
-                            <span className="material-symbols-outlined text-[18px]">add</span> Add Scheduled Task
-                        </button>
-                    )}
-                    <span className="px-2.5 py-1 bg-surface-container border border-outline-variant/30 text-on-surface-variant rounded text-[11px] font-bold uppercase">
+                    <span className="text-xs font-semibold text-on-surface uppercase tracking-wider">Task Directory</span>
+                    <span className="px-2.5 py-0.5 bg-surface-container-highest/50 border border-outline-variant/30 text-on-surface-variant rounded-md font-mono text-[11px]">
                         {processedTasks.length} items
                     </span>
                 </div>
-            </div>
-
-            {/* Filters panel */}
-            <div className="bg-surface-container/20 border border-outline-variant/20 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
-                <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[20px]">filter_list</span>
-                    <span className="text-[12px] font-bold text-on-surface uppercase tracking-wider">Search & Filters</span>
-                </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                    {!actionsDisabled && (
+                        <button 
+                            type="button" 
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1.5 px-3.5 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs" 
+                            onClick={openAddModal}
+                        >
+                            <span className="material-symbols-outlined text-[16px]">add</span> Add Scheduled Task
+                        </button>
+                    )}
                     {/* Reset button */}
                     {(tasklistSearch || tasklistFilterPic || tasklistFilterStatus) && (
                         <button 

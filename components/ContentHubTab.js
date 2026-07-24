@@ -258,28 +258,24 @@ export default function ContentHubTab() {
 
 
     return (
-        <div className="space-y-6">
-            
-            {/* Header banner */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-surface-container/30 border border-outline-variant/20 rounded-xl p-5 gap-4">
-                <div className="space-y-1">
-                    <h3 className="text-headline-lg font-bold text-on-surface">Content Hub</h3>
-                    <p className="text-on-surface-variant font-body-sm">Brainstorm ideas, compose scripts, and preview copy directions.</p>
-                </div>
+        <div className="space-y-4">
+            {/* Top Toolbar */}
+            <div className="flex justify-between items-center bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-sm">
                 <div className="flex items-center gap-3">
-                    {isUnlocked && userRole !== 'Creator' && (
-                        <button 
-                            type="button" 
-                            className="bg-primary text-on-primary hover:opacity-90 font-bold py-2 px-4 rounded text-body-sm transition-opacity flex items-center gap-1.5 cursor-pointer micro-interaction shadow-md" 
-                            onClick={handleCreateDraft}
-                        >
-                            <span className="material-symbols-outlined text-[18px]">add</span> New Draft
-                        </button>
-                    )}
-                    <span className="px-2.5 py-1 bg-surface-container border border-outline-variant/30 text-on-surface-variant rounded text-[11px] font-bold uppercase">
+                    <span className="text-xs font-semibold text-on-surface uppercase tracking-wider">Posts Library</span>
+                    <span className="px-2.5 py-0.5 bg-surface-container-highest/50 border border-outline-variant/30 text-on-surface-variant rounded-md font-mono text-[11px]">
                         {(draftsData || []).length} Drafts
                     </span>
                 </div>
+                {isUnlocked && userRole !== 'Creator' && (
+                    <button 
+                        type="button" 
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm micro-interaction" 
+                        onClick={handleCreateDraft}
+                    >
+                        <span className="material-symbols-outlined text-[16px]">add</span> New Draft
+                    </button>
+                )}
             </div>
 
             {/* Backlog Grid & Editor Container */}
@@ -389,7 +385,7 @@ export default function ContentHubTab() {
                                         }}
                                         className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer flex flex-col gap-2 relative ${
                                             isSelected 
-                                                ? 'bg-surface-container-high border-primary/40 shadow-md ring-1 ring-primary/30' 
+                                                ? 'bg-surface-container-high border-2 border-primary' 
                                                 : 'bg-surface-container-low border-outline-variant/15 hover:bg-surface-container'
                                         }`}
                                     >

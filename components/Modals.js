@@ -669,52 +669,61 @@ export function CalendarExportModal({ isOpen, onClose }) {
                     max-width: 900px !important;
                     max-height: 800px !important;
                     box-shadow: none !important;
-                    border: 1.5px solid #3c4a42 !important;
-                    border-radius: 8px !important;
+                    border: 1px solid ${exportTheme === 'light' ? '#e2e8f0' : '#2e3038'} !important;
+                    border-radius: 12px !important;
                     margin: 0 !important;
-                    padding: 24px !important;
+                    padding: 0 !important;
                     display: flex !important;
                     flex-direction: column !important;
                     box-sizing: border-box !important;
-                    gap: 16px !important;
-                    background-color: ${exportTheme === 'light' ? '#ffffff' : '#0b1326'} !important;
-                    color: ${exportTheme === 'light' ? '#09090b' : '#dae2fd'} !important;
+                    overflow: hidden !important;
+                    background-color: ${exportTheme === 'light' ? '#ffffff' : '#202127'} !important;
+                    color: ${exportTheme === 'light' ? '#0f172a' : '#f1f5f9'} !important;
                 }
                 .calendar-toolbar {
                     display: flex !important;
                     justify-content: space-between !important;
                     align-items: center !important;
                     width: 100% !important;
-                    margin-bottom: 8px !important;
+                    padding: 16px 20px !important;
+                    border-bottom: 1px solid ${exportTheme === 'light' ? '#e2e8f0' : '#2e3038'} !important;
+                    background-color: ${exportTheme === 'light' ? '#f8fafc' : '#18191e'} !important;
                 }
                 .calendar-weekdays {
                     display: grid !important;
                     grid-template-columns: repeat(7, 1fr) !important;
-                    gap: 12px !important;
+                    gap: 0 !important;
                     width: 100% !important;
-                    padding-bottom: 8px !important;
-                    border-bottom: 1.5px solid #3c4a42 !important;
-                    color: ${exportTheme === 'light' ? '#71717a' : '#bbcabf'} !important;
+                    padding: 10px 0 !important;
+                    border-bottom: 1px solid ${exportTheme === 'light' ? '#e2e8f0' : '#2e3038'} !important;
+                    background-color: ${exportTheme === 'light' ? '#f8fafc' : '#18191e'} !important;
+                    color: ${exportTheme === 'light' ? '#64748b' : '#94a3b8'} !important;
+                    text-align: center !important;
+                    font-size: 11px !important;
+                    font-weight: 700 !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.05em !important;
                 }
                 .calendar-days {
                     display: grid !important;
                     grid-template-columns: repeat(7, 1fr) !important;
-                    gap: 12px !important;
+                    gap: 1px !important;
                     flex-grow: 1 !important;
                     grid-auto-rows: 1fr !important;
                     width: 100% !important;
+                    background-color: ${exportTheme === 'light' ? '#e2e8f0' : '#2e3038'} !important;
                 }
                 .calendar-day {
                     min-height: 0 !important;
                     height: 100% !important;
-                    padding: 10px 8px !important;
-                    border: 1px solid #1e293b !important;
-                    border-radius: 4px !important;
+                    padding: 8px !important;
+                    border: none !important;
+                    border-radius: 0 !important;
                     display: flex !important;
                     flex-direction: column !important;
                     justify-content: flex-start !important;
                     box-sizing: border-box !important;
-                    background-color: ${exportTheme === 'light' ? '#f4f4f6' : '#131b2e'} !important;
+                    background-color: ${exportTheme === 'light' ? '#ffffff' : '#141518'} !important;
                 }
                 .calendar-day::after {
                     display: none !important;
@@ -735,14 +744,13 @@ export function CalendarExportModal({ isOpen, onClose }) {
                 .calendar-day-task-pill {
                     font-size: 11px !important;
                     padding: 3px 6px !important;
-                    border-radius: 2px !important;
+                    border-radius: 4px !important;
                     font-weight: 700 !important;
                 }
                 .calendar-day-task-category {
                     font-size: 11px !important;
                     font-weight: 600 !important;
                     margin-top: 2px !important;
-                    color: ${exportTheme === 'light' ? '#3f3f46' : '#e5e7eb'} !important;
                 }
                 
                 /* Standard fonts and fallback styles */
@@ -761,47 +769,42 @@ export function CalendarExportModal({ isOpen, onClose }) {
 
                 /* Basic color fallbacks */
                 .text-primary { color: #10b981 !important; }
-                .text-on-surface-variant { color: ${exportTheme === 'light' ? '#4b5563' : '#9ca3af'} !important; }
+                .text-on-surface-variant { color: ${exportTheme === 'light' ? '#64748b' : '#94a3b8'} !important; }
                 
                 /* Category/PIC badge color definitions */
-                .bg-emerald-500\\/10 { background-color: rgba(16, 185, 129, 0.1) !important; }
-                .text-emerald-400 { color: #34d399 !important; }
-                .border-emerald-500\\/20 { border-color: rgba(16, 185, 129, 0.2) !important; }
+                .bg-emerald-500\\/10 { background-color: rgba(16, 185, 129, 0.12) !important; }
+                .text-emerald-400 { color: ${exportTheme === 'light' ? '#059669' : '#34d399'} !important; }
+                .border-emerald-500\\/20 { border-color: rgba(16, 185, 129, 0.25) !important; }
 
-                .bg-sky-500\\/10 { background-color: rgba(14, 165, 233, 0.1) !important; }
-                .text-sky-400 { color: #38bdf8 !important; }
-                .border-sky-500\\/20 { border-color: rgba(14, 165, 233, 0.2) !important; }
+                .bg-sky-500\\/10 { background-color: rgba(14, 165, 233, 0.12) !important; }
+                .text-sky-400 { color: ${exportTheme === 'light' ? '#0284c7' : '#38bdf8'} !important; }
+                .border-sky-500\\/20 { border-color: rgba(14, 165, 233, 0.25) !important; }
 
-                .bg-purple-500\\/10 { background-color: rgba(168, 85, 247, 0.1) !important; }
-                .text-purple-400 { color: #c084fc !important; }
-                .border-purple-500\\/20 { border-color: rgba(168, 85, 247, 0.2) !important; }
+                .bg-purple-500\\/10 { background-color: rgba(168, 85, 247, 0.12) !important; }
+                .text-purple-400 { color: ${exportTheme === 'light' ? '#7e22ce' : '#c084fc'} !important; }
+                .border-purple-500\\/20 { border-color: rgba(168, 85, 247, 0.25) !important; }
 
-                .bg-pink-500\\/10 { background-color: rgba(236, 72, 153, 0.1) !important; }
-                .text-pink-400 { color: #f472b6 !important; }
-                .border-pink-500\\/20 { border-color: rgba(236, 72, 153, 0.2) !important; }
+                .bg-pink-500\\/10 { background-color: rgba(236, 72, 153, 0.12) !important; }
+                .text-pink-400 { color: ${exportTheme === 'light' ? '#be185d' : '#f472b6'} !important; }
+                .border-pink-500\\/20 { border-color: rgba(236, 72, 153, 0.25) !important; }
 
-                .bg-amber-500\\/10 { background-color: rgba(245, 158, 11, 0.1) !important; }
-                .text-amber-400 { color: #fbbf24 !important; }
-                .border-amber-500\\/20 { border-color: rgba(245, 158, 11, 0.2) !important; }
+                .bg-amber-500\\/10 { background-color: rgba(245, 158, 11, 0.12) !important; }
+                .text-amber-400 { color: ${exportTheme === 'light' ? '#d97706' : '#fbbf24'} !important; }
+                .border-amber-500\\/20 { border-color: rgba(245, 158, 11, 0.25) !important; }
 
-                .bg-rose-500\\/10 { background-color: rgba(244, 63, 94, 0.1) !important; }
-                .text-rose-400 { color: #fb7185 !important; }
-                .border-rose-500\\/20 { border-color: rgba(244, 63, 94, 0.2) !important; }
+                .bg-rose-500\\/10 { background-color: rgba(244, 63, 94, 0.12) !important; }
+                .text-rose-400 { color: ${exportTheme === 'light' ? '#e11d48' : '#fb7185'} !important; }
+                .border-rose-500\\/20 { border-color: rgba(244, 63, 94, 0.25) !important; }
 
-                .bg-blue-500\\/10 { background-color: rgba(59, 130, 246, 0.1) !important; }
-                .text-blue-400 { color: #60a5fa !important; }
-                .border-blue-500\\/20 { border-color: rgba(59, 130, 246, 0.2) !important; }
+                .bg-blue-500\\/10 { background-color: rgba(59, 130, 246, 0.12) !important; }
+                .text-blue-400 { color: ${exportTheme === 'light' ? '#2563eb' : '#60a5fa'} !important; }
+                .border-blue-500\\/20 { border-color: rgba(59, 130, 246, 0.25) !important; }
 
                 /* Status day backgrounds */
-                .bg-emerald-500\\/5, .bg-rose-500\\/5, .bg-sky-500\\/5, .bg-amber-500\\/5 { 
-                    background-color: ${exportTheme === 'light' ? 'rgba(59, 130, 246, 0.04)' : 'rgba(59, 130, 246, 0.08)'} !important; 
-                }
-                .border-emerald-500\\/10, .border-rose-500\\/10, .border-sky-500\\/10, .border-amber-500\\/10 {
-                    border-color: ${exportTheme === 'light' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(59, 130, 246, 0.2)'} !important;
-                }
-                .text-emerald-400, .text-rose-400, .text-sky-400, .text-amber-400 { 
-                    color: ${exportTheme === 'light' ? '#2563eb' : '#60a5fa'} !important; 
-                }
+                .bg-emerald-500\\/5 { background-color: rgba(16, 185, 129, 0.06) !important; }
+                .bg-rose-500\\/5 { background-color: rgba(244, 63, 94, 0.06) !important; }
+                .bg-sky-500\\/5 { background-color: rgba(14, 165, 233, 0.06) !important; }
+                .bg-amber-500\\/5 { background-color: rgba(245, 158, 11, 0.06) !important; }
             `;
             doc.head.appendChild(style);
 
@@ -936,7 +939,8 @@ export function CalendarExportModal({ isOpen, onClose }) {
         if (!previewUrl) return;
         const monthLabelEl = document.querySelector('.calendar-month-label h3');
         const monthLabel = monthLabelEl ? monthLabelEl.textContent : 'Calendar';
-        const filename = `Calendar-${monthLabel.replace(/\s+/g, '-')}-${exportTheme.toUpperCase()}.png`;
+        const cleanMonth = monthLabel.replace(/\s+/g, '-');
+        const filename = 'Calendar-' + cleanMonth + '-' + exportTheme.toUpperCase() + '.png';
 
         const link = document.createElement('a');
         link.download = filename;
@@ -1198,7 +1202,7 @@ export function HelpGuideModal({ isOpen, onClose }) {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
                             {/* Admin Card */}
                             <div className={`border rounded-lg p-4 bg-surface-container-lowest flex flex-col gap-2 transition-all duration-200 ${
-                                userRole === 'Admin' ? 'border-primary shadow-[0_0_8px_rgba(78,222,163,0.1)]' : 'border-outline-variant/30 opacity-60'
+                                userRole === 'Admin' ? 'border-2 border-primary' : 'border-outline-variant/30 opacity-60'
                             }`}>
                                 <div className="flex items-center gap-2 text-primary font-bold text-body-sm uppercase tracking-wider">
                                     <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
@@ -1213,7 +1217,7 @@ export function HelpGuideModal({ isOpen, onClose }) {
 
                             {/* Creator Card */}
                             <div className={`border rounded-lg p-4 bg-surface-container-lowest flex flex-col gap-2 transition-all duration-200 ${
-                                userRole === 'Creator' ? 'border-primary shadow-[0_0_8px_rgba(78,222,163,0.1)]' : 'border-outline-variant/30 opacity-60'
+                                userRole === 'Creator' ? 'border-2 border-primary' : 'border-outline-variant/30 opacity-60'
                             }`}>
                                 <div className="flex items-center gap-2 text-primary font-bold text-body-sm uppercase tracking-wider">
                                     <span className="material-symbols-outlined text-[18px]">palette</span>
@@ -1228,7 +1232,7 @@ export function HelpGuideModal({ isOpen, onClose }) {
 
                             {/* Viewer Card */}
                             <div className={`border rounded-lg p-4 bg-surface-container-lowest flex flex-col gap-2 transition-all duration-200 ${
-                                userRole === 'Viewer' ? 'border-primary shadow-[0_0_8px_rgba(78,222,163,0.1)]' : 'border-outline-variant/30 opacity-60'
+                                userRole === 'Viewer' ? 'border-2 border-primary' : 'border-outline-variant/30 opacity-60'
                             }`}>
                                 <div className="flex items-center gap-2 text-primary font-bold text-body-sm uppercase tracking-wider">
                                     <span className="material-symbols-outlined text-[18px]">visibility</span>

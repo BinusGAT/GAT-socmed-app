@@ -440,39 +440,34 @@ export default function AnalyticsTab() {
     return (
         <div className="space-y-6">
             
-            {/* Header banner */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-surface-container/30 border border-outline-variant/20 rounded-xl p-5 gap-4">
-                <div className="space-y-1">
-                    <h3 className="text-headline-lg font-bold text-on-surface">Analytics</h3>
-                </div>
-            </div>
+
 
             {!hasData ? (
                 <div className="p-16 text-center space-y-3 glass-panel border border-outline-variant/30 rounded-xl">
                     <span className="material-symbols-outlined text-[64px] text-on-surface-variant/40">bar_chart</span>
                     <h4 className="font-bold text-body-sm text-on-surface">No Data Available for Analytics</h4>
                     <p className="text-[12px] text-on-surface-variant/70 max-w-sm mx-auto">
-                        There are no published rows in the Laporan sheet database. Populate entries to visualize statistical distributions.
+                        There are no published rows in the Database. Populate entries to visualize statistical distributions.
                     </p>
                 </div>
             ) : (
                 <div className="space-y-6">
                     {/* 1. KPI distribution pills summary */}
-                    <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-4 flex flex-col gap-3">
-                        <span className="text-[10px] font-bold text-on-surface-variant/75 uppercase tracking-wider">Master KPI Distribution Measures</span>
+                    <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 flex flex-col gap-3">
+                        <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Master KPI Distribution Measures</span>
                         
-                        <div className="flex flex-wrap gap-2.5">
-                            <span className="px-3.5 py-1 rounded-full text-[12px] font-bold bg-emerald-500/10 text-primary border border-primary/20 flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[15px]">workspace_premium</span> KPI 6 (Exceptional): {kpiDistribution.kpiCount6}
+                        <div className="flex flex-wrap gap-2">
+                            <span className="px-3 py-1 rounded-md text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[14px]">workspace_premium</span> KPI 6 (Exceptional): {kpiDistribution.kpiCount6}
                             </span>
-                            <span className="px-3.5 py-1 rounded-full text-[12px] font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[15px]">star</span> KPI 5 (Excellent): {kpiDistribution.kpiCount5}
+                            <span className="px-3 py-1 rounded-md text-xs font-medium bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[14px]">star</span> KPI 5 (Excellent): {kpiDistribution.kpiCount5}
                             </span>
-                            <span className="px-3.5 py-1 rounded-full text-[12px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[15px]">grade</span> KPI 4 (Good): {kpiDistribution.kpiCount4}
+                            <span className="px-3 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[14px]">grade</span> KPI 4 (Good): {kpiDistribution.kpiCount4}
                             </span>
-                            <span className="px-3.5 py-1 rounded-full text-[12px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[15px]">flag</span> KPI 3 (Average): {kpiDistribution.kpiCount3}
+                            <span className="px-3 py-1 rounded-md text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[14px]">flag</span> KPI 3 (Average): {kpiDistribution.kpiCount3}
                             </span>
                         </div>
                     </div>

@@ -189,13 +189,8 @@ export default function WebAnalyticsTab() {
 
     return (
         <div className="space-y-6 animate-fade-in pb-12">
-            {/* Header Banner */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-surface-container/30 border border-outline-variant/20 rounded-xl p-5 gap-4">
-                <div className="space-y-1">
-                    <h3 className="text-headline-lg font-bold text-on-surface">Web Analytics</h3>
-                    <p className="text-on-surface-variant font-body-sm">Track website traffic, SEO keywords, referrer channels, and engagement statistics.</p>
-                </div>
-                {canEdit && (
+            {canEdit && (
+                <div className="flex justify-end">
                     <button 
                         onClick={() => setIsManageMode(!isManageMode)}
                         className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-body-sm font-semibold transition-all duration-200 shadow-sm micro-interaction ${
@@ -209,8 +204,8 @@ export default function WebAnalyticsTab() {
                         </span>
                         <span>{isManageMode ? 'Exit Manage Mode' : 'Manage Data'}</span>
                     </button>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* Premium Bento Grid for Summary Metrics */}
             <div className="bg-surface-container-lowest/40 border border-outline-variant/15 rounded-2xl p-6 space-y-6 shadow-md relative overflow-hidden">

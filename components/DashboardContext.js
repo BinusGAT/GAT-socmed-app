@@ -84,11 +84,11 @@ export function DashboardProvider({ children }) {
         const savedDarkMode = localDarkSetting === null ? true : localDarkSetting === 'true';
         setDarkMode(savedDarkMode);
         if (savedDarkMode) {
-            document.body.classList.add('dark-mode');
-            document.documentElement.classList.add('dark-mode');
+            document.body.classList.add('dark-mode', 'dark');
+            document.documentElement.classList.add('dark-mode', 'dark');
         } else {
-            document.body.classList.remove('dark-mode');
-            document.documentElement.classList.remove('dark-mode');
+            document.body.classList.remove('dark-mode', 'dark');
+            document.documentElement.classList.remove('dark-mode', 'dark');
         }
 
         // Restore session if within time limit (6 hours)
@@ -131,7 +131,7 @@ export function DashboardProvider({ children }) {
             app_subtitle: 'Content Suite',
             app_full_name: 'GAT Content Suite',
             company_name: 'GAT Internal Content Team',
-            app_version: 'v0.1.0-alpha'
+            app_version: 'v0.2.0-alpha'
         });
 
         setPlatformsData([
@@ -168,6 +168,16 @@ export function DashboardProvider({ children }) {
             window.removeEventListener('unauthorized-api-call', handleUnauthorized);
         };
     }, []);
+
+    // Update Web Browser Document Title dynamically when appSettingsData changes
+    useEffect(() => {
+        if (typeof window !== 'undefined' && appSettingsData) {
+            const titleToSet = appSettingsData.app_full_name || appSettingsData.app_name;
+            if (titleToSet) {
+                document.title = titleToSet;
+            }
+        }
+    }, [appSettingsData]);
 
     // Load data from Google Sheets when unlock status changes
     useEffect(() => {
@@ -227,11 +237,11 @@ export function DashboardProvider({ children }) {
         setDarkMode(nextDark);
         localStorage.setItem('darkMode', String(nextDark));
         if (nextDark) {
-            document.body.classList.add('dark-mode');
-            document.documentElement.classList.add('dark-mode');
+            document.body.classList.add('dark-mode', 'dark');
+            document.documentElement.classList.add('dark-mode', 'dark');
         } else {
-            document.body.classList.remove('dark-mode');
-            document.documentElement.classList.remove('dark-mode');
+            document.body.classList.remove('dark-mode', 'dark');
+            document.documentElement.classList.remove('dark-mode', 'dark');
         }
         
         // Force layout repaint
@@ -438,6 +448,9 @@ export function DashboardProvider({ children }) {
                 rawAppSettings.forEach(row => {
                     appSettingsObj[row.key] = row.value;
                 });
+                if (!appSettingsObj.app_version || appSettingsObj.app_version === 'v0.1.0-alpha') {
+                    appSettingsObj.app_version = 'v0.2.0-alpha';
+                }
                 const platforms = result.platforms?.data || [];
                 const categories = result.categories?.data || [];
 
@@ -534,39 +547,46 @@ export function DashboardProvider({ children }) {
         return remaining > 0 ? remaining : 0;
     };
 
-    // Submit unlock passcode
-    const unlockWorkspace = async (role, passcode, sessionLimitHours = 6) => {
+    // Submit unlock credentials
+    const unlockWorkspace = async (credentials, passcodeParam, sessionLimitHours = 6) => {
         if (getLockdownTimeRemaining() > 0) {
             throw new Error('System is locked down due to too many failed attempts.');
         }
 
         setIsLoading(true);
         try {
-            const result = await callSheetsAPI('validate_mode', { role, passcode });
-            if (result && result.valid && result.role === role) {
-                // Success
+            let payload = {};
+            if (typeof credentials === 'object' && credentials !== null) {
+                payload = credentials;
+            } else {
+                payload = { role: credentials, passcode: passcodeParam };
+            }
+
+            const result = await callSheetsAPI('validate_mode', payload);
+            if (result && result.valid) {
+                const userRole = result.role || 'Admin';
                 localStorage.setItem('failed_attempts', '0');
                 setIsUnlocked(true);
-                setUserRole(role);
+                setUserRole(userRole);
                 localStorage.setItem('cud_unlocked', 'true');
-                localStorage.setItem('user_role', role);
+                localStorage.setItem('user_role', userRole);
                 localStorage.setItem('session_token', result.token || '');
                 localStorage.setItem('unlocked_at', Date.now().toString());
                 localStorage.setItem('session_limit_hours', '6');
                 setSessionToken(result.token || '');
-                showAlert(`🔓 Workspace unlocked successfully as ${role}!`, 'success');
+                showAlert(`🔓 Workspace unlocked successfully!`, 'success');
                 return true;
             } else {
-                // Failed
                 let failedAttempts = parseInt(localStorage.getItem('failed_attempts') || '0', 10);
                 failedAttempts++;
                 localStorage.setItem('failed_attempts', failedAttempts.toString());
                 
+                const errorText = result?.error || `Incorrect credentials. (${MAX_ATTEMPTS - failedAttempts} attempts remaining)`;
                 if (failedAttempts >= MAX_ATTEMPTS) {
                     localStorage.setItem('lockdown_timestamp', Date.now().toString());
                     throw new Error('Too many failed attempts. System locked down for 6 hours.');
                 } else {
-                    throw new Error(`Incorrect access key. (${MAX_ATTEMPTS - failedAttempts} attempts remaining)`);
+                    throw new Error(errorText);
                 }
             }
         } catch (error) {
@@ -880,6 +900,29 @@ export function DashboardProvider({ children }) {
         return false;
     };
 
+    const saveAppSettingsBatch = async (settingsObj) => {
+        setIsLoading(true);
+        // Optimistic UI update
+        const updatedSettings = { ...appSettingsData, ...settingsObj };
+        setAppSettingsData(updatedSettings);
+        try {
+            localStorage.setItem('GAT_app_settings', JSON.stringify(updatedSettings));
+        } catch (e) {}
+
+        try {
+            const result = await callSheetsAPI('save_app_settings', { settings: settingsObj });
+            if (result && result.success) {
+                showAlert('💾 Settings updated!', 'success');
+                return true;
+            }
+        } catch (error) {
+            showAlert(`❌ Failed to save settings: ${error.message}`, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+        return false;
+    };
+
     const savePlatform = async (platform) => {
         setIsLoading(true);
         try {
@@ -1040,6 +1083,7 @@ export function DashboardProvider({ children }) {
             saveGaItem,
             deleteGaItem,
             saveAppSetting,
+            saveAppSettingsBatch,
             savePlatform,
             deletePlatform,
             saveCategory,

@@ -2,11 +2,12 @@
 // Dynamic database initializer to handle serverless deployments safely.
 
 let clientInstance = null;
+let gatAppClientInstance = null;
 
 async function getDbClient() {
   if (clientInstance) return clientInstance;
 
-  const url = process.env.TURSO_DATABASE_URL;
+  let url = (process.env.TURSO_DATABASE_URL || '').replace(/^:/, '');
   const authToken = process.env.TURSO_AUTH_TOKEN;
 
   if (url && (url.startsWith('libsql:') || url.startsWith('https:'))) {
@@ -28,9 +29,38 @@ async function getDbClient() {
   return clientInstance;
 }
 
+async function getGatAppDbClient() {
+  if (gatAppClientInstance) return gatAppClientInstance;
+
+  const url = (process.env.GAT_APP_DATABASE_URL || '').replace(/^:/, '');
+  const authToken = process.env.GAT_APP_AUTH_TOKEN || '';
+
+  if (!url || !authToken) {
+    throw new Error(
+      'GAT App database configuration is missing. Set GAT_APP_DATABASE_URL and GAT_APP_AUTH_TOKEN.'
+    );
+  }
+
+  if (url && (url.startsWith('libsql:') || url.startsWith('https:'))) {
+    const { createClient } = await import('@libsql/client/web');
+    gatAppClientInstance = createClient({
+      url: url,
+      authToken: authToken || '',
+    });
+  } else {
+    const { createClient } = await import('@libsql/client');
+    gatAppClientInstance = createClient({
+      url: url || 'file:local.db',
+      authToken: authToken || '',
+    });
+  }
+
+  return gatAppClientInstance;
+}
+
 export async function dbExecute(queryObj, maxAttempts = 5) {
   const client = await getDbClient();
-  const url = process.env.TURSO_DATABASE_URL || '';
+  const url = (process.env.TURSO_DATABASE_URL || '').replace(/^:/, '');
   const isRemote = url.startsWith('libsql:') || url.startsWith('https:');
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -53,7 +83,7 @@ export async function dbExecute(queryObj, maxAttempts = 5) {
 
 export async function dbBatch(queries, maxAttempts = 5) {
   const client = await getDbClient();
-  const url = process.env.TURSO_DATABASE_URL || '';
+  const url = (process.env.TURSO_DATABASE_URL || '').replace(/^:/, '');
   const isRemote = url.startsWith('libsql:') || url.startsWith('https:');
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -71,4 +101,9 @@ export async function dbBatch(queries, maxAttempts = 5) {
       throw err;
     }
   }
+}
+
+export async function gatAppExecute(queryObj) {
+  const client = await getGatAppDbClient();
+  return await client.execute(queryObj);
 }
