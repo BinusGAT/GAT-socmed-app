@@ -578,7 +578,7 @@ export async function POST(request) {
         });
         await db.execute({
           sql: "INSERT OR REPLACE INTO sessions (token, role, expiresAt) VALUES (?, ?, ?)",
-          args: [sessionToken, matchedRole, Date.now() + 24 * 60 * 60 * 1000]
+          args: [sessionToken, matchedRole, Date.now() + 8 * 60 * 60 * 1000]
         });
 
         return NextResponse.json({ 
