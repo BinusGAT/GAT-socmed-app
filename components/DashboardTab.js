@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
-import { 
-    normalizePicName, 
+import {
+    normalizePicName,
     getPlatformBadgeHtml,
     formatNumber,
     getLocalDateInputValue,
@@ -82,7 +82,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
     const [currentMonth, setCurrentMonth] = useState(() => today.getMonth());
     const [activeChartTab, setActiveChartTab] = useState('Followers'); // 'Followers' | 'Engagement' | 'Reach'
     const [tableFilterDate, setTableFilterDate] = useState('');
-    
+
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     const handlePrevMonth = () => {
@@ -150,7 +150,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
             const timer = setTimeout(() => {
                 if (viewsInputRef.current) {
                     viewsInputRef.current.focus();
-                    try { viewsInputRef.current.select(); } catch (e) {}
+                    try { viewsInputRef.current.select(); } catch (e) { }
                 }
             }, 250);
             return () => clearTimeout(timer);
@@ -171,7 +171,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
         // Search Query
         if (searchQuery) {
             const q = searchQuery.toLowerCase().trim();
-            list = list.filter(row => 
+            list = list.filter(row =>
                 String(row['Content Title'] || '').toLowerCase().includes(q) ||
                 String(row.ID || '').toLowerCase().includes(q) ||
                 String(row.PIC || '').toLowerCase().includes(q) ||
@@ -317,7 +317,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
             totalViews += parseCleanInt(row.Views);
             totalReach += parseCleanInt(row['Account Reach']);
             totalEngagement += parseCleanInt(row['Total Engagement']);
-            
+
             const rate = parseFloat(row['Engagement Rate (%)']) || 0;
             if (rate > 0) {
                 totalRate += rate;
@@ -393,7 +393,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
 
         let kpiSummary = kpiScore;
         currentData.forEach(row => {
-            if (normalizePlatformName(row.Platform) !== normalizePlatformName(platformVal) && 
+            if (normalizePlatformName(row.Platform) !== normalizePlatformName(platformVal) &&
                 String(row['Content Title']).trim().toLowerCase() === (formTitle || '').trim().toLowerCase()) {
                 const otherKpi = parseCleanInt(row['KPI Score']);
                 if (otherKpi > kpiSummary) kpiSummary = otherKpi;
@@ -472,7 +472,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
 
         let maxKpiScore = calculated.kpiScore;
         currentData.forEach(row => {
-            if (normalizePlatformName(row.Platform) !== normalizePlatformName(formPlatform) && 
+            if (normalizePlatformName(row.Platform) !== normalizePlatformName(formPlatform) &&
                 String(row['Content Title']).trim().toLowerCase() === formTitle.trim().toLowerCase()) {
                 const otherKpi = parseCleanInt(row['KPI Score']);
                 if (otherKpi > maxKpiScore) maxKpiScore = otherKpi;
@@ -507,7 +507,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
         } else {
             success = await addLaporanRow(payload);
         }
-        
+
         if (success) {
             resetForm();
         }
@@ -571,7 +571,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
 
             const Chart = window.Chart;
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            
+
             // Per-platform monthly arrays (12 items each, initialized to 0)
             const platformValues = {
                 Instagram: Array(12).fill(0),
@@ -628,7 +628,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
             const ytData = computeSeries(platformValues.YouTube);
 
             // Compute total combined series
-            const totalMonthly = Array(12).fill(0).map((_, i) => 
+            const totalMonthly = Array(12).fill(0).map((_, i) =>
                 platformValues.Instagram[i] + platformValues.TikTok[i] + platformValues.YouTube[i]
             );
             const totalData = computeSeries(totalMonthly);
@@ -697,7 +697,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                             padding: 10,
                             cornerRadius: 4,
                             callbacks: {
-                                label: function(context) {
+                                label: function (context) {
                                     return ' ' + context.dataset.label + ': ' + formatNumber(context.raw);
                                 }
                             }
@@ -722,7 +722,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                             ticks: {
                                 color: '#bbcabf',
                                 font: { family: 'Inter', size: 10 },
-                                callback: function(value) {
+                                callback: function (value) {
                                     if (value >= 1000000) return (value / 1000000) + 'M';
                                     if (value >= 1000) return (value / 1000) + 'K';
                                     return value;
@@ -754,12 +754,12 @@ export default function DashboardTab({ onOpenDatePicker }) {
     const getCalendarDays = () => {
         const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
         const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
-        
+
         const days = [];
         for (let i = 0; i < firstDayIndex; i++) {
             days.push({ dayNum: '', dateStr: null, isDummy: true });
         }
-        
+
         for (let d = 1; d <= totalDays; d++) {
             const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             days.push({ dayNum: d, dateStr, isDummy: false });
@@ -784,7 +784,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
             const parsedDate = parseDate(task.Date);
             if (parsedDate) {
                 const isUploaded = uploadedIds.has(task.ID);
-                
+
                 tasks.push({
                     id: task.ID,
                     date: parsedDate,
@@ -831,7 +831,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
 
     return (
         <div className="space-y-6">
-            
+
             {/* ========================================================
                1. DESKTOP VIEW LAYOUT (hidden on screens <= 1024px)
                ======================================================== */}
@@ -963,22 +963,22 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                         {isDeleteConfirming ? (
                                             <>
                                                 <span className="text-[10px] text-error font-semibold uppercase tracking-wider">Delete {selectedRows.length} items?</span>
-                                                <button 
-                                                    className="bg-error text-on-error hover:opacity-90 px-3 py-1 rounded-lg text-[11px] font-bold uppercase transition-all cursor-pointer" 
+                                                <button
+                                                    className="bg-error text-on-error hover:opacity-90 px-3 py-1 rounded-lg text-[11px] font-bold uppercase transition-all cursor-pointer"
                                                     onClick={handleDeleteSelected}
                                                 >
                                                     Confirm
                                                 </button>
-                                                <button 
-                                                    className="bg-surface-container border border-outline-variant/30 text-on-surface hover:bg-surface-container-high px-2 py-1 rounded-lg text-[11px] font-bold uppercase transition-all cursor-pointer" 
+                                                <button
+                                                    className="bg-surface-container border border-outline-variant/30 text-on-surface hover:bg-surface-container-high px-2 py-1 rounded-lg text-[11px] font-bold uppercase transition-all cursor-pointer"
                                                     onClick={() => setIsDeleteConfirming(false)}
                                                 >
                                                     Cancel
                                                 </button>
                                             </>
                                         ) : (
-                                            <button 
-                                                className="bg-error-container/20 text-error border border-error/25 hover:bg-error-container/30 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase transition-all micro-interaction cursor-pointer flex items-center gap-1.5" 
+                                            <button
+                                                className="bg-error-container/20 text-error border border-error/25 hover:bg-error-container/30 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase transition-all micro-interaction cursor-pointer flex items-center gap-1.5"
                                                 onClick={() => setIsDeleteConfirming(true)}
                                             >
                                                 <span className="material-symbols-outlined text-[14px]">delete</span> Delete ({selectedRows.length})
@@ -987,15 +987,15 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                     </div>
                                 )}
                                 <div className="flex items-center gap-1.5">
-                                    <button 
-                                        className={`bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest px-3 py-1.5 rounded text-[11px] font-bold uppercase transition-all flex items-center gap-1.5 micro-interaction cursor-pointer ${tableFilterDate ? 'border-primary text-primary' : ''}`} 
+                                    <button
+                                        className={`bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest px-3 py-1.5 rounded text-[11px] font-bold uppercase transition-all flex items-center gap-1.5 micro-interaction cursor-pointer ${tableFilterDate ? 'border-primary text-primary' : ''}`}
                                         onClick={handleTableDatePickerClick}
                                     >
                                         <span className="material-symbols-outlined text-[14px]">calendar_month</span>
                                         {tableFilterDate ? formatDisplayDate(tableFilterDate) : 'Choose Date'}
                                     </button>
                                     {tableFilterDate && (
-                                        <button 
+                                        <button
                                             className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest px-2 py-1.5 rounded text-[11px] font-bold uppercase transition-colors cursor-pointer"
                                             onClick={() => setTableFilterDate('')}
                                             title="Clear date filter"
@@ -1020,7 +1020,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                         <tr>
                                             {isUnlocked && userRole === 'Admin' && (
                                                 <th className="px-4 py-3.5 w-10 text-center">
-                                                    <input 
+                                                    <input
                                                         type="checkbox"
                                                         className="rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                                                         checked={selectedRows.length > 0 && selectedRows.length === processedData.length}
@@ -1057,14 +1057,14 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                             const rowBorderClass = (idx === 0)
                                                 ? ''
                                                 : isNewGroup
-                                                ? 'border-t-[2.5px] border-outline-variant/75'
-                                                : 'border-t border-outline-variant/15';
+                                                    ? 'border-t-[2.5px] border-outline-variant/75'
+                                                    : 'border-t border-outline-variant/15';
 
                                             return (
                                                 <tr key={`${row.ID}-${idx}`} className={`hover:bg-surface-container/20 transition-colors ${isRowSelected ? 'bg-primary-container/5' : ''} ${rowBorderClass}`}>
                                                     {isUnlocked && userRole === 'Admin' && (
                                                         <td className="px-4 py-3 w-10 text-center">
-                                                            <input 
+                                                            <input
                                                                 type="checkbox"
                                                                 className="rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                                                                 checked={isRowSelected}
@@ -1117,9 +1117,9 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                                     </td>
                                                     {isUnlocked && userRole === 'Admin' && (
                                                         <td className="px-4 py-3 text-center">
-                                                            <button 
-                                                                type="button" 
-                                                                className="p-1 text-on-surface-variant hover:text-primary transition-colors cursor-pointer micro-interaction" 
+                                                            <button
+                                                                type="button"
+                                                                className="p-1 text-on-surface-variant hover:text-primary transition-colors cursor-pointer micro-interaction"
                                                                 onClick={() => loadRowForEdit(row, idx)}
                                                                 title="Edit metrics"
                                                             >
@@ -1156,11 +1156,11 @@ export default function DashboardTab({ onOpenDatePicker }) {
                         <div className="grid grid-cols-7 gap-1">
                             {calendarDays.map((day, idx) => {
                                 const isSelected = day.dateStr && selectedDate === day.dateStr;
-                                
+
                                 let hasTask = false;
                                 let uploadedClass = '';
                                 let statusColor = 'text-on-surface hover:bg-surface-container-high';
-                                
+
                                 if (day.dateStr && !day.isDummy) {
                                     const dayTasks = combinedTasks.filter(t => t.date === day.dateStr);
                                     hasTask = dayTasks.length > 0;
@@ -1187,15 +1187,14 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                 }
 
                                 return (
-                                    <button 
+                                    <button
                                         key={idx}
-                                        className={`h-8 w-full border-none rounded text-body-sm cursor-pointer flex items-center justify-center transition-all micro-interaction ${
-                                            day.isDummy 
-                                                ? 'bg-transparent text-transparent pointer-events-none' 
-                                                : isSelected 
-                                                ? 'bg-primary text-on-primary font-bold shadow' 
-                                                : statusColor
-                                        } ${uploadedClass}`}
+                                        className={`h-8 w-full border-none rounded text-body-sm cursor-pointer flex items-center justify-center transition-all micro-interaction ${day.isDummy
+                                                ? 'bg-transparent text-transparent pointer-events-none'
+                                                : isSelected
+                                                    ? 'bg-primary text-on-primary font-bold shadow'
+                                                    : statusColor
+                                            } ${uploadedClass}`}
                                         onClick={() => !day.isDummy && setSelectedDate(day.dateStr)}
                                         disabled={day.isDummy}
                                     >
@@ -1211,15 +1210,15 @@ export default function DashboardTab({ onOpenDatePicker }) {
                         <div className="flex justify-between items-center pb-2 border-b border-outline-variant/20">
                             <h3 className="text-[11px] sm:text-xs font-bold text-on-surface-variant uppercase tracking-wider">Scheduled for this day</h3>
                             {userRole === 'Admin' && (
-                                <button 
-                                    className="w-7 h-7 flex items-center justify-center bg-primary-container text-on-primary-container rounded-lg hover:opacity-90 cursor-pointer transition-opacity" 
+                                <button
+                                    className="w-7 h-7 flex items-center justify-center bg-primary-container text-on-primary-container rounded-lg hover:opacity-90 cursor-pointer transition-opacity"
                                     onClick={() => setIsNewPostDrawerOpen(true)}
                                 >
                                     <span className="material-symbols-outlined text-[16px]">add</span>
                                 </button>
                             )}
                         </div>
-                        
+
                         <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
                             {scheduledTimeline.length === 0 ? (
                                 <div className="py-8 text-center text-on-surface-variant/60 text-body-sm space-y-2">
@@ -1254,9 +1253,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                 {['Followers', 'Engagement', 'Reach'].map(tab => (
                                     <button
                                         key={tab}
-                                        className={`px-2.5 py-1 rounded cursor-pointer transition-all ${
-                                            activeChartTab === tab ? 'bg-surface text-primary shadow' : 'text-on-surface-variant hover:text-on-surface'
-                                        }`}
+                                        className={`px-2.5 py-1 rounded cursor-pointer transition-all ${activeChartTab === tab ? 'bg-surface text-primary shadow' : 'text-on-surface-variant hover:text-on-surface'
+                                            }`}
                                         onClick={() => setActiveChartTab(tab)}
                                     >
                                         {tab}
@@ -1376,7 +1374,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
 
                 {/* Contextual FAB to trigger new post popup */}
                 {userRole === 'Admin' && (
-                    <button 
+                    <button
                         className="fixed right-6 bottom-24 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 z-40"
                         onClick={() => setIsNewPostDrawerOpen(true)}
                     >
@@ -1388,13 +1386,12 @@ export default function DashboardTab({ onOpenDatePicker }) {
             {/* ========================================================
                3. SLIDE-OVER FORM DRAWER (shared by desktop and mobile)
                ======================================================== */}
-            <div className={`fixed inset-y-0 right-0 z-[100] w-full sm:w-[450px] bg-surface-container border-l border-outline-variant/30 flex flex-col justify-between shadow-2xl transition-transform duration-300 ${
-                isNewPostDrawerOpen ? 'translate-x-0' : 'translate-x-full'
-            }`}>
+            <div className={`fixed inset-y-0 right-0 z-[100] w-full sm:w-[450px] bg-surface-container border-l border-outline-variant/30 flex flex-col justify-between shadow-2xl transition-transform duration-300 ${isNewPostDrawerOpen ? 'translate-x-0' : 'translate-x-full'
+                }`}>
                 {isNewPostDrawerOpen && (
                     <div className="fixed inset-0 bg-background/50 z-[-1]" onClick={resetForm}></div>
                 )}
-                
+
                 {/* Header */}
                 <div className="px-5 py-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
                     <h2 className="text-body-lg font-bold text-on-surface flex items-center gap-2">
@@ -1410,22 +1407,19 @@ export default function DashboardTab({ onOpenDatePicker }) {
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
                     {/* Tabs switcher */}
                     <div className="flex border-b border-outline-variant/25 pb-0.5">
-                        <button 
-                            type="button" 
-                            className={`flex-1 pb-2 text-center text-body-sm font-bold uppercase tracking-wider cursor-pointer border-b-2 transition-all ${
-                                formTab === 'basic' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant'
-                            }`}
+                        <button
+                            type="button"
+                            className={`flex-1 pb-2 text-center text-body-sm font-bold uppercase tracking-wider cursor-pointer border-b-2 transition-all ${formTab === 'basic' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant'
+                                }`}
                             onClick={() => setFormTab('basic')}
                         >
                             Basic Metrics
                         </button>
-                        <button 
-                            type="button" 
-                            className={`flex-1 pb-2 text-center text-body-sm font-bold uppercase tracking-wider cursor-pointer border-b-2 transition-all ${
-                                formTab === 'additional' ? 'border-transparent border-b-2 border-transparent text-on-surface-variant' : ''
-                            } ${
-                                formTab === 'additional' ? 'border-primary text-on-surface' : ''
-                            }`}
+                        <button
+                            type="button"
+                            className={`flex-1 pb-2 text-center text-body-sm font-bold uppercase tracking-wider cursor-pointer border-b-2 transition-all ${formTab === 'additional' ? 'border-transparent border-b-2 border-transparent text-on-surface-variant' : ''
+                                } ${formTab === 'additional' ? 'border-primary text-on-surface' : ''
+                                }`}
                             onClick={() => setFormTab('additional')}
                         >
                             Additional Info
@@ -1439,9 +1433,9 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                     <label className="text-body-sm font-semibold text-on-surface-variant flex items-center gap-1">
                                         Date <span className="text-error">*</span>
                                     </label>
-                                    <input 
-                                        type="text" 
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer" 
+                                    <input
+                                        type="text"
+                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer"
                                         placeholder="YYYY-MM-DD"
                                         value={formDate}
                                         onClick={handleDatePickerClick}
@@ -1455,8 +1449,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                     <label className="text-body-sm font-semibold text-on-surface-variant">
                                         Content Title
                                     </label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                         placeholder="Enter title (optional)"
                                         value={formTitle}
@@ -1470,7 +1464,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                         <label className="text-body-sm font-semibold text-on-surface-variant">
                                             PIC <span className="text-error">*</span>
                                         </label>
-                                        <select 
+                                        <select
                                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                             value={formPic}
                                             onChange={(e) => setFormPic(e.target.value)}
@@ -1487,7 +1481,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                         <label className="text-body-sm font-semibold text-on-surface-variant">
                                             Category <span className="text-error">*</span>
                                         </label>
-                                        <select 
+                                        <select
                                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                             value={formCategory}
                                             onChange={(e) => setFormCategory(e.target.value)}
@@ -1507,7 +1501,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="space-y-1">
                                                 <label className="text-body-sm font-semibold text-on-surface-variant">Platform</label>
-                                                <select 
+                                                <select
                                                     className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                                     value={formPlatform}
                                                     onChange={(e) => setFormPlatform(e.target.value)}
@@ -1520,8 +1514,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                             </div>
                                             <div className="space-y-1">
                                                 <label className="text-body-sm font-semibold text-on-surface-variant">Views</label>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                                     placeholder="0"
                                                     value={formViews}
@@ -1533,8 +1527,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
 
                                         <div className="space-y-1">
                                             <label className="text-body-sm font-semibold text-on-surface-variant">Account Reach</label>
-                                            <input 
-                                                type="number" 
+                                            <input
+                                                type="number"
                                                 className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                                 placeholder="0"
                                                 value={formReach}
@@ -1545,8 +1539,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="space-y-1">
                                                 <label className="text-body-sm font-semibold text-on-surface-variant">Likes</label>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                                     placeholder="0"
                                                     value={formLikes}
@@ -1555,8 +1549,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                             </div>
                                             <div className="space-y-1">
                                                 <label className="text-body-sm font-semibold text-on-surface-variant">Comments</label>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                                     placeholder="0"
                                                     value={formComments}
@@ -1568,8 +1562,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="space-y-1">
                                                 <label className="text-body-sm font-semibold text-on-surface-variant">Followers Gained</label>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                                     placeholder="0"
                                                     value={formFollows}
@@ -1578,8 +1572,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                             </div>
                                             <div className="space-y-1">
                                                 <label className="text-body-sm font-semibold text-on-surface-variant">Reposts</label>
-                                                <input 
-                                                    type="number" 
+                                                <input
+                                                    type="number"
                                                     className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                                     placeholder="0"
                                                     value={formRepost}
@@ -1590,8 +1584,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
 
                                         <div className="space-y-1">
                                             <label className="text-body-sm font-semibold text-on-surface-variant">Shares</label>
-                                            <input 
-                                                type="number" 
+                                            <input
+                                                type="number"
                                                 className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                                 placeholder="0"
                                                 value={formShares}
@@ -1619,8 +1613,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
                             <div className="space-y-4">
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Post URL</label>
-                                    <input 
-                                        type="url" 
+                                    <input
+                                        type="url"
                                         className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                         placeholder="https://published-link.com/post/123"
                                         value={formUrl}
@@ -1629,7 +1623,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Comment Notes</label>
-                                    <textarea 
+                                    <textarea
                                         className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                         rows="5"
                                         placeholder="Enter any comments or post details"

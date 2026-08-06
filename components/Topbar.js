@@ -5,21 +5,21 @@ import { createPortal } from 'react-dom';
 import { useDashboard } from './DashboardContext';
 import { parseDate } from '../utils/helpers';
 
-export default function Topbar({ 
-    toggleSidebar, 
-    openUnlockModal, 
-    openDateRangeModal, 
-    onExport, 
+export default function Topbar({
+    toggleSidebar,
+    openUnlockModal,
+    openDateRangeModal,
+    onExport,
     dateRangeText,
     openHelpModal
 }) {
-    const { 
-        currentView, 
-        isUnlocked, 
-        userRole, 
-        lockWorkspace, 
-        darkMode, 
-        toggleDarkMode, 
+    const {
+        currentView,
+        isUnlocked,
+        userRole,
+        lockWorkspace,
+        darkMode,
+        toggleDarkMode,
         refreshData,
         searchQuery,
         setSearchQuery,
@@ -84,8 +84,8 @@ export default function Topbar({
             .map(n => ({
                 id: n.id,
                 icon: n.isUrgent === 1 || n.isUrgent === true ? 'warning' : 'campaign',
-                text: n.targetRole === 'All' 
-                    ? `Broadcast: "${n.message}"` 
+                text: n.targetRole === 'All'
+                    ? `Broadcast: "${n.message}"`
                     : `[To ${n.targetRole}] Broadcast: "${n.message}"`,
                 isCustom: true,
                 isUrgent: n.isUrgent === 1 || n.isUrgent === true,
@@ -161,10 +161,10 @@ export default function Topbar({
         <header className="fixed top-0 right-0 left-0 lg:left-[280px] h-16 bg-surface-container-lowest border-b border-outline-variant/30 dark:bg-[#0c0d10] dark:border-[#22232a] z-40 flex items-center justify-between px-container-padding">
             {/* Header Left (Menu Toggle and Title) */}
             <div className="flex items-center gap-4">
-                <button 
-                    onClick={toggleSidebar} 
-                    id="sidebarToggle" 
-                    className="block lg:hidden text-on-surface-variant hover:text-on-surface p-1.5 rounded-lg hover:bg-surface-container/60 transition-colors micro-interaction cursor-pointer" 
+                <button
+                    onClick={toggleSidebar}
+                    id="sidebarToggle"
+                    className="block lg:hidden text-on-surface-variant hover:text-on-surface p-1.5 rounded-lg hover:bg-surface-container/60 transition-colors micro-interaction cursor-pointer"
                     aria-label="Toggle sidebar"
                 >
                     <span className="material-symbols-outlined text-[24px]">menu</span>
@@ -182,10 +182,10 @@ export default function Topbar({
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 flex items-center">
                             <span className="material-symbols-outlined text-[20px]">search</span>
                         </span>
-                        <input 
-                            type="text" 
-                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg pl-10 pr-4 py-2 text-body-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" 
-                            placeholder="Search posts..." 
+                        <input
+                            type="text"
+                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg pl-10 pr-4 py-2 text-body-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                            placeholder="Search posts..."
                             value={searchQuery || ''}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -194,10 +194,9 @@ export default function Topbar({
 
                 {/* Notifications */}
                 <div className="relative">
-                    <button 
-                        className={`p-2 rounded-full hover:bg-surface-container transition-colors cursor-pointer relative micro-interaction ${
-                            notificationsOpen ? 'text-primary' : 'text-on-surface-variant'
-                        }`} 
+                    <button
+                        className={`p-2 rounded-full hover:bg-surface-container transition-colors cursor-pointer relative micro-interaction ${notificationsOpen ? 'text-primary' : 'text-on-surface-variant'
+                            }`}
                         title="Notifications"
                         onClick={() => setNotificationsOpen(!notificationsOpen)}
                     >
@@ -214,17 +213,16 @@ export default function Topbar({
                                 </div>
                                 <div className="max-h-60 overflow-y-auto divide-y divide-outline-variant/10">
                                     {getNotifications().map((n, idx) => (
-                                        <div key={n.id || idx} className={`px-4 py-3 text-[12px] leading-relaxed flex items-center justify-between gap-2.5 transition-colors ${
-                                            n.isUrgent 
-                                                ? 'bg-error-container/15 hover:bg-error-container/25 text-error border-l-4 border-error font-semibold' 
+                                        <div key={n.id || idx} className={`px-4 py-3 text-[12px] leading-relaxed flex items-center justify-between gap-2.5 transition-colors ${n.isUrgent
+                                                ? 'bg-error-container/15 hover:bg-error-container/25 text-error border-l-4 border-error font-semibold'
                                                 : 'text-on-surface-variant/90 hover:bg-surface-container-low'
-                                        }`}>
+                                            }`}>
                                             <div className="flex items-start gap-2.5 flex-1 min-w-0">
                                                 <span className={`material-symbols-outlined text-[16px] mt-0.5 ${n.isUrgent ? 'text-error animate-pulse' : 'text-primary'}`}>{n.icon}</span>
                                                 <span className="break-words">{n.text}</span>
                                             </div>
                                             {n.isCustom && isUnlocked && userRole === 'Admin' && (
-                                                <button 
+                                                <button
                                                     type="button"
                                                     onClick={async (e) => {
                                                         e.stopPropagation();
@@ -250,7 +248,7 @@ export default function Topbar({
 
                 {/* User Profile / Menu */}
                 <div className="relative">
-                    <div 
+                    <div
                         className="flex items-center gap-3 cursor-pointer group micro-interaction select-none"
                         onClick={() => setProfileOpen(!profileOpen)}
                     >
@@ -259,9 +257,9 @@ export default function Topbar({
                                 {isUnlocked ? `${userRole} Account` : 'Guest Mode'}
                             </p>
                             <p className="text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold">
-                                 {isUnlocked 
-                                     ? (userRole === 'Viewer' ? 'Viewer' : 'Staff Member') 
-                                     : 'Visitor Mode'}
+                                {isUnlocked
+                                    ? (userRole === 'Viewer' ? 'Viewer' : 'Staff Member')
+                                    : 'Visitor Mode'}
                             </p>
                         </div>
                         <div className="w-10 h-10 rounded-full border border-outline-variant group-hover:border-primary transition-colors flex items-center justify-center bg-surface-container-high text-on-surface-variant group-hover:text-primary">
@@ -274,16 +272,15 @@ export default function Topbar({
                             <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)}></div>
                             <div className="absolute right-0 mt-2 w-56 bg-surface-container border border-outline-variant/30 rounded-lg shadow-2xl z-50 overflow-hidden py-1 font-body-sm text-body-sm">
                                 <div className="px-4 py-2 border-b border-outline-variant/15 bg-surface-container-lowest flex justify-center">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                        isUnlocked ? 'bg-primary-container/20 text-primary border border-primary/25' : 'bg-error-container/25 text-error border border-error/20'
-                                    }`}>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${isUnlocked ? 'bg-primary-container/20 text-primary border border-primary/25' : 'bg-error-container/25 text-error border border-error/20'
+                                        }`}>
                                         {isUnlocked ? `Active: ${userRole}` : 'READ ONLY'}
                                     </span>
                                 </div>
                                 <div className="py-1">
                                     {/* Edit Mode Toggle */}
-                                    <button 
-                                        className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer" 
+                                    <button
+                                        className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer"
                                         onClick={handleAuthClick}
                                     >
                                         <span className="material-symbols-outlined text-[18px] text-primary">
@@ -292,42 +289,42 @@ export default function Topbar({
                                         <span>{isUnlocked ? 'Lock Workspace' : 'Enable Edit Mode'}</span>
                                     </button>
 
-                                     {/* Refresh */}
-                                     {isUnlocked && userRole !== 'Viewer' && (
-                                         <button 
-                                             className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer" 
-                                             onClick={() => { setProfileOpen(false); refreshData(); }}
-                                         >
-                                             <span className="material-symbols-outlined text-[18px] text-primary">sync</span>
-                                             <span>Sync Database</span>
-                                         </button>
-                                     )}
+                                    {/* Refresh */}
+                                    {isUnlocked && userRole !== 'Viewer' && (
+                                        <button
+                                            className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer"
+                                            onClick={() => { setProfileOpen(false); refreshData(); }}
+                                        >
+                                            <span className="material-symbols-outlined text-[18px] text-primary">sync</span>
+                                            <span>Sync Database</span>
+                                        </button>
+                                    )}
 
-                                     {/* Export to Excel */}
-                                     {isUnlocked && userRole !== 'Viewer' && (
-                                         <button 
-                                             className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer" 
-                                             onClick={() => { setProfileOpen(false); onExport(); }}
-                                         >
-                                             <span className="material-symbols-outlined text-[18px] text-primary">download</span>
-                                             <span>Export Database</span>
-                                         </button>
-                                     )}
+                                    {/* Export to Excel */}
+                                    {isUnlocked && userRole !== 'Viewer' && (
+                                        <button
+                                            className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer"
+                                            onClick={() => { setProfileOpen(false); onExport(); }}
+                                        >
+                                            <span className="material-symbols-outlined text-[18px] text-primary">download</span>
+                                            <span>Export Database</span>
+                                        </button>
+                                    )}
 
-                                     {/* Broadcast Notification */}
-                                     {isUnlocked && userRole === 'Admin' && (
-                                         <button 
-                                             className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer" 
-                                             onClick={() => { setProfileOpen(false); setIsBroadcastModalOpen(true); }}
-                                         >
-                                             <span className="material-symbols-outlined text-[18px] text-primary">campaign</span>
-                                             <span>Broadcast Notification</span>
-                                         </button>
-                                     )}
+                                    {/* Broadcast Notification */}
+                                    {isUnlocked && userRole === 'Admin' && (
+                                        <button
+                                            className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer"
+                                            onClick={() => { setProfileOpen(false); setIsBroadcastModalOpen(true); }}
+                                        >
+                                            <span className="material-symbols-outlined text-[18px] text-primary">campaign</span>
+                                            <span>Broadcast Notification</span>
+                                        </button>
+                                    )}
 
                                     {/* Date range picker trigger */}
-                                    <button 
-                                        className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer" 
+                                    <button
+                                        className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer"
                                         onClick={() => { setProfileOpen(false); openDateRangeModal(); }}
                                     >
                                         <span className="material-symbols-outlined text-[18px] text-primary">date_range</span>
@@ -336,8 +333,8 @@ export default function Topbar({
 
                                     {/* Help Guide */}
                                     {isUnlocked && (
-                                        <button 
-                                            className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer" 
+                                        <button
+                                            className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer"
                                             onClick={() => { setProfileOpen(false); openHelpModal(); }}
                                         >
                                             <span className="material-symbols-outlined text-[18px] text-primary">help</span>
@@ -346,10 +343,10 @@ export default function Topbar({
                                     )}
 
                                     <div className="border-t border-outline-variant/15 my-1"></div>
-                                    
+
                                     {/* Theme Switch */}
-                                    <button 
-                                        className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer" 
+                                    <button
+                                        className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer"
                                         onClick={() => { setProfileOpen(false); toggleDarkMode(); }}
                                     >
                                         <span className="material-symbols-outlined text-[18px] text-primary">
@@ -375,15 +372,15 @@ export default function Topbar({
                                 <span className="material-symbols-outlined text-[20px]">close</span>
                             </button>
                         </div>
-                        
+
                         <form onSubmit={handleBroadcastSubmit} autoComplete="off">
                             <div className="px-5 py-4 space-y-4">
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Message <span className="text-error">*</span></label>
-                                    <textarea 
+                                    <textarea
                                         rows={3}
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary resize-none" 
-                                        placeholder="Enter notification message..." 
+                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary resize-none"
+                                        placeholder="Enter notification message..."
                                         required
                                         value={broadcastMessage}
                                         onChange={(e) => setBroadcastMessage(e.target.value)}
@@ -393,27 +390,27 @@ export default function Topbar({
                                     <label className="text-body-sm font-semibold text-on-surface-variant block mb-1">Target Roles <span className="text-error">*</span></label>
                                     <div className="flex flex-col gap-2.5 bg-surface-container-low border border-outline-variant/30 rounded p-3">
                                         <label className="flex items-center gap-2.5 text-body-sm text-on-surface cursor-pointer select-none">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={broadcastRoles.includes('Admin')} 
+                                            <input
+                                                type="checkbox"
+                                                checked={broadcastRoles.includes('Admin')}
                                                 onChange={() => handleRoleToggle('Admin')}
                                                 className="w-4 h-4 rounded accent-primary cursor-pointer"
                                             />
                                             <span>Admin</span>
                                         </label>
                                         <label className="flex items-center gap-2.5 text-body-sm text-on-surface cursor-pointer select-none">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={broadcastRoles.includes('Creator')} 
+                                            <input
+                                                type="checkbox"
+                                                checked={broadcastRoles.includes('Creator')}
                                                 onChange={() => handleRoleToggle('Creator')}
                                                 className="w-4 h-4 rounded accent-primary cursor-pointer"
                                             />
                                             <span>Creator</span>
                                         </label>
                                         <label className="flex items-center gap-2.5 text-body-sm text-on-surface cursor-pointer select-none">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={broadcastRoles.includes('Viewer')} 
+                                            <input
+                                                type="checkbox"
+                                                checked={broadcastRoles.includes('Viewer')}
                                                 onChange={() => handleRoleToggle('Viewer')}
                                                 className="w-4 h-4 rounded accent-primary cursor-pointer"
                                             />
@@ -422,10 +419,10 @@ export default function Topbar({
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 pt-1">
-                                    <input 
-                                        type="checkbox" 
+                                    <input
+                                        type="checkbox"
                                         id="isUrgentNotif"
-                                        checked={isUrgent} 
+                                        checked={isUrgent}
                                         onChange={(e) => setIsUrgent(e.target.checked)}
                                         className="w-4 h-4 rounded accent-error cursor-pointer"
                                     />
@@ -435,17 +432,17 @@ export default function Topbar({
                                     </label>
                                 </div>
                             </div>
-                            
+
                             <div className="px-5 py-3 bg-surface-container-lowest border-t border-outline-variant/15 flex justify-end gap-2.5">
-                                <button 
-                                    type="button" 
-                                    className="bg-surface-container border border-outline-variant/30 text-on-surface hover:bg-surface-container-high font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors" 
+                                <button
+                                    type="button"
+                                    className="bg-surface-container border border-outline-variant/30 text-on-surface hover:bg-surface-container-high font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors"
                                     onClick={() => setIsBroadcastModalOpen(false)}
                                 >
                                     Cancel
                                 </button>
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     className="bg-primary text-on-primary hover:opacity-90 font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-opacity flex items-center gap-1 cursor-pointer"
                                 >
                                     <span className="material-symbols-outlined text-[15px]">send</span> Broadcast

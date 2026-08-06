@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { DashboardProvider, useDashboard } from '../../components/DashboardContext';
 import Sidebar from '../../components/Sidebar';
 import Topbar from '../../components/Topbar';
-import { 
-    UnlockModal, 
+import {
+    UnlockModal,
     DateRangeModal,
     DatePickerModal,
     CalendarExportModal,
@@ -45,7 +45,7 @@ function DashboardAppContent() {
         if (typeof document === 'undefined') return;
         const classes = ['calendar-mode', 'tasklist-mode', 'meeting-mode', 'content-mode', 'analytics-mode'];
         classes.forEach(c => document.body.classList.remove(c));
-        
+
         if (currentView === 'calendar') {
             document.body.classList.add('calendar-mode');
         } else if (currentView === 'tasklist') {
@@ -71,7 +71,7 @@ function DashboardAppContent() {
     const [dateRangeOpen, setDateRangeOpen] = useState(false);
     const [calendarExportOpen, setCalendarExportOpen] = useState(false);
     const [helpOpen, setHelpOpen] = useState(false);
-    
+
     // Date Picker state
     const [datePickerOpen, setDatePickerOpen] = useState(false);
     const [datePickerCallback, setDatePickerCallback] = useState(null);
@@ -107,12 +107,12 @@ function DashboardAppContent() {
 
         try {
             const XLSX = window.XLSX;
-            
+
             // Map headers to match Google Sheets format
             const headers = [
-                'Date', 'ID', 'Content Title', 'PIC', 'Category', 'Platform', 
-                'Views', 'Account Reach', 'Likes', 'Comments', 'Follows', 'Repost', 
-                'Shares', 'Total Engagement', 'Engagement Rate (%)', 'KPI Score', 
+                'Date', 'ID', 'Content Title', 'PIC', 'Category', 'Platform',
+                'Views', 'Account Reach', 'Likes', 'Comments', 'Follows', 'Repost',
+                'Shares', 'Total Engagement', 'Engagement Rate (%)', 'KPI Score',
                 'KPI Summary', 'URL', 'Comment Text'
             ];
 
@@ -147,7 +147,7 @@ function DashboardAppContent() {
         if (dateRange.mode === 'custom') {
             return `${formatDisplayDate(dateRange.start)} - ${formatDisplayDate(dateRange.end)}`;
         }
-        
+
         const modeLabels = {
             today: 'Today',
             yesterday: 'Yesterday',
@@ -229,13 +229,12 @@ function DashboardAppContent() {
                 )}
 
                 {globalAlert && (
-                    <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 py-3.5 px-5 rounded-xl shadow-2xl animate-slide-in text-body-sm font-semibold border ${
-                        globalAlert.type === 'error' 
-                            ? 'bg-error/10 border-error/25 text-error shadow-[0_4px_20px_rgba(186,26,26,0.12)]' 
-                            : globalAlert.type === 'warning' 
-                            ? 'bg-amber-500/10 border-amber-500/25 text-amber-500 shadow-[0_4px_20px_rgba(245,158,11,0.12)]'
-                            : 'bg-primary/10 border-primary/25 text-primary shadow-[0_4px_20px_rgba(16,185,129,0.12)]'
-                    }`}>
+                    <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 py-3.5 px-5 rounded-xl shadow-2xl animate-slide-in text-body-sm font-semibold border ${globalAlert.type === 'error'
+                            ? 'bg-error/10 border-error/25 text-error shadow-[0_4px_20px_rgba(186,26,26,0.12)]'
+                            : globalAlert.type === 'warning'
+                                ? 'bg-amber-500/10 border-amber-500/25 text-amber-500 shadow-[0_4px_20px_rgba(245,158,11,0.12)]'
+                                : 'bg-primary/10 border-primary/25 text-primary shadow-[0_4px_20px_rgba(16,185,129,0.12)]'
+                        }`}>
                         <span className="material-symbols-outlined text-[20px]">
                             {globalAlert.type === 'error' ? 'error' : globalAlert.type === 'warning' ? 'warning' : 'check_circle'}
                         </span>
@@ -258,8 +257,8 @@ function DashboardAppContent() {
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col min-h-screen w-full lg:pl-[280px] pt-16 pb-20 lg:pb-0">
-                <Topbar 
-                    toggleSidebar={toggleSidebar} 
+                <Topbar
+                    toggleSidebar={toggleSidebar}
                     openUnlockModal={() => setUnlockOpen(true)}
                     openDateRangeModal={() => setDateRangeOpen(true)}
                     onExport={handleExportAll}
@@ -283,13 +282,12 @@ function DashboardAppContent() {
 
                 {/* Global Alert Notification Banner */}
                 {globalAlert && (
-                    <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 py-3.5 px-5 rounded-xl shadow-2xl animate-slide-in text-body-sm font-semibold border ${
-                        globalAlert.type === 'error' 
-                            ? 'bg-error/10 border-error/25 text-error shadow-[0_4px_20px_rgba(186,26,26,0.12)]' 
-                            : globalAlert.type === 'warning' 
-                            ? 'bg-amber-500/10 border-amber-500/25 text-amber-500 shadow-[0_4px_20px_rgba(245,158,11,0.12)]'
-                            : 'bg-primary/10 border-primary/25 text-primary shadow-[0_4px_20px_rgba(16,185,129,0.12)]'
-                    }`}>
+                    <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 py-3.5 px-5 rounded-xl shadow-2xl animate-slide-in text-body-sm font-semibold border ${globalAlert.type === 'error'
+                            ? 'bg-error/10 border-error/25 text-error shadow-[0_4px_20px_rgba(186,26,26,0.12)]'
+                            : globalAlert.type === 'warning'
+                                ? 'bg-amber-500/10 border-amber-500/25 text-amber-500 shadow-[0_4px_20px_rgba(245,158,11,0.12)]'
+                                : 'bg-primary/10 border-primary/25 text-primary shadow-[0_4px_20px_rgba(16,185,129,0.12)]'
+                        }`}>
                         <span className="material-symbols-outlined text-[20px]">
                             {globalAlert.type === 'error' ? 'error' : globalAlert.type === 'warning' ? 'warning' : 'check_circle'}
                         </span>
@@ -326,9 +324,8 @@ function DashboardAppContent() {
                         <button
                             key={item.id}
                             onClick={() => handleMobileNavClick(item.id)}
-                            className={`flex flex-col items-center gap-1 cursor-pointer transition-all micro-interaction ${
-                                isActive ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
-                            }`}
+                            className={`flex flex-col items-center gap-1 cursor-pointer transition-all micro-interaction ${isActive ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
+                                }`}
                         >
                             <span className="material-symbols-outlined text-[24px]" style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}>
                                 {item.icon}
@@ -341,14 +338,14 @@ function DashboardAppContent() {
 
             {/* Modals Overlays */}
             <UnlockModal isOpen={unlockOpen} onClose={() => setUnlockOpen(false)} />
-            <DateRangeModal 
-                isOpen={dateRangeOpen} 
-                onClose={() => setDateRangeOpen(false)} 
+            <DateRangeModal
+                isOpen={dateRangeOpen}
+                onClose={() => setDateRangeOpen(false)}
                 onOpenDatePicker={openDatePicker}
             />
-            <DatePickerModal 
-                isOpen={datePickerOpen} 
-                onClose={() => setDatePickerOpen(false)} 
+            <DatePickerModal
+                isOpen={datePickerOpen}
+                onClose={() => setDatePickerOpen(false)}
                 onSelect={handleDatePickerSelect}
                 initialDate={datePickerInitialDate}
             />

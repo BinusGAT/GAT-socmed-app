@@ -107,34 +107,31 @@ export function UnlockModal({ isOpen, onClose }) {
                     <div className="space-y-2">
                         <label className="text-label-md text-on-surface-variant uppercase tracking-widest block font-bold text-center">SELECT WORKSPACE ROLE</label>
                         <div className="grid grid-cols-3 gap-2">
-                            <div 
-                                className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer transition-all micro-interaction ${
-                                    role === 'Admin' 
-                                        ? 'border-primary bg-primary-container/10 text-primary' 
+                            <div
+                                className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer transition-all micro-interaction ${role === 'Admin'
+                                        ? 'border-primary bg-primary-container/10 text-primary'
                                         : 'border-outline-variant/30 bg-surface-container-low text-on-surface-variant hover:border-outline'
-                                }`}
+                                    }`}
                                 onClick={() => !lockdownTimeText && setRole('Admin')}
                             >
                                 <span className="material-symbols-outlined text-[20px] mb-1">admin_panel_settings</span>
                                 <span className="text-[9px] font-bold tracking-wider uppercase text-center">Admin</span>
                             </div>
-                            <div 
-                                className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer transition-all micro-interaction ${
-                                    role === 'Creator' 
-                                        ? 'border-primary bg-primary-container/10 text-primary' 
+                            <div
+                                className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer transition-all micro-interaction ${role === 'Creator'
+                                        ? 'border-primary bg-primary-container/10 text-primary'
                                         : 'border-outline-variant/30 bg-surface-container-low text-on-surface-variant hover:border-outline'
-                                }`}
+                                    }`}
                                 onClick={() => !lockdownTimeText && setRole('Creator')}
                             >
                                 <span className="material-symbols-outlined text-[20px] mb-1">palette</span>
                                 <span className="text-[9px] font-bold tracking-wider uppercase text-center">Creator</span>
                             </div>
-                            <div 
-                                className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer transition-all micro-interaction ${
-                                    role === 'Viewer' 
-                                        ? 'border-primary bg-primary-container/10 text-primary' 
+                            <div
+                                className={`flex flex-col items-center justify-center p-2 rounded-lg border cursor-pointer transition-all micro-interaction ${role === 'Viewer'
+                                        ? 'border-primary bg-primary-container/10 text-primary'
                                         : 'border-outline-variant/30 bg-surface-container-low text-on-surface-variant hover:border-outline'
-                                }`}
+                                    }`}
                                 onClick={() => !lockdownTimeText && setRole('Viewer')}
                             >
                                 <span className="material-symbols-outlined text-[20px] mb-1">visibility</span>
@@ -378,11 +375,10 @@ export function DateRangeModal({ isOpen, onClose, onOpenDatePicker }) {
                                 <button
                                     key={preset.id}
                                     type="button"
-                                    className={`py-2 px-3 text-left rounded text-body-sm font-semibold border transition-all cursor-pointer micro-interaction truncate ${
-                                        dateRange.mode === preset.id
+                                    className={`py-2 px-3 text-left rounded text-body-sm font-semibold border transition-all cursor-pointer micro-interaction truncate ${dateRange.mode === preset.id
                                             ? 'border-primary bg-primary-container/10 text-primary'
                                             : 'border-outline-variant/30 bg-surface-container-low text-on-surface hover:border-outline'
-                                    }`}
+                                        }`}
                                     onClick={() => applyPreset(preset.id)}
                                 >
                                     {preset.label}
@@ -468,7 +464,7 @@ export function DatePickerModal({ isOpen, onClose, onSelect, initialDate }) {
 
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    
+
     const firstDay = new Date(year, month, 1);
     const startOffset = firstDay.getDay(); // 0 is Sunday
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -499,7 +495,7 @@ export function DatePickerModal({ isOpen, onClose, onSelect, initialDate }) {
                         <span className="material-symbols-outlined text-[18px]">close</span>
                     </button>
                 </div>
-                
+
                 {/* Calendar Navigation */}
                 <div className="flex justify-between items-center">
                     <button type="button" className="w-8 h-8 flex items-center justify-center rounded border border-outline-variant/30 hover:bg-surface-container-high text-on-surface cursor-pointer" onClick={() => shiftMonth(-1)}>
@@ -533,18 +529,17 @@ export function DatePickerModal({ isOpen, onClose, onSelect, initialDate }) {
                         }
 
                         const dayStr = String(dayNumber);
-                        const isSelected = initialDate === `${year}-${String(month+1).padStart(2,'0')}-${String(dayNumber).padStart(2,'0')}`;
+                        const isSelected = initialDate === `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
 
                         return (
                             <button
                                 key={cellIndex}
                                 type="button"
                                 onClick={() => handleSelectDay(dayNumber)}
-                                className={`h-8 w-full border-none rounded text-body-sm cursor-pointer flex items-center justify-center transition-all micro-interaction ${
-                                    isSelected 
-                                        ? 'bg-primary text-on-primary font-bold' 
+                                className={`h-8 w-full border-none rounded text-body-sm cursor-pointer flex items-center justify-center transition-all micro-interaction ${isSelected
+                                        ? 'bg-primary text-on-primary font-bold'
                                         : 'bg-transparent text-on-surface hover:bg-surface-container-high font-medium'
-                                }`}
+                                    }`}
                             >
                                 {dayStr}
                             </button>
@@ -580,13 +575,13 @@ export function CalendarExportModal({ isOpen, onClose }) {
         if (isOpen) {
             const isBodyDark = document.body.classList.contains('dark-mode') || true;
             setExportTheme(isBodyDark ? 'dark' : 'light');
-            
+
             const target = document.querySelector('.calendar-shell');
             if (target) {
                 const meetingCount = target.querySelectorAll('.calendar-day-task-item[data-is-meeting="true"]').length;
                 setHasMeetings(meetingCount > 0);
             }
-            
+
             setShowMeetings(true);
             setSelectedPic('All');
             setSelectedCategory('All');
@@ -825,7 +820,7 @@ export function CalendarExportModal({ isOpen, onClose }) {
                 toolbarActions.remove();
             }
             clone.removeAttribute('style');
- 
+
             // Remove the "task_alt" (uploaded checkmark icon) from the calendar days in clone
             clone.querySelectorAll('span.material-symbols-outlined').forEach(el => {
                 if (el.textContent.trim() === 'task_alt') {
@@ -961,30 +956,28 @@ export function CalendarExportModal({ isOpen, onClose }) {
                     <div className="flex gap-3 items-center ml-auto mr-4">
                         <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Theme:</span>
                         <div className="flex bg-surface-container-low rounded border border-outline-variant/20 p-0.5">
-                            <button 
-                                type="button" 
-                                onClick={() => setExportTheme('light')} 
-                                className={`px-3 py-1 text-[10px] font-bold rounded cursor-pointer transition-all ${
-                                    exportTheme === 'light' ? 'bg-surface text-primary shadow' : 'text-on-surface-variant hover:text-on-surface'
-                                }`}
+                            <button
+                                type="button"
+                                onClick={() => setExportTheme('light')}
+                                className={`px-3 py-1 text-[10px] font-bold rounded cursor-pointer transition-all ${exportTheme === 'light' ? 'bg-surface text-primary shadow' : 'text-on-surface-variant hover:text-on-surface'
+                                    }`}
                             >
                                 Light
                             </button>
-                            <button 
-                                type="button" 
-                                onClick={() => setExportTheme('dark')} 
-                                className={`px-3 py-1 text-[10px] font-bold rounded cursor-pointer transition-all ${
-                                    exportTheme === 'dark' ? 'bg-surface text-primary shadow' : 'text-on-surface-variant hover:text-on-surface'
-                                }`}
+                            <button
+                                type="button"
+                                onClick={() => setExportTheme('dark')}
+                                className={`px-3 py-1 text-[10px] font-bold rounded cursor-pointer transition-all ${exportTheme === 'dark' ? 'bg-surface text-primary shadow' : 'text-on-surface-variant hover:text-on-surface'
+                                    }`}
                             >
                                 Dark
                             </button>
                         </div>
                     </div>
-                    <button 
-                        type="button" 
-                        className="text-on-surface-variant hover:text-on-surface p-1 micro-interaction" 
-                        onClick={onClose} 
+                    <button
+                        type="button"
+                        className="text-on-surface-variant hover:text-on-surface p-1 micro-interaction"
+                        onClick={onClose}
                     >
                         <span className="material-symbols-outlined text-[20px]">close</span>
                     </button>
@@ -993,21 +986,21 @@ export function CalendarExportModal({ isOpen, onClose }) {
                 <div className="px-5 py-3 border-b border-outline-variant/20 flex gap-4 items-center flex-wrap bg-surface-container-lowest">
                     {hasMeetings && (
                         <label className="flex items-center gap-2 text-body-sm cursor-pointer select-none text-on-surface mr-2">
-                            <input 
-                                type="checkbox" 
-                                checked={showMeetings} 
-                                onChange={(e) => setShowMeetings(e.target.checked)} 
-                                className="cursor-pointer rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-4 w-4" 
+                            <input
+                                type="checkbox"
+                                checked={showMeetings}
+                                onChange={(e) => setShowMeetings(e.target.checked)}
+                                className="cursor-pointer rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-4 w-4"
                             />
                             <span>Meetings</span>
                         </label>
                     )}
-                    
+
                     <div className="flex items-center gap-2">
                         <label className="text-body-sm font-semibold text-on-surface-variant">PIC:</label>
-                        <select 
+                        <select
                             className="bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1 text-body-sm text-on-surface focus:outline-none focus:border-primary"
-                            value={selectedPic} 
+                            value={selectedPic}
                             onChange={(e) => setSelectedPic(e.target.value)}
                         >
                             <option value="All">All PICs</option>
@@ -1019,9 +1012,9 @@ export function CalendarExportModal({ isOpen, onClose }) {
 
                     <div className="flex items-center gap-2">
                         <label className="text-body-sm font-semibold text-on-surface-variant">Category:</label>
-                        <select 
+                        <select
                             className="bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1 text-body-sm text-on-surface focus:outline-none focus:border-primary"
-                            value={selectedCategory} 
+                            value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}
                         >
                             <option value="All">All Categories</option>
@@ -1041,9 +1034,8 @@ export function CalendarExportModal({ isOpen, onClose }) {
                         </div>
                     )}
                     {!isLoading && previewUrl && (
-                        <div className={`w-full max-w-[500px] border border-outline-variant/30 rounded-lg p-2 shadow-lg flex justify-center ${
-                            exportTheme === 'light' ? 'bg-[#ffffff]' : 'bg-[#0c0c0e]'
-                        }`}>
+                        <div className={`w-full max-w-[500px] border border-outline-variant/30 rounded-lg p-2 shadow-lg flex justify-center ${exportTheme === 'light' ? 'bg-[#ffffff]' : 'bg-[#0c0c0e]'
+                            }`}>
                             <img src={previewUrl} alt="Calendar Export Preview" className="max-w-full h-auto rounded object-contain" />
                         </div>
                     )}
@@ -1051,25 +1043,25 @@ export function CalendarExportModal({ isOpen, onClose }) {
 
                 {/* Actions Footer */}
                 <div className="flex gap-3 px-5 py-4 border-t border-outline-variant/20 justify-end bg-surface-container-lowest">
-                    <button 
-                        type="button" 
-                        className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction" 
+                    <button
+                        type="button"
+                        className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction"
                         onClick={onClose}
                     >
                         Cancel
                     </button>
-                    <button 
-                        type="button" 
-                        className="bg-surface-container-high text-primary border border-primary/20 hover:bg-primary-container/15 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction flex items-center gap-2 disabled:opacity-50" 
-                        onClick={handleCopy} 
+                    <button
+                        type="button"
+                        className="bg-surface-container-high text-primary border border-primary/20 hover:bg-primary-container/15 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction flex items-center gap-2 disabled:opacity-50"
+                        onClick={handleCopy}
                         disabled={isLoading || !imageBlob}
                     >
                         <span className="material-symbols-outlined text-[18px]">content_copy</span> Copy Image
                     </button>
-                    <button 
-                        type="button" 
-                        className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction flex items-center gap-2 disabled:opacity-50" 
-                        onClick={handleDownload} 
+                    <button
+                        type="button"
+                        className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction flex items-center gap-2 disabled:opacity-50"
+                        onClick={handleDownload}
                         disabled={isLoading || !previewUrl}
                     >
                         <span className="material-symbols-outlined text-[18px]">download</span> Download PNG
@@ -1099,16 +1091,16 @@ export function DeleteConfirmModal({ isOpen, onClose, onConfirm, message }) {
                     {message || 'Are you sure you want to delete this item?'}
                 </p>
                 <div className="flex gap-3 w-full mt-2">
-                    <button 
-                        type="button" 
-                        className="flex-1 bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction" 
+                    <button
+                        type="button"
+                        className="flex-1 bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction"
                         onClick={onClose}
                     >
                         Cancel
                     </button>
-                    <button 
-                        type="button" 
-                        className="flex-1 bg-error-container/20 text-error border border-error/20 hover:bg-error-container/30 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction" 
+                    <button
+                        type="button"
+                        className="flex-1 bg-error-container/20 text-error border border-error/20 hover:bg-error-container/30 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction"
                         onClick={onConfirm}
                     >
                         Delete
@@ -1198,12 +1190,11 @@ export function HelpGuideModal({ isOpen, onClose }) {
                         <p className="text-body-sm text-on-surface-variant/80 leading-relaxed">
                             Content suite dynamically adapts its interface and access controls based on the authenticated role.
                         </p>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
                             {/* Admin Card */}
-                            <div className={`border rounded-lg p-4 bg-surface-container-lowest flex flex-col gap-2 transition-all duration-200 ${
-                                userRole === 'Admin' ? 'border-2 border-primary' : 'border-outline-variant/30 opacity-60'
-                            }`}>
+                            <div className={`border rounded-lg p-4 bg-surface-container-lowest flex flex-col gap-2 transition-all duration-200 ${userRole === 'Admin' ? 'border-2 border-primary' : 'border-outline-variant/30 opacity-60'
+                                }`}>
                                 <div className="flex items-center gap-2 text-primary font-bold text-body-sm uppercase tracking-wider">
                                     <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
                                     <span>ADMIN MODE</span>
@@ -1216,9 +1207,8 @@ export function HelpGuideModal({ isOpen, onClose }) {
                             </div>
 
                             {/* Creator Card */}
-                            <div className={`border rounded-lg p-4 bg-surface-container-lowest flex flex-col gap-2 transition-all duration-200 ${
-                                userRole === 'Creator' ? 'border-2 border-primary' : 'border-outline-variant/30 opacity-60'
-                            }`}>
+                            <div className={`border rounded-lg p-4 bg-surface-container-lowest flex flex-col gap-2 transition-all duration-200 ${userRole === 'Creator' ? 'border-2 border-primary' : 'border-outline-variant/30 opacity-60'
+                                }`}>
                                 <div className="flex items-center gap-2 text-primary font-bold text-body-sm uppercase tracking-wider">
                                     <span className="material-symbols-outlined text-[18px]">palette</span>
                                     <span>CREATOR MODE</span>
@@ -1231,9 +1221,8 @@ export function HelpGuideModal({ isOpen, onClose }) {
                             </div>
 
                             {/* Viewer Card */}
-                            <div className={`border rounded-lg p-4 bg-surface-container-lowest flex flex-col gap-2 transition-all duration-200 ${
-                                userRole === 'Viewer' ? 'border-2 border-primary' : 'border-outline-variant/30 opacity-60'
-                            }`}>
+                            <div className={`border rounded-lg p-4 bg-surface-container-lowest flex flex-col gap-2 transition-all duration-200 ${userRole === 'Viewer' ? 'border-2 border-primary' : 'border-outline-variant/30 opacity-60'
+                                }`}>
                                 <div className="flex items-center gap-2 text-primary font-bold text-body-sm uppercase tracking-wider">
                                     <span className="material-symbols-outlined text-[18px]">visibility</span>
                                     <span>VIEWER MODE</span>
@@ -1245,7 +1234,7 @@ export function HelpGuideModal({ isOpen, onClose }) {
                                 </ul>
                             </div>
                         </div>
-                        
+
                         <div className="text-[11px] text-on-surface-variant/50 border-t border-outline-variant/10 pt-3 flex items-center gap-2">
                             <span className="material-symbols-outlined text-[14px]">info</span>
                             <span>Workspace role can be changed on the Lock screen by re-entering the staff key.</span>
@@ -1258,7 +1247,7 @@ export function HelpGuideModal({ isOpen, onClose }) {
                         <p className="text-body-sm text-on-surface-variant/80 leading-relaxed">
                             Navigate through the sidebar to coordinate content operations:
                         </p>
-                        
+
                         <div className="space-y-2 border border-outline-variant/20 rounded-lg p-3 bg-surface-container-lowest text-body-sm divide-y divide-outline-variant/15">
                             <div className="flex gap-3 items-start pb-2">
                                 <div className="min-w-[100px] font-bold text-on-surface flex items-center gap-1.5 text-body-sm">
@@ -1268,7 +1257,7 @@ export function HelpGuideModal({ isOpen, onClose }) {
                                     Overview of total publication views, reaches, follow growth, and recent performance highlights.
                                 </div>
                             </div>
-                            
+
                             <div className="flex gap-3 items-start py-2">
                                 <div className="min-w-[100px] font-bold text-on-surface flex items-center gap-1.5 text-body-sm">
                                     <span className="material-symbols-outlined text-primary text-[16px]">calendar_month</span>Planner
@@ -1322,7 +1311,7 @@ export function HelpGuideModal({ isOpen, onClose }) {
                         <p className="text-body-sm text-on-surface-variant/80 leading-relaxed">
                             Security controls and offline caching mechanisms of the platform:
                         </p>
-                        
+
                         <div className="space-y-3">
                             <div className="flex gap-3">
                                 <span className="material-symbols-outlined text-primary text-[18px] mt-0.5">lock</span>
@@ -1377,27 +1366,24 @@ export function HelpGuideModal({ isOpen, onClose }) {
 
                 {/* Tabs */}
                 <div className="flex border-b border-outline-variant/20 gap-4 pb-0.5">
-                    <button 
+                    <button
                         onClick={() => setActiveTab('roles')}
-                        className={`bg-transparent border-none pb-2 text-[12px] font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all border-b-2 ${
-                            activeTab === 'roles' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant'
-                        }`}
+                        className={`bg-transparent border-none pb-2 text-[12px] font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all border-b-2 ${activeTab === 'roles' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant'
+                            }`}
                     >
                         <span className="material-symbols-outlined text-[16px]">lock</span> Roles
                     </button>
-                    <button 
+                    <button
                         onClick={() => setActiveTab('workflows')}
-                        className={`bg-transparent border-none pb-2 text-[12px] font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all border-b-2 ${
-                            activeTab === 'workflows' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant'
-                        }`}
+                        className={`bg-transparent border-none pb-2 text-[12px] font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all border-b-2 ${activeTab === 'workflows' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant'
+                            }`}
                     >
                         <span className="material-symbols-outlined text-[16px]">route</span> Workflows
                     </button>
-                    <button 
+                    <button
                         onClick={() => setActiveTab('security')}
-                        className={`bg-transparent border-none pb-2 text-[12px] font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all border-b-2 ${
-                            activeTab === 'security' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant'
-                        }`}
+                        className={`bg-transparent border-none pb-2 text-[12px] font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all border-b-2 ${activeTab === 'security' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant'
+                            }`}
                     >
                         <span className="material-symbols-outlined text-[16px]">shield</span> Security
                     </button>
@@ -1410,9 +1396,9 @@ export function HelpGuideModal({ isOpen, onClose }) {
 
                 {/* Footer */}
                 <div className="flex justify-end border-t border-outline-variant/20 pt-4 mt-2">
-                    <button 
-                        type="button" 
-                        className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-5 rounded-lg text-body-sm transition-all micro-interaction min-w-[100px]" 
+                    <button
+                        type="button"
+                        className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-5 rounded-lg text-body-sm transition-all micro-interaction min-w-[100px]"
                         onClick={onClose}
                     >
                         Got it

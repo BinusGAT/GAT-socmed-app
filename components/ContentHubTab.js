@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
-import { 
-    normalizePicName, 
+import {
+    normalizePicName,
     parseDate,
     getPicBadgeClasses
 } from '../utils/helpers';
@@ -65,11 +65,11 @@ export default function ContentHubTab() {
     // Resolve PIC and Date from scheduleData
     const getResolvedSchedule = (title) => {
         if (!title) return null;
-        const task = (scheduleData || []).find(t => 
+        const task = (scheduleData || []).find(t =>
             String(t['Content Title'] || '').trim().toLowerCase() === title.trim().toLowerCase()
         );
         if (!task) return null;
-        const isUploaded = (currentData || []).some(row => 
+        const isUploaded = (currentData || []).some(row =>
             row.ID === task.ID && row.URL && String(row.URL).trim() !== ''
         );
         return { pic: task.PIC, date: task.Date, isUploaded };
@@ -109,7 +109,7 @@ export default function ContentHubTab() {
 
             if (timestampA === 0 && timestampB !== 0) return 1;
             if (timestampB === 0 && timestampA !== 0) return -1;
-            
+
             if (timestampA !== timestampB) {
                 return timestampA - timestampB;
             }
@@ -231,13 +231,13 @@ export default function ContentHubTab() {
                         try {
                             const urlObj = new URL(link);
                             shortUrl = urlObj.hostname + (urlObj.pathname.length > 20 ? urlObj.pathname.slice(0, 20) + '...' : urlObj.pathname);
-                        } catch (e) {}
+                        } catch (e) { }
                         return (
-                            <a 
-                                key={i} 
-                                href={link} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
+                            <a
+                                key={i}
+                                href={link}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="text-[12px] text-primary hover:underline inline-flex items-center gap-1.5 font-medium"
                             >
                                 <span className="material-symbols-outlined text-[12px]">link</span> {shortUrl}
@@ -268,9 +268,9 @@ export default function ContentHubTab() {
                     </span>
                 </div>
                 {isUnlocked && userRole !== 'Creator' && (
-                    <button 
-                        type="button" 
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm micro-interaction" 
+                    <button
+                        type="button"
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm micro-interaction"
                         onClick={handleCreateDraft}
                     >
                         <span className="material-symbols-outlined text-[16px]">add</span> New Draft
@@ -280,15 +280,15 @@ export default function ContentHubTab() {
 
             {/* Backlog Grid & Editor Container */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter items-start">
-                
+
                 {/* Left Side: Idea Backlog (col-span-1) */}
                 <div className="glass-panel border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
                     <div className="flex items-center justify-between border-b border-outline-variant/20 pb-2">
                         <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider">Idea Backlog</h4>
-                        
+
                         {/* PIC selector filter */}
                         <div>
-                            <select 
+                            <select
                                 value={picFilter}
                                 onChange={(e) => setPicFilter(e.target.value)}
                                 className="bg-surface-container-low border border-outline-variant/30 text-on-surface-variant rounded px-2 py-1 text-[11px] font-bold uppercase focus:outline-none"
@@ -303,29 +303,26 @@ export default function ContentHubTab() {
 
                     {/* Category quick selectors */}
                     <div className="flex gap-1.5 border-b border-outline-variant/15 pb-2.5">
-                        <button 
-                            type="button" 
-                            className={`flex-1 font-bold py-1.5 rounded text-[10px] uppercase transition-colors cursor-pointer text-center ${
-                                categoryFilter === '' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
-                            }`} 
+                        <button
+                            type="button"
+                            className={`flex-1 font-bold py-1.5 rounded text-[10px] uppercase transition-colors cursor-pointer text-center ${categoryFilter === '' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
+                                }`}
                             onClick={() => setCategoryFilter('')}
                         >
                             All
                         </button>
-                        <button 
-                            type="button" 
-                            className={`flex-1 font-bold py-1.5 rounded text-[10px] uppercase transition-colors cursor-pointer text-center ${
-                                categoryFilter === 'Story Telling' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
-                            }`} 
+                        <button
+                            type="button"
+                            className={`flex-1 font-bold py-1.5 rounded text-[10px] uppercase transition-colors cursor-pointer text-center ${categoryFilter === 'Story Telling' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
+                                }`}
                             onClick={() => setCategoryFilter('Story Telling')}
                         >
                             Story Telling
                         </button>
-                        <button 
-                            type="button" 
-                            className={`flex-1 font-bold py-1.5 rounded text-[10px] uppercase transition-colors cursor-pointer text-center ${
-                                categoryFilter === 'Motion' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
-                            }`} 
+                        <button
+                            type="button"
+                            className={`flex-1 font-bold py-1.5 rounded text-[10px] uppercase transition-colors cursor-pointer text-center ${categoryFilter === 'Motion' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
+                                }`}
                             onClick={() => setCategoryFilter('Motion')}
                         >
                             Motion
@@ -337,10 +334,10 @@ export default function ContentHubTab() {
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 flex items-center">
                             <span className="material-symbols-outlined text-[18px]">search</span>
                         </span>
-                        <input 
-                            type="text" 
-                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded pl-9 pr-3 py-1.5 text-body-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-all" 
-                            placeholder="Search backlog drafts..." 
+                        <input
+                            type="text"
+                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded pl-9 pr-3 py-1.5 text-body-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-all"
+                            placeholder="Search backlog drafts..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -357,7 +354,7 @@ export default function ContentHubTab() {
                             filteredDrafts.map(({ d, index }) => {
                                 const sched = getResolvedSchedule(d.title);
                                 const isSelected = selectedDraftTitle === d.title;
-                                
+
                                 let displayStatus = d.status || 'Idea';
                                 if (sched && sched.isUploaded) {
                                     displayStatus = 'Uploaded';
@@ -371,9 +368,9 @@ export default function ContentHubTab() {
                                 }
 
                                 return (
-                                    <button 
+                                    <button
                                         key={index}
-                                        type="button" 
+                                        type="button"
                                         onClick={() => {
                                             setSelectedDraftTitle(d.title);
                                             setTimeout(() => {
@@ -383,20 +380,18 @@ export default function ContentHubTab() {
                                                 }
                                             }, 50);
                                         }}
-                                        className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer flex flex-col gap-2 relative ${
-                                            isSelected 
-                                                ? 'bg-surface-container-high border-2 border-primary' 
+                                        className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer flex flex-col gap-2 relative ${isSelected
+                                                ? 'bg-surface-container-high border-2 border-primary'
                                                 : 'bg-surface-container-low border-outline-variant/15 hover:bg-surface-container'
-                                        }`}
+                                            }`}
                                     >
                                         <p className="font-semibold text-on-surface text-body-sm leading-snug">{d.title || 'Untitled Draft'}</p>
-                                        
+
                                         <div className="flex justify-between items-center gap-2 mt-0.5">
                                             <div className="flex items-center gap-1.5">
                                                 <span className="flex items-center gap-1 text-[10px] font-bold text-on-surface-variant/80 uppercase">
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${
-                                                        d.category === 'Motion' ? 'bg-primary' : 'bg-emerald-400'
-                                                    }`}></span>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${d.category === 'Motion' ? 'bg-primary' : 'bg-emerald-400'
+                                                        }`}></span>
                                                     {d.category}
                                                 </span>
                                                 {sched && (
@@ -443,17 +438,17 @@ export default function ContentHubTab() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {isUnlocked && userRole !== 'Creator' && (
-                                        <button 
-                                            type="button" 
-                                            className="bg-error-container/20 text-error border border-error/25 hover:bg-error-container/30 font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer" 
+                                        <button
+                                            type="button"
+                                            className="bg-error-container/20 text-error border border-error/25 hover:bg-error-container/30 font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer"
                                             onClick={handleDeleteDraft}
                                         >
                                             <span className="material-symbols-outlined text-[15px]">delete</span> Delete
                                         </button>
                                     )}
-                                    <button 
-                                        type="button" 
-                                        className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer" 
+                                    <button
+                                        type="button"
+                                        className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer"
                                         onClick={() => setSelectedDraftTitle(null)}
                                     >
                                         <span className="material-symbols-outlined text-[15px]">close</span> Close
@@ -464,8 +459,8 @@ export default function ContentHubTab() {
                             <div className="space-y-4">
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Draft Title <span className="text-error">*</span></label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface-variant/70 focus:outline-none cursor-not-allowed opacity-75"
                                         value={formTitle}
                                         onChange={(e) => setFormTitle(e.target.value)}
@@ -477,7 +472,7 @@ export default function ContentHubTab() {
 
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Category <span className="text-error">*</span></label>
-                                    <select 
+                                    <select
                                         className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface-variant/70 focus:outline-none cursor-not-allowed opacity-75"
                                         value={formCategory}
                                         onChange={(e) => setFormCategory(e.target.value)}
@@ -492,7 +487,7 @@ export default function ContentHubTab() {
 
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Viral Hook Template / Caption Hook</label>
-                                    <input 
+                                    <input
                                         type="text"
                                         className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                         placeholder="e.g. Stop doing X, do this instead..."
@@ -504,7 +499,7 @@ export default function ContentHubTab() {
 
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Script Voiceover / Audio Directions</label>
-                                    <textarea 
+                                    <textarea
                                         className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary font-mono"
                                         rows={6}
                                         placeholder="Write video dialogue, voiceover cues, or visual notes here..."
@@ -516,8 +511,8 @@ export default function ContentHubTab() {
 
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Hashtags <span className="text-error">*</span></label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                         placeholder="e.g. #technology #learning #tutorial"
                                         value={formHashtags}
@@ -529,7 +524,7 @@ export default function ContentHubTab() {
 
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Caption / Post Description</label>
-                                    <textarea 
+                                    <textarea
                                         className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                         rows={3}
                                         placeholder="Write the accompanying caption, description copy, or call to actions..."
@@ -541,7 +536,7 @@ export default function ContentHubTab() {
 
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Reference Links (comma separated)</label>
-                                    <textarea 
+                                    <textarea
                                         className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary font-mono"
                                         rows={2}
                                         placeholder="e.g. https://instagram.com/reel/123, https://youtube.com/watch?v=abc"
@@ -558,7 +553,7 @@ export default function ContentHubTab() {
                                 <h5 className="text-[10px] font-bold text-on-surface-variant/75 uppercase tracking-wider flex items-center gap-1">
                                     <span className="material-symbols-outlined text-[16px] text-primary">analytics</span> Live Preview Panel
                                 </h5>
-                                
+
                                 <div className="space-y-3 text-body-sm">
                                     {formHook && (
                                         <div>

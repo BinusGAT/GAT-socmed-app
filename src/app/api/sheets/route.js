@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { getSessionDurationMs } from '../../../../utils/sessionPolicy';
 import { dbExecute, dbBatch, gatAppExecute } from '../../../../utils/db';
 
 const db = {
@@ -424,8 +425,8 @@ export async function POST(request) {
         if (settingsCount.rows[0].count === 0) {
           await db.batch([
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_name", "contentmanager"] },
-            { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_subtitle", "Workspace"] },
-            { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_full_name", "Content suite"] },
+            { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_subtitle", "Socmed Apps"] },
+            { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_full_name", "Socmed Apps"] },
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["company_name", "Internal Content Team"] },
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_version", "v0.2.0-alpha"] }
           ]);
@@ -569,6 +570,8 @@ export async function POST(request) {
         }
 
         const matchedRole = 'Admin';
+        const sessionDurationMs = getSessionDurationMs(roleName);
+        const expiresAt = Date.now() + sessionDurationMs;
         failedAttempts.delete(ip);
 
         const sessionToken = crypto.randomBytes(32).toString('hex');
@@ -578,7 +581,7 @@ export async function POST(request) {
         });
         await db.execute({
           sql: "INSERT OR REPLACE INTO sessions (token, role, expiresAt) VALUES (?, ?, ?)",
-          args: [sessionToken, matchedRole, Date.now() + 8 * 60 * 60 * 1000]
+          args: [sessionToken, matchedRole, expiresAt]
         });
 
         return NextResponse.json({ 
@@ -590,7 +593,9 @@ export async function POST(request) {
             email: String(userRow.email),
             role_name: String(userRow.role_name)
           },
-          token: sessionToken
+          token: sessionToken,
+          expiresAt,
+          sessionDurationMs
         });
       }
 

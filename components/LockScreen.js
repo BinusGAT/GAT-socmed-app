@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDashboard } from './DashboardContext';
 
-export default function LockScreen({ sectionName = 'Workspace' }) {
+export default function LockScreen({ sectionName = 'Socmed Apps' }) {
     const { unlockWorkspace, getLockdownTimeRemaining, appSettingsData } = useDashboard();
     const [email, setEmail] = useState('');
     const [nim, setNim] = useState('');
@@ -84,7 +84,7 @@ export default function LockScreen({ sectionName = 'Workspace' }) {
                             CC Internal Gate
                         </h2>
                         <p className="text-[10px] text-primary uppercase tracking-widest font-bold">
-                            {appSettingsData?.app_full_name || 'Content suite'} · {sectionName} Lock
+                            {sectionName} Lock
                         </p>
                     </div>
                 </div>

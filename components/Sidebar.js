@@ -4,10 +4,10 @@ import React from 'react';
 import { useDashboard } from './DashboardContext';
 
 export default function Sidebar({ isOpen, toggleSidebar }) {
-    const { 
-        currentView, 
-        setCurrentView, 
-        isUnlocked, 
+    const {
+        currentView,
+        setCurrentView,
+        isUnlocked,
         setSelectedMeetingId,
         setIsNewPostDrawerOpen,
         lockWorkspace,
@@ -63,9 +63,8 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
     };
 
     return (
-        <aside className={`fixed left-0 top-0 h-full w-[280px] bg-surface-container-lowest border-r border-outline-variant/30 dark:bg-[#0c0d10] dark:border-[#22232a] flex flex-col justify-between py-stack-lg z-50 transition-transform duration-300 ${
-            isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}>
+        <aside className={`fixed left-0 top-0 h-full w-[280px] bg-surface-container-lowest border-r border-outline-variant/30 dark:bg-[#0c0d10] dark:border-[#22232a] flex flex-col justify-between py-stack-lg z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+            }`}>
             <div>
                 {/* Brand */}
                 <div className="px-container-padding mb-stack-lg flex items-center justify-between">
@@ -87,8 +86,8 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                 {/* + New Post Button */}
                 {userRole === 'Admin' && (
                     <div className="px-4 mb-5">
-                        <button 
-                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 shadow-xs transition-all duration-150 cursor-pointer text-sm" 
+                        <button
+                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 shadow-xs transition-all duration-150 cursor-pointer text-sm"
                             onClick={handleNewPostClick}
                         >
                             <span className="material-symbols-outlined text-[18px]">add</span>
@@ -96,7 +95,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                         </button>
                     </div>
                 )}
-                
+
                 {/* Navigation Links */}
                 <nav className="px-3 space-y-1">
                     {visibleItems.map((item) => {
@@ -106,11 +105,10 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                                 key={item.id}
                                 id={item.domId}
                                 onClick={() => handleNavClick(item.id)}
-                                className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all duration-150 cursor-pointer relative group text-sm ${
-                                    isActive 
-                                        ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-xs border border-zinc-200 dark:bg-zinc-800/90 dark:text-white dark:border-zinc-700/50' 
+                                className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all duration-150 cursor-pointer relative group text-sm ${isActive
+                                        ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-xs border border-zinc-200 dark:bg-zinc-800/90 dark:text-white dark:border-zinc-700/50'
                                         : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/40 dark:hover:text-zinc-200'
-                                }`}
+                                    }`}
                             >
                                 <span className="material-symbols-outlined text-[19px] transition-transform duration-150 text-zinc-500 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-200" style={isActive ? { color: '#6366f1', fontVariationSettings: item.fillActive ? "'FILL' 1" : undefined } : undefined}>
                                     {item.icon}
@@ -125,12 +123,11 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             {/* Footer Links */}
             <div className="border-t border-outline-variant/20 pt-stack-md mx-container-padding space-y-1">
                 {userRole === 'Admin' && isUnlocked && (
-                    <button 
-                        className={`w-full text-left py-2.5 px-3 rounded-lg flex items-center gap-3 transition-all duration-200 cursor-pointer ${
-                            currentView === 'settings'
-                                ? 'bg-surface-container-highest/60 text-primary font-semibold font-display-sm' 
+                    <button
+                        className={`w-full text-left py-2.5 px-3 rounded-lg flex items-center gap-3 transition-all duration-200 cursor-pointer ${currentView === 'settings'
+                                ? 'bg-surface-container-highest/60 text-primary font-semibold font-display-sm'
                                 : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface hover:translate-x-0.5'
-                        }`} 
+                            }`}
                         onClick={() => handleNavClick('settings')}
                         title="Workspace Settings"
                     >
@@ -140,14 +137,13 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                         <span className="text-body-sm font-medium">Settings</span>
                     </button>
                 )}
-                <button 
-                    className={`w-full text-left py-2.5 px-3 rounded-lg flex items-center gap-3 transition-all duration-200 cursor-pointer ${
-                        isUnlocked 
-                            ? 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface hover:translate-x-0.5' 
+                <button
+                    className={`w-full text-left py-2.5 px-3 rounded-lg flex items-center gap-3 transition-all duration-200 cursor-pointer ${isUnlocked
+                            ? 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface hover:translate-x-0.5'
                             : 'text-on-surface-variant/40 cursor-not-allowed'
-                    }`} 
-                    onClick={handleLogoutClick} 
-                    disabled={!isUnlocked} 
+                        }`}
+                    onClick={handleLogoutClick}
+                    disabled={!isUnlocked}
                     title={isUnlocked ? "Lock Workspace" : "Workspace Locked"}
                 >
                     <span className="material-symbols-outlined text-[20px]">

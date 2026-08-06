@@ -55,21 +55,21 @@ export default function RootLayout({ children }) {
           `}
         </Script>
         {children}
-        
+
         {/* Load CDN Dependencies asynchronously to prevent render-blocking */}
-        <Script 
+        <Script
           src="https://cdn.jsdelivr.net/npm/dompurify@3.2.7/dist/purify.min.js"
           strategy="afterInteractive"
         />
-        <Script 
+        <Script
           src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
           strategy="afterInteractive"
         />
-        <Script 
+        <Script
           src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
           strategy="lazyOnload"
         />
-        <Script 
+        <Script
           src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
           strategy="lazyOnload"
         />

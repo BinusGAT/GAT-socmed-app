@@ -91,10 +91,13 @@ export function DashboardProvider({ children }) {
             document.documentElement.classList.remove('dark-mode', 'dark');
         }
 
-        // Restore session if within time limit (6 hours)
-        const limitMs = 6 * 60 * 60 * 1000;
-        const unlockedAt = localStorage.getItem('unlocked_at');
-        const isSessionValid = unlockedAt && (Date.now() - parseInt(unlockedAt, 10) < limitMs);
+        // The server-issued expiration is authoritative. Keep a 6-hour fallback
+        // only for sessions created before expires_at was introduced.
+        const expiresAt = parseInt(localStorage.getItem('expires_at') || '', 10);
+        const unlockedAt = parseInt(localStorage.getItem('unlocked_at') || '', 10);
+        const legacyExpiresAt = unlockedAt + 6 * 60 * 60 * 1000;
+        const effectiveExpiresAt = Number.isFinite(expiresAt) ? expiresAt : legacyExpiresAt;
+        const isSessionValid = Number.isFinite(effectiveExpiresAt) && Date.now() < effectiveExpiresAt;
 
         if (localStorage.getItem('cud_unlocked') === 'true' && isSessionValid) {
             setIsUnlocked(true);
@@ -110,6 +113,7 @@ export function DashboardProvider({ children }) {
             localStorage.removeItem('user_role');
             localStorage.removeItem('session_token');
             localStorage.removeItem('unlocked_at');
+            localStorage.removeItem('expires_at');
         }
 
         // Load Offline Member Defaults
@@ -128,8 +132,8 @@ export function DashboardProvider({ children }) {
 
         setAppSettingsData({
             app_name: 'GAT',
-            app_subtitle: 'Content Suite',
-            app_full_name: 'GAT Content Suite',
+            app_subtitle: 'Socmed Apps',
+            app_full_name: 'Socmed Apps',
             company_name: 'GAT Internal Content Team',
             app_version: 'v0.2.0-alpha'
         });
@@ -160,6 +164,7 @@ export function DashboardProvider({ children }) {
             localStorage.removeItem('user_role');
             localStorage.removeItem('session_token');
             localStorage.removeItem('unlocked_at');
+            localStorage.removeItem('expires_at');
             showAlert('🔒 Session expired. Please unlock the workspace again.', 'error');
         };
 
@@ -200,10 +205,9 @@ export function DashboardProvider({ children }) {
         if (!isUnlocked) return;
 
         const interval = setInterval(() => {
-            const unlockedAt = localStorage.getItem('unlocked_at');
-            const limitMs = 6 * 60 * 60 * 1000; // 6 hours
+            const expiresAt = parseInt(localStorage.getItem('expires_at') || '', 10);
 
-            if (unlockedAt && Date.now() - parseInt(unlockedAt, 10) >= limitMs) {
+            if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
                 lockWorkspace();
                 showAlert('🔒 Session expired. Workspace locked.', 'info');
             }
@@ -548,7 +552,7 @@ export function DashboardProvider({ children }) {
     };
 
     // Submit unlock credentials
-    const unlockWorkspace = async (credentials, passcodeParam, sessionLimitHours = 6) => {
+    const unlockWorkspace = async (credentials, passcodeParam) => {
         if (getLockdownTimeRemaining() > 0) {
             throw new Error('System is locked down due to too many failed attempts.');
         }
@@ -572,7 +576,8 @@ export function DashboardProvider({ children }) {
                 localStorage.setItem('user_role', userRole);
                 localStorage.setItem('session_token', result.token || '');
                 localStorage.setItem('unlocked_at', Date.now().toString());
-                localStorage.setItem('session_limit_hours', '6');
+                localStorage.setItem('expires_at', String(result.expiresAt));
+                localStorage.removeItem('session_limit_hours');
                 setSessionToken(result.token || '');
                 showAlert(`🔓 Workspace unlocked successfully!`, 'success');
                 return true;
@@ -606,6 +611,7 @@ export function DashboardProvider({ children }) {
         localStorage.removeItem('user_role');
         localStorage.removeItem('session_token');
         localStorage.removeItem('unlocked_at');
+        localStorage.removeItem('expires_at');
         showAlert('🔒 Workspace locked. Session ended.', 'info');
     };
 
