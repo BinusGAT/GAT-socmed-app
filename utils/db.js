@@ -7,8 +7,8 @@ let gatAppClientInstance = null;
 async function getDbClient() {
   if (clientInstance) return clientInstance;
 
-  let url = (process.env.TURSO_DATABASE_URL || '').replace(/^:/, '');
-  const authToken = process.env.TURSO_AUTH_TOKEN;
+  let url = (process.env.APP_DATABASE_URL || '').replace(/^:/, '');
+  const authToken = process.env.APP_DATABASE_AUTH_TOKEN;
 
   if (url && (url.startsWith('libsql:') || url.startsWith('https:'))) {
     // For remote Turso DB, import the web-only client (safe for serverless/Netlify functions)
@@ -32,12 +32,12 @@ async function getDbClient() {
 async function getGatAppDbClient() {
   if (gatAppClientInstance) return gatAppClientInstance;
 
-  const url = (process.env.GAT_APP_DATABASE_URL || '').replace(/^:/, '');
-  const authToken = process.env.GAT_APP_AUTH_TOKEN || '';
+  const url = (process.env.AUTH_DATABASE_URL || '').replace(/^:/, '');
+  const authToken = process.env.AUTH_DATABASE_AUTH_TOKEN || '';
 
   if (!url || !authToken) {
     throw new Error(
-      'GAT App database configuration is missing. Set GAT_APP_DATABASE_URL and GAT_APP_AUTH_TOKEN.'
+      'Authentication database configuration is missing. Set AUTH_DATABASE_URL and AUTH_DATABASE_AUTH_TOKEN.'
     );
   }
 
@@ -60,7 +60,7 @@ async function getGatAppDbClient() {
 
 export async function dbExecute(queryObj, maxAttempts = 5) {
   const client = await getDbClient();
-  const url = (process.env.TURSO_DATABASE_URL || '').replace(/^:/, '');
+  const url = (process.env.APP_DATABASE_URL || '').replace(/^:/, '');
   const isRemote = url.startsWith('libsql:') || url.startsWith('https:');
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -83,7 +83,7 @@ export async function dbExecute(queryObj, maxAttempts = 5) {
 
 export async function dbBatch(queries, maxAttempts = 5) {
   const client = await getDbClient();
-  const url = (process.env.TURSO_DATABASE_URL || '').replace(/^:/, '');
+  const url = (process.env.APP_DATABASE_URL || '').replace(/^:/, '');
   const isRemote = url.startsWith('libsql:') || url.startsWith('https:');
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

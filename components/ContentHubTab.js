@@ -99,7 +99,7 @@ export default function ContentHubTab() {
             });
         }
 
-        // Sort: Oldest task date first
+        // Sort: Latest scheduled task date first
         list.sort((a, b) => {
             const schedA = getResolvedSchedule(a.d.title);
             const schedB = getResolvedSchedule(b.d.title);
@@ -111,9 +111,9 @@ export default function ContentHubTab() {
             if (timestampB === 0 && timestampA !== 0) return -1;
 
             if (timestampA !== timestampB) {
-                return timestampA - timestampB;
+                return timestampB - timestampA;
             }
-            return a.index - b.index;
+            return b.index - a.index;
         });
 
         return list;
@@ -133,6 +133,7 @@ export default function ContentHubTab() {
             title: `New ${cat} Script ${draftsData.length + 1}`,
             category: cat,
             status: 'Idea',
+            origin: 'manual',
             hook: '',
             script: '',
             hashtags: cat === 'Motion' ? '#motion #content' : '#storytelling #content',
@@ -163,9 +164,10 @@ export default function ContentHubTab() {
         const isUploaded = currentSched ? currentSched.isUploaded : false;
 
         const updatedDraft = {
-            title: formTitle,
+            title: formTitle.trim() || 'Untitled',
             category: formCategory,
             status: isUploaded ? 'Uploaded' : (formScript && String(formScript).trim() !== '' ? 'Scripting' : 'Idea'),
+            origin: (draftsData || []).find(d => d.title === selectedDraftTitle)?.origin || 'manual',
             hook: formHook,
             script: formScript,
             hashtags: formHashtags,
@@ -176,6 +178,7 @@ export default function ContentHubTab() {
         const success = await saveScriptDraft(updatedDraft);
         if (success) {
             setSelectedDraftTitle(updatedDraft.title);
+            setFormTitle(updatedDraft.title);
             showAlert('💾 Storyboard draft updated!', 'success');
         }
     };

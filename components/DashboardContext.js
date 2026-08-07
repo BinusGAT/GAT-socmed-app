@@ -424,6 +424,7 @@ export function DashboardProvider({ children }) {
                     title: s.Title ?? s.title ?? '',
                     category: s.Category || s.category || 'Story Telling',
                     status: s.Status ?? s.status ?? 'Idea',
+                    origin: s.Origin ?? s.origin ?? 'legacy',
                     hook: s.Hook ?? s.hook ?? '',
                     script: s.Script ?? s.script ?? '',
                     hashtags: s.Hashtags ?? s.hashtags ?? s.Hastags ?? s.hastags ?? '',
@@ -759,6 +760,7 @@ export function DashboardProvider({ children }) {
             const gasDraftPayload = {
                 Title: draft.title ?? draft.Title ?? '',
                 Status: draft.status ?? draft.Status ?? 'Idea',
+                Origin: draft.origin ?? draft.Origin ?? 'manual',
                 Category: draft.category ?? draft.Category ?? '',
                 Hook: draft.hook ?? draft.Hook ?? '',
                 Script: draft.script ?? draft.Script ?? '',

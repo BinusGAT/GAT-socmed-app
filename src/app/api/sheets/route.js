@@ -285,8 +285,20 @@ export async function POST(request) {
           Script TEXT,
           Hastags TEXT,
           "References" TEXT,
-          Caption TEXT
+          Caption TEXT,
+          Origin TEXT DEFAULT 'legacy'
         )
+      `);
+      try { await db.execute("ALTER TABLE scripts ADD COLUMN Origin TEXT DEFAULT 'legacy'"); } catch (e) {}
+      await db.execute(`
+        UPDATE scripts
+        SET Status = 'Scripting', Origin = 'auto'
+        WHERE Status = 'Idea'
+          AND (Origin IS NULL OR Origin = 'legacy')
+          AND EXISTS (
+            SELECT 1 FROM schedule
+            WHERE LOWER(schedule."Content Title") = LOWER(scripts.Title)
+          )
       `);
 
       await db.execute(`
@@ -930,6 +942,7 @@ export async function POST(request) {
       case 'create': {
         const platforms = ['Instagram', 'TikTok', 'Youtube'];
         const selectedPlatform = String(params.Platform || '').trim().toLowerCase();
+        const contentTitle = String(params['Content Title'] || '').trim() || 'Untitled';
         
         const views = parseInt(params.Views) || 0;
         const likes = parseInt(params.Likes) || 0;
@@ -967,7 +980,7 @@ export async function POST(request) {
               , AssignedUserId
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
-              params.Date, newId, params['Content Title'], params.PIC, params.Category, plat,
+              params.Date, newId, contentTitle, params.PIC, params.Category, plat,
               viewsVal, reachVal, likesVal, commentsVal, followsVal, repostVal, sharesVal,
               totalEngVal, rateVal, kpiVal, 3, urlVal, commentVal, String(params.AssignedUserId || '')
             ]
@@ -975,7 +988,24 @@ export async function POST(request) {
         }
         await db.batch(insertQueries);
         await syncGroupById(newId);
-        await writeAudit(auth, 'created', 'content', newId, { title: params['Content Title'] || '' });
+        if (contentTitle) {
+          const existingScript = await db.execute({
+            sql: 'SELECT Title FROM scripts WHERE LOWER(Title) = LOWER(?)',
+            args: [contentTitle]
+          });
+          if (existingScript.rows.length === 0) {
+            await db.execute({
+              sql: `INSERT INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption, Origin)
+                    VALUES (?, 'Scripting', ?, '', '', ?, '', '', 'auto')`,
+              args: [
+                contentTitle,
+                params.Category || 'Story Telling',
+                params.Category === 'Motion' ? '#motion #content' : (params.Category === 'Story Telling' ? '#storytelling #content' : '#content')
+              ]
+            });
+          }
+        }
+        await writeAudit(auth, 'created', 'content', newId, { title: contentTitle });
         result = { success: true, message: 'All 3 platform rows created successfully' };
         break;
       }
@@ -1134,7 +1164,7 @@ export async function POST(request) {
         const id = params.ID || params.id || '';
         const dateStr = params.Date || '';
         const pic = params.PIC || '';
-        const title = params.Content_Title || params['Content Title'] || '';
+        const title = String(params.Content_Title || params['Content Title'] || '').trim() || 'Untitled';
         const category = params.Category || '';
         const assignedUserId = String(params.AssignedUserId || params.assignedUserId || '');
         let taskId = id;
@@ -1179,8 +1209,8 @@ export async function POST(request) {
             } else {
               // 4. Create a new script draft if it doesn't exist yet
               await db.execute({
-                sql: `INSERT INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption)
-                      VALUES (?, 'Idea', ?, '', '', ?, '', '')`,
+                sql: `INSERT INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption, Origin)
+                      VALUES (?, 'Scripting', ?, '', '', ?, '', '', 'auto')`,
                 args: [
                   title, 
                   category, 
@@ -1212,8 +1242,8 @@ export async function POST(request) {
             });
             if (existingScript.rows.length === 0) {
               await db.execute({
-                sql: `INSERT INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption)
-                      VALUES (?, 'Idea', ?, '', '', ?, '', '')`,
+                sql: `INSERT INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption, Origin)
+                      VALUES (?, 'Scripting', ?, '', '', ?, '', '', 'auto')`,
                 args: [
                   title, 
                   category, 
@@ -1254,7 +1284,7 @@ export async function POST(request) {
       }
 
       case 'save_script': {
-        const title = params.Title || params.title || '';
+        const title = String(params.Title || params.title || '').trim() || 'Untitled';
         const status = params.Status || params.status || 'Idea';
         const category = params.Category || params.category || 'Story Telling';
         const hook = params.Hook || params.hook || '';
@@ -1262,11 +1292,12 @@ export async function POST(request) {
         const hashtags = params.Hashtags || params.hashtags || params.Hastags || params.hastags || '';
         const references = params.References || params.references || '';
         const caption = params.Caption || params.caption || '';
+        const origin = params.Origin || params.origin || 'manual';
 
         await db.execute({
-          sql: `INSERT OR REPLACE INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [title, status, category, hook, scriptText, hashtags, references, caption]
+          sql: `INSERT OR REPLACE INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption, Origin)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [title, status, category, hook, scriptText, hashtags, references, caption, origin]
         });
         await writeAudit(auth, 'saved', 'script', title, { status, category });
         result = { success: true, message: 'Script saved successfully' };
