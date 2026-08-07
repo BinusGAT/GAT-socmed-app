@@ -29,7 +29,6 @@ export default function SessionsTab() {
         });
         return () => { active = false; };
         // listSessions is provided by the dashboard context and is intentionally loaded once on mount.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleRevoke = async (sessionId) => {

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from './DashboardContext';
+export { default as DeleteConfirmModal } from './modals/DeleteConfirmModal';
+export { default as LinkModal } from './modals/LinkModal';
 
 // ----------------------------------------------------
 // 1. UNLOCK MODAL
@@ -1076,97 +1078,6 @@ export function CalendarExportModal({ isOpen, onClose }) {
 // ----------------------------------------------------
 // 6. DELETE CONFIRMATION MODAL
 // ----------------------------------------------------
-export function DeleteConfirmModal({ isOpen, onClose, onConfirm, message }) {
-    if (!isOpen) return null;
-    if (typeof window === 'undefined') return null;
-
-    return createPortal(
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
-            <div className="w-full max-w-[400px] bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl flex flex-col items-center gap-4 text-center">
-                <div className="w-14 h-14 rounded-full bg-error-container/20 text-error border border-error/20 flex items-center justify-center text-[28px]">
-                    <span className="material-symbols-outlined text-[32px]">warning</span>
-                </div>
-                <h3 className="text-headline-md font-bold text-on-surface">Confirm Delete</h3>
-                <p className="text-body-sm text-on-surface-variant/80 leading-relaxed">
-                    {message || 'Are you sure you want to delete this item?'}
-                </p>
-                <div className="flex gap-3 w-full mt-2">
-                    <button
-                        type="button"
-                        className="flex-1 bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction"
-                        onClick={onClose}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        className="flex-1 bg-error-container/20 text-error border border-error/20 hover:bg-error-container/30 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction"
-                        onClick={onConfirm}
-                    >
-                        Delete
-                    </button>
-                </div>
-            </div>
-        </div>,
-        document.body
-    );
-}
-
-// ----------------------------------------------------
-// 7. LINK INSERT MODAL (Rich Text Editor Helper)
-// ----------------------------------------------------
-export function LinkModal({ isOpen, onClose, onConfirm }) {
-    const [url, setUrl] = useState('https://');
-
-    useEffect(() => {
-        if (isOpen) {
-            setUrl('https://');
-        }
-    }, [isOpen]);
-
-    if (!isOpen) return null;
-    if (typeof window === 'undefined') return null;
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onConfirm(url);
-    };
-
-    return createPortal(
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
-            <div className="w-full max-w-[400px] bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl space-y-4">
-                <div className="flex items-center gap-3 border-b border-outline-variant/20 pb-3">
-                    <span className="material-symbols-outlined text-primary text-[20px]">link</span>
-                    <h3 className="text-body-lg font-bold text-on-surface">Insert Link</h3>
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-label-md text-on-surface-variant uppercase tracking-widest block font-bold">Link URL</label>
-                        <input
-                            type="text"
-                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            placeholder="https://example.com"
-                            required
-                            autoFocus
-                        />
-                    </div>
-                    <div className="flex gap-3 justify-end pt-2">
-                        <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction" onClick={onClose}>
-                            Cancel
-                        </button>
-                        <button type="submit" className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction">
-                            Insert
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>,
-        document.body
-    );
-}
-
 // ----------------------------------------------------
 // 8. HELP & OPERATIONS GUIDE MODAL
 // ----------------------------------------------------

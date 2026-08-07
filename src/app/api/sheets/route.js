@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getSessionDurationMs } from '../../../../utils/sessionPolicy';
 import { dbExecute, dbBatch, gatAppExecute } from '../../../../utils/db';
+import { getAllowedRoles } from './authorization';
+import { getIndonesianMonth, getIsoDateString, parseMetricToNumber } from './domain';
+import { validateAuth, writeAudit } from './sessions';
 
 const db = {
   execute: dbExecute,
@@ -17,133 +20,7 @@ const AUDIT_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 let isDbInitialized = false;
 
 
-function sha256(text) {
-  return crypto.createHash('sha256').update(text).digest('hex');
-}
 
-function parseMetricToNumber(metricStr) {
-  if (!metricStr) return 0;
-  // Clean string: remove ±, +, %, spaces and convert to lowercase
-  let clean = String(metricStr).replace(/[±+%\s]/g, '').toLowerCase();
-  
-  let multiplier = 1;
-  if (clean.includes('k')) {
-    multiplier = 1000;
-    clean = clean.replace('k', '');
-  } else if (clean.includes('m')) {
-    multiplier = 1000000;
-    clean = clean.replace('m', '');
-  }
-  
-  // Extract the first consecutive digit-and-period sequence
-  const match = clean.match(/[0-9.]+/);
-  if (match) {
-    return parseFloat(match[0]) * multiplier;
-  }
-  return 0;
-}
-
-function safeCompare(a, b) {
-  const hashA = crypto.createHash('sha256').update(a).digest();
-  const hashB = crypto.createHash('sha256').update(b).digest();
-  return crypto.timingSafeEqual(hashA, hashB);
-}
-
-async function validateAuth(token, allowedRoles) {
-  if (!token || typeof token !== 'string') return { valid: false, role: null };
-
-  try {
-    const res = await db.execute({
-      sql: "SELECT * FROM sessions WHERE token = ? LIMIT 1",
-      args: [token]
-    });
-    const session = res.rows[0];
-    if (!session) return { valid: false, role: null };
-
-    if (session.expiresAt < Date.now()) {
-      await db.execute({
-        sql: "DELETE FROM sessions WHERE token = ?",
-        args: [token]
-      });
-      return { valid: false, role: null };
-    }
-
-    if (allowedRoles.includes(session.role)) {
-      await db.execute({
-        sql: "UPDATE sessions SET lastSeenAt = ? WHERE token = ?",
-        args: [Date.now(), token]
-      });
-      return {
-        valid: true,
-        role: session.role,
-        userId: session.userId,
-        userName: session.userName,
-        userEmail: session.userEmail,
-        sessionId: session.sessionId
-      };
-    }
-  } catch (err) {
-    console.error('Session validation error:', err);
-  }
-  return { valid: false, role: null };
-}
-
-async function writeAudit(auth, action, entityType, entityId, details = {}) {
-  await db.execute({
-    sql: `INSERT INTO audit_log (id, userId, userName, role, action, entityType, entityId, details, createdAt)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [
-      crypto.randomUUID(),
-      auth.userId ? String(auth.userId) : '',
-      auth.userName || 'Unknown user',
-      auth.role || '',
-      action,
-      entityType,
-      String(entityId || ''),
-      JSON.stringify(details),
-      Date.now()
-    ]
-  });
-}
-
-function getIsoDateString(dateVal) {
-  if (!dateVal) return '';
-  if (dateVal instanceof Date) {
-    const y = dateVal.getFullYear();
-    const m = ("0" + (dateVal.getMonth() + 1)).slice(-2);
-    const d = ("0" + dateVal.getDate()).slice(-2);
-    return `${y}-${m}-${d}`;
-  }
-  const dateStr = String(dateVal).trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-
-  // Handle mm/dd/yyyy or mm-dd-yyyy
-  const match = dateStr.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
-  if (match) {
-    const month = ("0" + match[1]).slice(-2);
-    const day = ("0" + match[2]).slice(-2);
-    const year = match[3];
-    return `${year}-${month}-${day}`;
-  }
-  
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  const y = d.getFullYear();
-  const m = ("0" + (d.getMonth() + 1)).slice(-2);
-  const dy = ("0" + d.getDate()).slice(-2);
-  return `${y}-${m}-${dy}`;
-}
-
-function getIndonesianMonth(dateStr) {
-  const iso = getIsoDateString(dateStr);
-  if (!iso) return '';
-  const monthNum = parseInt(iso.substring(5, 7));
-  const months = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-  ];
-  return months[monthNum - 1] || '';
-}
 async function getNextId() {
   const res = await db.execute("SELECT MAX(CAST(SUBSTR(ID, 3) AS INTEGER)) AS maxNum FROM schedule WHERE ID LIKE 'CT%'");
   const maxVal = res.rows[0]?.maxNum;
@@ -728,14 +605,9 @@ export async function POST(request) {
     }
 
     // 2. Validate token for all other actions
-    let allowedRoles = ['Admin'];
-    if (['read_all', 'list_sessions', 'revoke_session', 'logout'].includes(action)) {
-      allowedRoles = ['Admin', 'Creator', 'Viewer'];
-    } else if (['save_script', 'save_schedule', 'delete_schedule', 'delete_script', 'save_meeting', 'delete_meeting', 'save_ga_summary', 'save_ga_item', 'delete_ga_item'].includes(action)) {
-      allowedRoles = ['Admin', 'Creator'];
-    }
+    const allowedRoles = getAllowedRoles(action);
 
-    const auth = await validateAuth(token, allowedRoles);
+    const auth = await validateAuth(db, token, allowedRoles);
     if (!auth.valid) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized: Access token required or invalid' },
@@ -934,7 +806,7 @@ export async function POST(request) {
                 ON CONFLICT(userId) DO UPDATE SET visible = excluded.visible, updatedAt = excluded.updatedAt`,
           args: [userId, visible, Date.now()]
         });
-        await writeAudit(auth, 'updated', 'lecturer attendee visibility', userId, { visible: Boolean(visible) });
+        await writeAudit(db, auth, 'updated', 'lecturer attendee visibility', userId, { visible: Boolean(visible) });
         result = { success: true, message: 'Lecturer attendee visibility updated.' };
         break;
       }
@@ -1005,7 +877,7 @@ export async function POST(request) {
             });
           }
         }
-        await writeAudit(auth, 'created', 'content', newId, { title: contentTitle });
+        await writeAudit(db, auth, 'created', 'content', newId, { title: contentTitle });
         result = { success: true, message: 'All 3 platform rows created successfully' };
         break;
       }
@@ -1070,7 +942,7 @@ export async function POST(request) {
           });
 
           await syncGroupById(id);
-          await writeAudit(auth, 'updated', 'content', id, { title: params['Content Title'] || '' });
+          await writeAudit(db, auth, 'updated', 'content', id, { title: params['Content Title'] || '' });
         }
         result = { success: true, message: 'Data updated successfully' };
         break;
@@ -1104,7 +976,7 @@ export async function POST(request) {
             await syncGroupsByIds([fetchedId]);
           }
         }
-        await writeAudit(auth, 'deleted', 'content', fetchedId || '', { title: params['Content Title'] || '' });
+        await writeAudit(db, auth, 'deleted', 'content', fetchedId || '', { title: params['Content Title'] || '' });
         result = { success: true, message: 'Data deleted successfully' };
         break;
       }
@@ -1261,7 +1133,7 @@ export async function POST(request) {
             args: [`assignment-${taskId}-${assignedUserId}`, `New assignment: ${title}`, Date.now(), auth.userName || auth.role, assignedUserId, taskId]
           });
         }
-        await writeAudit(auth, id ? 'updated' : 'created', 'task', taskId, {
+        await writeAudit(db, auth, id ? 'updated' : 'created', 'task', taskId, {
           title, date: dateStr, assignedUserId, assigneeName: pic
         });
         result = { success: true, message: id ? 'Schedule updated successfully' : 'Schedule created successfully' };
@@ -1278,7 +1150,7 @@ export async function POST(request) {
           sql: "DELETE FROM schedule WHERE ID = ?",
           args: [id]
         });
-        await writeAudit(auth, 'deleted', 'task', id, {});
+        await writeAudit(db, auth, 'deleted', 'task', id, {});
         result = { success: true, message: 'Schedule deleted successfully' };
         break;
       }
@@ -1299,7 +1171,7 @@ export async function POST(request) {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [title, status, category, hook, scriptText, hashtags, references, caption, origin]
         });
-        await writeAudit(auth, 'saved', 'script', title, { status, category });
+        await writeAudit(db, auth, 'saved', 'script', title, { status, category });
         result = { success: true, message: 'Script saved successfully' };
         break;
       }
@@ -1310,7 +1182,7 @@ export async function POST(request) {
           sql: "DELETE FROM scripts WHERE LOWER(Title) = LOWER(?)",
           args: [title]
         });
-        await writeAudit(auth, 'deleted', 'script', title, {});
+        await writeAudit(db, auth, 'deleted', 'script', title, {});
         result = { success: true, message: 'Script deleted successfully' };
         break;
       }
@@ -1330,7 +1202,7 @@ export async function POST(request) {
                 VALUES (?, ?, ?, ?, ?, ?)`,
           args: [id, date, attendees, absentees, recap, videoRecap]
         });
-        await writeAudit(auth, 'saved', 'meeting', id, { date });
+        await writeAudit(db, auth, 'saved', 'meeting', id, { date });
         result = { success: true, message: 'Meeting saved successfully', id: id };
         break;
       }
@@ -1341,7 +1213,7 @@ export async function POST(request) {
           sql: "DELETE FROM meetings WHERE ID = ?",
           args: [id]
         });
-        await writeAudit(auth, 'deleted', 'meeting', id, {});
+        await writeAudit(db, auth, 'deleted', 'meeting', id, {});
         result = { success: true, message: 'Meeting deleted successfully' };
         break;
       }
@@ -1358,7 +1230,7 @@ export async function POST(request) {
           sql: "INSERT OR REPLACE INTO notifications (id, message, targetRole, isUrgent, createdAt, createdBy) VALUES (?, ?, ?, ?, ?, ?)",
           args: [id, message, targetRole, isUrgent, createdAt, createdBy]
         });
-        await writeAudit(auth, 'broadcast', 'notification', id, { targetRole });
+        await writeAudit(db, auth, 'broadcast', 'notification', id, { targetRole });
         result = { success: true, message: 'Notification broadcasted successfully', id };
         break;
       }
