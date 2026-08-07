@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { callSheetsAPI, setSessionToken, getSessionToken } from '../utils/api';
+import { callSheetsAPI } from '../utils/api';
 import { 
     normalizePicName, 
     getLocalDateInputValue, 
@@ -110,19 +110,15 @@ export function DashboardProvider({ children }) {
             setUserRole(savedRole);
             setUserName(localStorage.getItem('user_name'));
             setUserId(localStorage.getItem('user_id'));
-            const savedToken = localStorage.getItem('session_token');
-            setSessionToken(savedToken || '');
         } else {
             setIsUnlocked(false);
             setUserRole(null);
             setUserName(null);
             setUserId(null);
-            setSessionToken('');
             localStorage.removeItem('cud_unlocked');
             localStorage.removeItem('user_role');
             localStorage.removeItem('user_name');
             localStorage.removeItem('user_id');
-            localStorage.removeItem('session_token');
             localStorage.removeItem('unlocked_at');
             localStorage.removeItem('expires_at');
         }
@@ -165,12 +161,10 @@ export function DashboardProvider({ children }) {
             setUserRole(null);
             setUserName(null);
             setUserId(null);
-            setSessionToken('');
             localStorage.removeItem('cud_unlocked');
             localStorage.removeItem('user_role');
             localStorage.removeItem('user_name');
             localStorage.removeItem('user_id');
-            localStorage.removeItem('session_token');
             localStorage.removeItem('unlocked_at');
             localStorage.removeItem('expires_at');
             showAlert('🔒 Session expired. Please unlock the workspace again.', 'error');
@@ -555,11 +549,9 @@ export function DashboardProvider({ children }) {
                 localStorage.setItem('user_role', userRole);
                 localStorage.setItem('user_name', result.user?.name || '');
                 localStorage.setItem('user_id', result.user?.id || '');
-                localStorage.setItem('session_token', result.token || '');
                 localStorage.setItem('unlocked_at', Date.now().toString());
                 localStorage.setItem('expires_at', String(result.expiresAt));
                 localStorage.removeItem('session_limit_hours');
-                setSessionToken(result.token || '');
                 showAlert(`🔓 Workspace unlocked successfully!`, 'success');
                 return true;
             } else {
@@ -585,7 +577,7 @@ export function DashboardProvider({ children }) {
  
     // Lock Workspace
     const lockWorkspace = ({ revokeServer = true } = {}) => {
-        if (revokeServer && getSessionToken()) {
+        if (revokeServer) {
             callSheetsAPI('logout').catch((error) => {
                 console.error('Server logout failed:', error);
             });
@@ -594,12 +586,10 @@ export function DashboardProvider({ children }) {
         setUserRole(null);
         setUserName(null);
         setUserId(null);
-        setSessionToken('');
         localStorage.removeItem('cud_unlocked');
         localStorage.removeItem('user_role');
         localStorage.removeItem('user_name');
         localStorage.removeItem('user_id');
-        localStorage.removeItem('session_token');
         localStorage.removeItem('unlocked_at');
         localStorage.removeItem('expires_at');
         showAlert('🔒 Workspace locked. Session ended.', 'info');

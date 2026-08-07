@@ -2,9 +2,14 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getSessionDurationMs } from '../../../../utils/sessionPolicy';
 import { dbExecute, dbBatch, gatAppExecute } from '../../../../utils/db';
-import { getAllowedRoles } from './authorization';
+import { getAllowedRoles, isTrustedRequestOrigin } from './authorization';
 import { getIndonesianMonth, getIsoDateString, parseMetricToNumber } from './domain';
 import { validateAuth, writeAudit } from './sessions';
+import {
+  getExpiredSessionCookieOptions,
+  getSessionCookieOptions,
+  SESSION_COOKIE_NAME,
+} from './session-cookie';
 
 const db = {
   execute: dbExecute,
@@ -107,6 +112,13 @@ export async function POST(request) {
   const startTime = Date.now();
   console.log(`\n--- [API request start] ---`);
   try {
+    if (!isTrustedRequestOrigin(request.headers.get('origin'), request.nextUrl.origin)) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: cross-origin request rejected' },
+        { status: 403 },
+      );
+    }
+
     // Ensure all required tables exist in the database dynamically (only once per server lifecycle)
     if (!isDbInitialized) {
       console.log(`[API] Initializing tables for first request...`);
@@ -470,7 +482,7 @@ export async function POST(request) {
 
     const payload = await request.json();
     const action = payload.action;
-    const token = payload.token;
+    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value || '';
     const params = payload.params || {};
 
     console.log(`[API] Action payload parsed. Action = "${action}" in ${Date.now() - startTime}ms`);
@@ -569,7 +581,7 @@ export async function POST(request) {
           args: [sessionToken, matchedRole, expiresAt, sessionId, String(userRow.id), String(userRow.name), String(userRow.email), now, now, userAgent]
         });
 
-        return NextResponse.json({ 
+        const response = NextResponse.json({
           success: true, 
           valid: true, 
           role: matchedRole,
@@ -580,10 +592,11 @@ export async function POST(request) {
             role_name: primaryRoleName,
             roles: roleNames
           },
-          token: sessionToken,
           expiresAt,
           sessionDurationMs
         });
+        response.cookies.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions(expiresAt));
+        return response;
       }
 
       record.count += 1;
@@ -1421,7 +1434,11 @@ export async function POST(request) {
     }
 
     console.log(`[API SUCCESS] Completed request for action "${action}" in ${Date.now() - startTime}ms`);
-    return NextResponse.json(result);
+    const response = NextResponse.json(result);
+    if (action === 'logout') {
+      response.cookies.set(SESSION_COOKIE_NAME, '', getExpiredSessionCookieOptions());
+    }
+    return response;
   } catch (error) {
     console.error('Error in API sheets proxy route:', error);
     return NextResponse.json(

@@ -33,3 +33,11 @@ export function isRoleAllowed(action, role) {
   return getAllowedRoles(action).includes(role);
 }
 
+export function isTrustedRequestOrigin(origin, expectedOrigin) {
+  if (!origin) return true;
+  try {
+    return new URL(origin).origin === new URL(expectedOrigin).origin;
+  } catch {
+    return false;
+  }
+}

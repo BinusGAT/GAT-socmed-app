@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 test('loads the protected login gate without browser errors', async ({ page }) => {
   const errors = [];
@@ -30,4 +31,52 @@ test('keeps the login controls usable at mobile width', async ({ page }) => {
   await email.fill('user@example.test');
   await nim.fill('1234567890');
   await expect(page.getByRole('button', { name: 'Login' })).toBeEnabled();
+});
+
+test('provides a logical keyboard focus order', async ({ page }) => {
+  await page.goto('/');
+  const email = page.getByRole('textbox', { name: 'Email Address *' });
+  const nim = page.getByRole('textbox', { name: 'NIM *' });
+  const clear = page.getByRole('button', { name: 'Clear' });
+  const login = page.getByRole('button', { name: 'Login' });
+
+  await expect(email).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(nim).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(clear).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(login).toBeFocused();
+});
+
+test('has no detectable WCAG A or AA violations at the login gate', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForTimeout(600);
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
+
+  expect(results.violations).toEqual([]);
+});
+
+test('does not overflow horizontally at the configured viewport', async ({ page }) => {
+  await page.goto('/');
+  const dimensions = await page.evaluate(() => ({
+    viewportWidth: document.documentElement.clientWidth,
+    contentWidth: document.documentElement.scrollWidth,
+  }));
+
+  expect(dimensions.contentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
+});
+
+test('serves the required browser security headers', async ({ request }) => {
+  const response = await request.get('/');
+  const headers = response.headers();
+
+  expect(headers['content-security-policy']).toContain("default-src 'self'");
+  expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
+  expect(headers['x-content-type-options']).toBe('nosniff');
+  expect(headers['x-frame-options']).toBe('DENY');
+  expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
+  expect(headers['permissions-policy']).toContain('camera=()');
 });

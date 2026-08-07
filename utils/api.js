@@ -1,22 +1,8 @@
-let inMemoryToken = '';
-
-export function setSessionToken(token) {
-  inMemoryToken = token || '';
-}
-
-export function getSessionToken() {
-  return inMemoryToken;
-}
-
 export async function callSheetsAPI(action, params = {}) {
-  const token = inMemoryToken;
   const payload = {
     action,
     params
   };
-  if (token) {
-    payload.token = token;
-  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -27,6 +13,7 @@ export async function callSheetsAPI(action, params = {}) {
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'same-origin',
       body: JSON.stringify(payload),
       signal: controller.signal
     });

@@ -218,7 +218,7 @@ function DashboardAppContent() {
 
     if (!isUnlocked) {
         return (
-            <div className="flex min-h-screen w-screen justify-center items-center bg-background relative overflow-hidden">
+            <main id="main-content" className="flex min-h-screen w-full justify-center items-center bg-background relative overflow-hidden">
                 {isLoading && (
                     <div className="fixed inset-0 bg-background/40 backdrop-blur-md flex items-center justify-center z-[9999] animate-fade-in">
                         <div className="noise-overlay"></div>
@@ -233,7 +233,7 @@ function DashboardAppContent() {
                 )}
 
                 {globalAlert && (
-                    <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 py-3.5 px-5 rounded-xl shadow-2xl animate-slide-in text-body-sm font-semibold border ${globalAlert.type === 'error'
+                    <div role={globalAlert.type === 'error' ? 'alert' : 'status'} aria-live={globalAlert.type === 'error' ? 'assertive' : 'polite'} className={`fixed top-6 right-6 z-50 flex items-center gap-3 py-3.5 px-5 rounded-xl shadow-2xl animate-slide-in text-body-sm font-semibold border ${globalAlert.type === 'error'
                             ? 'bg-error/10 border-error/25 text-error shadow-[0_4px_20px_rgba(186,26,26,0.12)]'
                             : globalAlert.type === 'warning'
                                 ? 'bg-amber-500/10 border-amber-500/25 text-amber-500 shadow-[0_4px_20px_rgba(245,158,11,0.12)]'
@@ -247,12 +247,15 @@ function DashboardAppContent() {
                 )}
 
                 <LockScreen sectionName="Workspace" />
-            </div>
+            </main>
         );
     }
 
     return (
         <div className="flex min-h-screen w-full relative bg-background">
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[120] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-on-primary focus:font-semibold">
+                Skip to main content
+            </a>
             {/* Sidebar navigation */}
             <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
             {sidebarOpen && (
@@ -260,7 +263,7 @@ function DashboardAppContent() {
             )}
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col min-h-screen w-full lg:pl-[280px] pt-16 pb-20 lg:pb-0">
+            <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-h-screen w-full lg:pl-[280px] pt-16 pb-20 lg:pb-0">
                 <Topbar
                     toggleSidebar={toggleSidebar}
                     openUnlockModal={() => setUnlockOpen(true)}
@@ -286,7 +289,7 @@ function DashboardAppContent() {
 
                 {/* Global Alert Notification Banner */}
                 {globalAlert && (
-                    <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 py-3.5 px-5 rounded-xl shadow-2xl animate-slide-in text-body-sm font-semibold border ${globalAlert.type === 'error'
+                    <div role={globalAlert.type === 'error' ? 'alert' : 'status'} aria-live={globalAlert.type === 'error' ? 'assertive' : 'polite'} className={`fixed top-6 right-6 z-50 flex items-center gap-3 py-3.5 px-5 rounded-xl shadow-2xl animate-slide-in text-body-sm font-semibold border ${globalAlert.type === 'error'
                             ? 'bg-error/10 border-error/25 text-error shadow-[0_4px_20px_rgba(186,26,26,0.12)]'
                             : globalAlert.type === 'warning'
                                 ? 'bg-amber-500/10 border-amber-500/25 text-amber-500 shadow-[0_4px_20px_rgba(245,158,11,0.12)]'
@@ -321,13 +324,15 @@ function DashboardAppContent() {
             </main>
 
             {/* Mobile Bottom Navigation Bar */}
-            <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-md border-t border-outline-variant/20 flex items-center justify-around px-2 z-[90]">
+            <nav aria-label="Mobile primary navigation" className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-md border-t border-outline-variant/20 flex items-center justify-around px-2 z-[90]">
                 {visibleMobileItems.map((item) => {
                     const isActive = currentView === item.id;
                     return (
                         <button
+                            type="button"
                             key={item.id}
                             onClick={() => handleMobileNavClick(item.id)}
+                            aria-current={isActive ? 'page' : undefined}
                             className={`flex flex-col items-center gap-1 cursor-pointer transition-all micro-interaction ${isActive ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
                                 }`}
                         >

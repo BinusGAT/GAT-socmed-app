@@ -55,5 +55,7 @@ local.db
 
 # dev utility scripts
 /scripts/
-next.config.mjs
 /assets/
+
+# local editor spell-check configuration
+cspell.json

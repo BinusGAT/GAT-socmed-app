@@ -77,12 +77,12 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                 {/* Header */}
                 <div className="flex items-center gap-4 border-b border-outline-variant/20 pb-4">
                     <div className="w-11 h-11 bg-primary-container/20 border border-primary/20 rounded-xl flex items-center justify-center text-primary shadow-sm">
-                        <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>lock</span>
+                        <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">lock</span>
                     </div>
                     <div>
-                        <h2 className="font-headline-md text-headline-md font-bold text-on-surface leading-tight text-pretty">
+                        <h1 className="font-headline-md text-headline-md font-bold text-on-surface leading-tight text-pretty">
                             CC Internal Gate
-                        </h2>
+                        </h1>
                         <p className="text-[10px] text-primary uppercase tracking-widest font-bold">
                             {sectionName} Lock
                         </p>
@@ -92,15 +92,15 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                 <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
                     {/* Alerts */}
                     {lockdownTimeText && (
-                        <div className="flex items-center gap-3 p-3 bg-error-container/20 border border-error/30 rounded-xl text-error text-body-sm animate-fade-up">
-                            <span className="material-symbols-outlined text-[20px]">warning</span>
+                        <div className="flex items-center gap-3 p-3 bg-error-container/20 border border-error/30 rounded-xl text-error text-body-sm animate-fade-up" role="alert" aria-live="assertive">
+                            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">warning</span>
                             <span className="font-medium text-pretty">{lockdownTimeText}</span>
                         </div>
                     )}
 
                     {errorMsg && !lockdownTimeText && (
-                        <div className="flex items-center gap-3 p-3 bg-error-container/10 border border-error/20 rounded-xl text-error text-body-sm animate-fade-up">
-                            <span className="material-symbols-outlined text-[20px]">error</span>
+                        <div className="flex items-center gap-3 p-3 bg-error-container/10 border border-error/20 rounded-xl text-error text-body-sm animate-fade-up" role="alert" aria-live="assertive">
+                            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">error</span>
                             <span className="font-medium text-pretty">{errorMsg}</span>
                         </div>
                     )}
@@ -116,7 +116,7 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-2.5 text-body-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
                             placeholder="user@domain.com"
                             required
-                            autoComplete="off"
+                            autoComplete="username"
                             autoFocus
                             value={email}
                             onChange={(e) => {
@@ -159,7 +159,7 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                         </button>
                         <button 
                             type="submit" 
-                            className="flex-1 bg-primary text-on-primary hover:opacity-90 font-semibold py-3 px-4 rounded-xl text-body-sm transition-all duration-200 micro-interaction text-center disabled:opacity-50 shimmer-button" 
+                            className="flex-1 bg-[#4f46e5] text-white hover:bg-[#4338ca] font-semibold py-3 px-4 rounded-xl text-body-sm transition-all duration-200 micro-interaction text-center disabled:opacity-50 shimmer-button"
                             disabled={!!lockdownTimeText}
                         >
                             Login

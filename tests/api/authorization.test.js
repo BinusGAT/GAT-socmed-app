@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
   getAllowedRoles,
+  isTrustedRequestOrigin,
   isRoleAllowed,
   ROLES,
 } from '../../src/app/api/sheets/authorization';
 import { validateAuth } from '../../src/app/api/sheets/sessions';
+import {
+  getExpiredSessionCookieOptions,
+  getSessionCookieOptions,
+  SESSION_COOKIE_NAME,
+} from '../../src/app/api/sheets/session-cookie';
 
 describe('API authorization policy', () => {
   it('allows every authenticated role to read and manage its own sessions', () => {
@@ -34,6 +40,13 @@ describe('API authorization policy', () => {
 
   it('defaults unknown actions to admin-only access', () => {
     expect(getAllowedRoles('unknown_action')).toEqual([ROLES.ADMIN]);
+  });
+
+  it('rejects cross-origin cookie-authenticated requests', () => {
+    expect(isTrustedRequestOrigin('https://dashboard.example.test', 'https://dashboard.example.test')).toBe(true);
+    expect(isTrustedRequestOrigin(null, 'https://dashboard.example.test')).toBe(true);
+    expect(isTrustedRequestOrigin('https://attacker.example', 'https://dashboard.example.test')).toBe(false);
+    expect(isTrustedRequestOrigin('not-a-url', 'https://dashboard.example.test')).toBe(false);
   });
 
   it('accepts a valid server-side session and refreshes last-seen time', async () => {
@@ -84,5 +97,25 @@ describe('API authorization policy', () => {
     };
 
     await expect(validateAuth(db, 'viewer', [ROLES.ADMIN])).resolves.toEqual({ valid: false, role: null });
+  });
+
+  it('uses a server-only, strict session cookie', () => {
+    const options = getSessionCookieOptions(Date.now() + 60_000);
+    expect(SESSION_COOKIE_NAME).toBe('gat_session');
+    expect(options).toMatchObject({
+      httpOnly: true,
+      sameSite: 'strict',
+      path: '/',
+    });
+    expect(options.maxAge).toBeGreaterThan(0);
+  });
+
+  it('expires the session cookie during logout', () => {
+    expect(getExpiredSessionCookieOptions()).toMatchObject({
+      httpOnly: true,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 0,
+    });
   });
 });
