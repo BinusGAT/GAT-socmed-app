@@ -364,6 +364,14 @@ export async function POST(request) {
         args: [Date.now() - AUDIT_RETENTION_MS]
       });
 
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS lecturer_attendee_visibility (
+          userId TEXT PRIMARY KEY,
+          visible INTEGER NOT NULL DEFAULT 1,
+          updatedAt INTEGER NOT NULL
+        )
+      `);
+
       // Google Analytics Summary Table
       await db.execute(`
         CREATE TABLE IF NOT EXISTS google_analytics_summary (
@@ -732,7 +740,7 @@ export async function POST(request) {
           sql: 'DELETE FROM audit_log WHERE createdAt < ?',
           args: [Date.now() - AUDIT_RETENTION_MS]
         });
-        const [laporanRes, scheduleRes, scriptsRes, meetingsRes, notificationsRes, gaSummaryRes, gaItemsRes, appSettingsRes, platformsRes, categoriesRes, internUsersRes, auditRes] = await Promise.all([
+        const [laporanRes, scheduleRes, scriptsRes, meetingsRes, notificationsRes, gaSummaryRes, gaItemsRes, appSettingsRes, platformsRes, categoriesRes, internUsersRes, lecturerUsersRes, lecturerVisibilityRes, auditRes] = await Promise.all([
           db.execute("SELECT * FROM laporan"),
           db.execute("SELECT * FROM schedule"),
           db.execute("SELECT * FROM scripts"),
@@ -754,8 +762,24 @@ export async function POST(request) {
             `,
             args: []
           }),
+          gatAppExecute({
+            sql: `
+              SELECT DISTINCT u.id, u.name, r.name AS role
+              FROM users u
+              JOIN user_roles ur ON ur.user_id = u.id
+              JOIN roles r ON r.id = ur.role_id
+              WHERE LOWER(TRIM(r.name)) = 'lecturer'
+              ORDER BY LOWER(u.name), u.id
+            `,
+            args: []
+          }),
+          db.execute('SELECT userId, visible FROM lecturer_attendee_visibility'),
           db.execute("SELECT * FROM audit_log WHERE entityType <> 'session' ORDER BY createdAt DESC LIMIT 200")
         ]);
+
+        const lecturerVisibility = new Map(
+          lecturerVisibilityRes.rows.map((setting) => [String(setting.userId), Number(setting.visible) === 1])
+        );
 
         const internUsers = internUsersRes.rows.map((intern) => ({
           id: String(intern.id),
@@ -818,6 +842,15 @@ export async function POST(request) {
             data: internUsers.map((intern) => ({ NAMA: intern.name, STREAM: intern.role, USER_ID: intern.id }))
           },
           internList: { success: true, data: internUsers },
+          lecturerList: {
+            success: true,
+            data: lecturerUsersRes.rows.map((lecturer) => ({
+              id: String(lecturer.id),
+              name: String(lecturer.name),
+              role: String(lecturer.role || 'lecturer'),
+              showInAttendees: lecturerVisibility.get(String(lecturer.id)) ?? true
+            }))
+          },
           scripts: { success: true, data: scriptsRes.rows },
           meetings: { success: true, data: meetingsRes.rows },
           notifications: {
@@ -873,6 +906,24 @@ export async function POST(request) {
           args: [token]
         });
         result = { success: true, message: 'Logged out successfully.' };
+        break;
+      }
+
+      case 'set_lecturer_attendee_visibility': {
+        const userId = String(params.userId || '');
+        const visible = params.visible ? 1 : 0;
+        if (!userId) {
+          result = { success: false, error: 'Lecturer user ID is required.' };
+          break;
+        }
+        await db.execute({
+          sql: `INSERT INTO lecturer_attendee_visibility (userId, visible, updatedAt)
+                VALUES (?, ?, ?)
+                ON CONFLICT(userId) DO UPDATE SET visible = excluded.visible, updatedAt = excluded.updatedAt`,
+          args: [userId, visible, Date.now()]
+        });
+        await writeAudit(auth, 'updated', 'lecturer attendee visibility', userId, { visible: Boolean(visible) });
+        result = { success: true, message: 'Lecturer attendee visibility updated.' };
         break;
       }
 

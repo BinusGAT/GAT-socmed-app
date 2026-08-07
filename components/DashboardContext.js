@@ -60,6 +60,7 @@ export function DashboardProvider({ children }) {
     const [scheduleData, setScheduleData] = useState([]);
     const [memberListData, setMemberListData] = useState([]);
     const [internListData, setInternListData] = useState([]);
+    const [lecturerListData, setLecturerListData] = useState([]);
     const [draftsData, setDraftsData] = useState([]);
     const [meetingsData, setMeetingsData] = useState([]);
     const [notificationsData, setNotificationsData] = useState([]);
@@ -203,6 +204,7 @@ export function DashboardProvider({ children }) {
             setCurrentData([]);
             setScheduleData([]);
             setInternListData([]);
+            setLecturerListData([]);
             setAuditLogData([]);
             setDraftsData([]);
             setMeetingsData([]);
@@ -411,6 +413,7 @@ export function DashboardProvider({ children }) {
                 const schedule = result.schedule?.data || [];
                 const memberList = result.memberList?.data || [];
                 const internList = result.internList?.data || [];
+                const lecturerList = result.lecturerList?.data || [];
                 const rawScripts = result.scripts?.data || [];
                 const rawMeetings = result.meetings?.data || [];
                 const rawNotifications = result.notifications?.data || [];
@@ -436,6 +439,7 @@ export function DashboardProvider({ children }) {
                 setScheduleData(schedule);
                 setMemberListData(memberList);
                 setInternListData(internList);
+                setLecturerListData(lecturerList);
                 setDraftsData(scripts);
                 setNotificationsData(rawNotifications);
                 setAuditLogData(rawAuditLog);
@@ -707,6 +711,26 @@ export function DashboardProvider({ children }) {
             return true;
         }
         showAlert(result?.error || 'Failed to revoke session.', 'error');
+        return false;
+    };
+
+    const setLecturerAttendeeVisibility = async (userId, visible) => {
+        setLecturerListData((current) => current.map((lecturer) =>
+            String(lecturer.id) === String(userId) ? { ...lecturer, showInAttendees: visible } : lecturer
+        ));
+        try {
+            const result = await callSheetsAPI('set_lecturer_attendee_visibility', { userId, visible });
+            if (result?.success) {
+                await loadFromGoogleSheets(true);
+                showAlert('Lecturer attendee visibility updated.', 'success');
+                return true;
+            }
+        } catch (error) {
+            setLecturerListData((current) => current.map((lecturer) =>
+                String(lecturer.id) === String(userId) ? { ...lecturer, showInAttendees: !visible } : lecturer
+            ));
+            showAlert(`Failed to update lecturer visibility: ${error.message}`, 'error');
+        }
         return false;
     };
 
@@ -1068,6 +1092,7 @@ export function DashboardProvider({ children }) {
             scheduleData,
             memberListData,
             internListData,
+            lecturerListData,
             draftsData,
             meetingsData,
             notificationsData,
@@ -1109,6 +1134,7 @@ export function DashboardProvider({ children }) {
             deleteMember,
             listSessions,
             revokeSession,
+            setLecturerAttendeeVisibility,
             refreshData: () => loadFromGoogleSheets(false)
         }}>
             {children}

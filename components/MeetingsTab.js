@@ -23,12 +23,14 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         saveMeetingMemo,
         deleteMeetingMemo,
         internListData,
+        lecturerListData,
         showAlert,
         selectedMeetingId,
         setSelectedMeetingId
     } = useDashboard();
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [attendeeSearch, setAttendeeSearch] = useState('');
     const [dateFilter, setDateFilter] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -187,7 +189,22 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     const filteredMeetings = getFilteredMeetings();
 
     const getMeetingMembers = () => {
-        return (internListData || []).map((intern) => intern.name).filter(Boolean);
+        const usersById = new Map();
+        const visibleLecturers = (lecturerListData || []).filter((lecturer) => lecturer.showInAttendees !== false);
+        for (const user of [...(internListData || []), ...visibleLecturers]) {
+            if (!user?.id || !user?.name) continue;
+            const id = String(user.id);
+            const existing = usersById.get(id) || { id, name: user.name, roles: new Set() };
+            existing.roles.add(String(user.role || '').trim().toLowerCase());
+            usersById.set(id, existing);
+        }
+        return Array.from(usersById.values())
+            .map((user) => ({ ...user, roles: Array.from(user.roles).filter(Boolean) }))
+            .sort((a, b) => {
+                const aPriority = a.roles.includes('lecturer') ? 0 : 1;
+                const bPriority = b.roles.includes('lecturer') ? 0 : 1;
+                return aPriority - bPriority || a.name.localeCompare(b.name);
+            });
     };
 
     const handleAttendeeToggle = (name) => {
@@ -276,40 +293,57 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     const safeExecCommand = (command, value = null) => {
         if (typeof document !== 'undefined' && typeof document.execCommand === 'function') {
             try {
-                document.execCommand(command, false, value);
+                return document.execCommand(command, false, value);
             } catch (err) {
                 console.warn(`execCommand('${command}') is not supported or failed:`, err);
             }
         }
+        return false;
     };
 
     const applyFormatting = (command) => {
+        if (actionsDisabled || !editorRef.current) return;
+        restoreSelection();
         safeExecCommand(command);
-        if (editorRef.current) {
-            setFormRecap(editorRef.current.innerHTML);
-        }
-        updateActiveStyles();
+        saveSelection();
+        setFormRecap(editorRef.current.innerHTML);
+        requestAnimationFrame(updateActiveStyles);
     };
 
     const saveSelection = () => {
-        if (typeof window !== 'undefined' && window.getSelection) {
+        if (editorRef.current && typeof window !== 'undefined' && window.getSelection) {
             const sel = window.getSelection();
             if (sel.rangeCount > 0) {
-                savedSelectionRef.current = sel.getRangeAt(0);
+                const range = sel.getRangeAt(0);
+                if (editorRef.current.contains(range.commonAncestorContainer)) {
+                    savedSelectionRef.current = range.cloneRange();
+                }
             }
         }
     };
 
     const restoreSelection = () => {
-        if (savedSelectionRef.current && typeof window !== 'undefined' && window.getSelection) {
+        if (!editorRef.current || typeof window === 'undefined' || !window.getSelection) return false;
+        editorRef.current.focus({ preventScroll: true });
+        if (savedSelectionRef.current) {
             const sel = window.getSelection();
             sel.removeAllRanges();
             sel.addRange(savedSelectionRef.current);
+            return true;
         }
+        const range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        savedSelectionRef.current = range.cloneRange();
+        return true;
     };
 
     const handleLinkClick = (e) => {
         e.preventDefault();
+        if (actionsDisabled) return;
         saveSelection();
         setIsLinkModalOpen(true);
     };
@@ -322,7 +356,17 @@ export default function MeetingsTab({ onOpenDatePicker }) {
             if (formattedUrl && !/^https?:\/\//i.test(formattedUrl)) {
                 formattedUrl = 'https://' + formattedUrl;
             }
-            safeExecCommand('createLink', formattedUrl);
+            const selection = window.getSelection();
+            if (selection && selection.isCollapsed) {
+                const link = document.createElement('a');
+                link.href = formattedUrl;
+                link.textContent = formattedUrl;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                safeExecCommand('insertHTML', link.outerHTML);
+            } else {
+                safeExecCommand('createLink', formattedUrl);
+            }
 
             if (editorRef.current) {
                 editorRef.current.querySelectorAll('a').forEach(a => {
@@ -330,8 +374,15 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                     a.rel = 'noopener noreferrer';
                 });
                 setFormRecap(editorRef.current.innerHTML);
+                saveSelection();
             }
         }
+    };
+
+    const handleEditorInput = (event) => {
+        setFormRecap(event.currentTarget.innerHTML);
+        saveSelection();
+        updateActiveStyles();
     };
 
     const handleEditorPaste = (e) => {
@@ -403,6 +454,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                 }
             }
         }
+        saveSelection();
         updateActiveStyles();
     };
 
@@ -414,9 +466,12 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         try {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html || '', 'text/html');
-            const allowedTags = ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'a', 'span', 'i'];
+            const allowedTags = ['p', 'div', 'br', 'strong', 'b', 'em', 'u', 'ul', 'ol', 'li', 'a', 'span', 'i'];
             const allowedAttrs = {
                 'a': ['href', 'target', 'rel'],
+                'p': ['style'],
+                'div': ['style'],
+                'li': ['style'],
                 'span': ['class', 'style'],
                 'i': ['class', 'style']
             };
@@ -490,7 +545,11 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     };
 
     const meetingMembers = getMeetingMembers();
-    const absentees = meetingMembers.filter(name => !formAttendees.includes(name));
+    const filteredMeetingMembers = meetingMembers.filter((user) => {
+        const query = attendeeSearch.trim().toLowerCase();
+        return !query || user.name.toLowerCase().includes(query) || user.roles.some((role) => role.includes(query));
+    });
+    const absentees = meetingMembers.map((user) => user.name).filter(name => !formAttendees.includes(name));
     const actionsDisabled = !isUnlocked || userRole === 'Creator';
 
     if (!isUnlocked) {
@@ -772,28 +831,51 @@ export default function MeetingsTab({ onOpenDatePicker }) {
 
                                 {/* Attendees checkboxes */}
                                 <div className="space-y-2">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Attendees Presence Checklist</label>
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                        <label className="text-body-sm font-semibold text-on-surface-variant">Attendees Presence Checklist</label>
+                                        <div className="relative sm:w-64">
+                                            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[17px] text-on-surface-variant/60">search</span>
+                                            <input
+                                                type="search"
+                                                value={attendeeSearch}
+                                                onChange={(event) => setAttendeeSearch(event.target.value)}
+                                                placeholder="Search name or role"
+                                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg pl-9 pr-3 py-2 text-[11px] text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary"
+                                            />
+                                        </div>
+                                    </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-surface-container-low/40 border border-outline-variant/20 rounded p-4">
                                         {meetingMembers.length === 0 ? (
                                             <span className="col-span-full text-[11.5px] text-on-surface-variant/60 italic">
-                                                No users with the intern role were found.
+                                                No interns or lecturers were found.
                                             </span>
-                                        ) : meetingMembers.map(name => {
-                                            const isChecked = formAttendees.includes(name);
+                                        ) : filteredMeetingMembers.length === 0 ? (
+                                            <span className="col-span-full text-[11.5px] text-on-surface-variant/60 italic">
+                                                No attendees match your search.
+                                            </span>
+                                        ) : filteredMeetingMembers.map(user => {
+                                            const isChecked = formAttendees.includes(user.name);
                                             return (
                                                 <label 
-                                                    key={name} 
-                                                    className="flex items-center gap-2 cursor-pointer select-none text-[12px] text-on-surface font-medium"
+                                                    key={user.id}
+                                                    className="flex items-start gap-2 cursor-pointer select-none text-[12px] text-on-surface font-medium"
                                                 >
                                                     <input 
                                                         type="checkbox" 
                                                         checked={isChecked}
-                                                        onChange={() => handleAttendeeToggle(name)}
+                                                        onChange={() => handleAttendeeToggle(user.name)}
                                                         disabled={actionsDisabled}
-                                                        className="rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                                                        className="rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-4 w-4 cursor-pointer mt-0.5"
                                                     />
-                                                    <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${getPicBadgeClasses(name)}`}>
-                                                        {normalizePicName(name)}
+                                                    <span className="min-w-0">
+                                                        <span className="block truncate">{user.name}</span>
+                                                        <span className="flex flex-wrap gap-1 mt-1">
+                                                            {user.roles.map((role) => (
+                                                                <span key={role} className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${role === 'lecturer' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-primary/10 text-primary border border-primary/20'}`}>
+                                                                    {role}
+                                                                </span>
+                                                            ))}
+                                                        </span>
                                                     </span>
                                                 </label>
                                             );
@@ -806,7 +888,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Meeting Recap Notes <span className="text-error">*</span></label>
                                     
                                     {/* Format toolbar using Material symbols */}
-                                    <div className="flex flex-wrap gap-1 bg-surface-container-low border border-outline-variant/35 rounded-t p-1">
+                                    <fieldset disabled={actionsDisabled} className="flex flex-wrap gap-1 bg-surface-container-low border border-outline-variant/35 rounded-t p-1 disabled:opacity-60">
                                         <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.bold)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('bold'); }} title="Bold">
                                             <span className="material-symbols-outlined text-[18px]">format_bold</span>
                                         </button>
@@ -843,7 +925,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                         <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} onMouseDown={handleLinkClick} title="Insert Link">
                                             <span className="material-symbols-outlined text-[18px]">link</span>
                                         </button>
-                                    </div>
+                                    </fieldset>
                                     
                                     <div 
                                         ref={editorRef}
@@ -851,9 +933,12 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                         className="w-full bg-surface-container-low border border-outline-variant/35 border-t-0 rounded-b p-4 text-body-sm text-on-surface focus:outline-none focus:border-primary min-h-[220px]" 
                                         contentEditable={!actionsDisabled} 
                                         onBlur={(e) => setFormRecap(e.currentTarget.innerHTML)}
+                                        onInput={handleEditorInput}
                                         onKeyUp={handleEditorKeyUp}
-                                        onMouseUp={updateActiveStyles}
+                                        onMouseUp={() => { saveSelection(); updateActiveStyles(); }}
+                                        onFocus={() => { saveSelection(); updateActiveStyles(); }}
                                         onPaste={handleEditorPaste}
+                                        suppressContentEditableWarning
                                         placeholder="Write down the details of what was discussed, action items, next steps..."
                                         data-placeholder="Write down the details of what was discussed, action items, next steps..."
                                     />

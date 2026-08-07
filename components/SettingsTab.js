@@ -11,6 +11,7 @@ export default function SettingsTab() {
     const {
         appSettingsData,
         internListData,
+        lecturerListData,
         platformsData,
         categoriesData,
         saveAppSetting,
@@ -21,13 +22,14 @@ export default function SettingsTab() {
         deleteCategory,
         saveMember,
         deleteMember,
+        setLecturerAttendeeVisibility,
         isUnlocked,
         userRole
     } = useDashboard();
 
     const [activeSubTab, setActiveSubTab] = useState(userRole === 'Creator' ? 'sessions' : 'general');
     const settingsTabs = userRole === 'Admin'
-        ? ['general', 'members', 'categories', 'audit', 'sessions']
+        ? ['general', 'members', 'lecturers', 'categories', 'audit', 'sessions']
         : ['sessions'];
 
     // General Settings States
@@ -275,6 +277,50 @@ export default function SettingsTab() {
                             </button>
                         </div>
                     </form>
+                </div>
+            )}
+
+            {userRole === 'Admin' && activeSubTab === 'lecturers' && (
+                <div className="glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
+                    <h4 className="font-bold text-body-lg text-on-surface flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary">school</span> Lecturer Directory
+                    </h4>
+                    <div className="overflow-x-auto border border-outline-variant/20 rounded-xl">
+                        <table className="w-full text-left border-collapse text-body-sm">
+                            <thead className="bg-surface-container-low text-on-surface-variant uppercase text-[10px] tracking-wider border-b border-outline-variant/20">
+                                <tr>
+                                    <th className="px-5 py-4">Name</th>
+                                    <th className="px-5 py-4">Role</th>
+                                    <th className="px-5 py-4 text-center">Meeting attendees</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-outline-variant/10">
+                                {lecturerListData.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="3" className="px-5 py-8 text-center text-on-surface-variant/60 italic">
+                                            No users with the lecturer role were found.
+                                        </td>
+                                    </tr>
+                                ) : lecturerListData.map((lecturer) => (
+                                    <tr key={lecturer.id} className="hover:bg-surface-container-low/30 transition-colors">
+                                        <td className="px-5 py-4 font-semibold text-on-surface">{lecturer.name}</td>
+                                        <td className="px-5 py-4 text-on-surface-variant capitalize">{lecturer.role}</td>
+                                        <td className="px-5 py-4 text-center">
+                                            <label className="inline-flex items-center justify-center gap-2 cursor-pointer text-[11px] text-on-surface-variant">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={lecturer.showInAttendees !== false}
+                                                    onChange={(event) => setLecturerAttendeeVisibility(lecturer.id, event.target.checked)}
+                                                    aria-label={`Show ${lecturer.name} in meeting attendees`}
+                                                />
+                                                <span>{lecturer.showInAttendees !== false ? 'Shown' : 'Hidden'}</span>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
