@@ -17,8 +17,15 @@ function getDueState(dateValue, completed) {
 
 export default function MyWorkTab() {
     const { scheduleData, userId, userName, setCurrentView } = useDashboard();
+    const normalizedUserName = String(userName || '').trim().toLowerCase();
+    const userFirstName = normalizedUserName.split(/\s+/)[0];
     const tasks = (scheduleData || [])
-        .filter((task) => String(task.AssignedUserId || '') === String(userId || '') || (!task.AssignedUserId && task.PIC === userName))
+        .filter((task) => {
+            if (String(task.AssignedUserId || '') === String(userId || '')) return true;
+            if (task.AssignedUserId || !task.PIC || !normalizedUserName) return false;
+            const normalizedPic = String(task.PIC).trim().toLowerCase();
+            return normalizedPic === normalizedUserName || normalizedPic.split(/\s+/)[0] === userFirstName;
+        })
         .sort((a, b) => String(a.Date || '').localeCompare(String(b.Date || '')));
     const openCount = tasks.filter((task) => Number(task.Status) !== 1).length;
     const overdueCount = tasks.filter((task) => Number(task.Status) !== 1 && new Date(`${task.Date}T00:00:00`) < new Date(new Date().setHours(0, 0, 0, 0))).length;

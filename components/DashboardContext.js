@@ -126,14 +126,7 @@ export function DashboardProvider({ children }) {
             localStorage.removeItem('expires_at');
         }
 
-        // Load Offline Member Defaults
-        setMemberListData([
-            { NAMA: 'User A', STREAM: 'Product Manager' },
-            { NAMA: 'User B', STREAM: 'Content Creator' },
-            { NAMA: 'User C', STREAM: 'Content Creator' },
-            { NAMA: 'User D', STREAM: 'Content Creator' },
-            { NAMA: 'User E', STREAM: 'Content Creator' }
-        ]);
+        setMemberListData([]);
 
         setScheduleData([]);
         setDraftsData([]);
@@ -224,7 +217,7 @@ export function DashboardProvider({ children }) {
             const expiresAt = parseInt(localStorage.getItem('expires_at') || '', 10);
 
             if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
-                lockWorkspace();
+                lockWorkspace({ revokeServer: false });
                 showAlert('🔒 Session expired. Workspace locked.', 'info');
             }
         }, 15000); // Check every 15 seconds
@@ -361,26 +354,6 @@ export function DashboardProvider({ children }) {
                 const data = JSON.parse(localMeetings);
                 const normalized = normalizeMeetingsList(data || []);
                 setMeetingsData(normalized);
-                if (normalized.length === 0) {
-                    // Fallback sample meeting memo data when none present
-                    const sampleMeetings = normalizeMeetingsList([
-                        {
-                            id: 'MEET001',
-                            date: new Date().toISOString().split('T')[0],
-                            agenda: 'Project Kickoff',
-                            attendees: 'User A, User B',
-                            recap: 'Discussed project scope, deliverables, and timelines.'
-                        },
-                        {
-                            id: 'MEET002',
-                            date: new Date().toISOString().split('T')[0],
-                            agenda: 'Design Review',
-                            attendees: 'User C, User A',
-                            recap: 'Reviewed UI mockups, feedback collected, next steps defined.'
-                        }
-                    ]);
-                    setMeetingsData(sampleMeetings);
-                }
             } catch (e) {}
         }
         const localNotifications = localStorage.getItem('GAT_notifications');
@@ -491,29 +464,8 @@ export function DashboardProvider({ children }) {
                     localStorage.setItem('GAT_categories', JSON.stringify(categories));
                 }
                 
-                if (meetings.length === 0) {
-                    const sampleMeetings = normalizeMeetingsList([
-                        {
-                            id: 'MEET001',
-                            date: new Date().toISOString().split('T')[0],
-                            agenda: 'Project Kickoff',
-                            attendees: 'User A, User B',
-                            recap: 'Discussed project scope, deliverables, and timelines.'
-                        },
-                        {
-                            id: 'MEET002',
-                            date: new Date().toISOString().split('T')[0],
-                            agenda: 'Design Review',
-                            attendees: 'User C, User A',
-                            recap: 'Reviewed UI mockups, feedback collected, next steps defined.'
-                        }
-                    ]);
-                    setMeetingsData(sampleMeetings);
-                    localStorage.setItem('GAT_meeting_memos', JSON.stringify(sampleMeetings));
-                } else {
-                    setMeetingsData(meetings);
-                    localStorage.setItem('GAT_meeting_memos', JSON.stringify(meetings));
-                }
+                setMeetingsData(meetings);
+                localStorage.setItem('GAT_meeting_memos', JSON.stringify(meetings));
 
                 const gaSummary = result.gaSummary?.data?.[0] || {
                     visitors: '± 6K',
@@ -627,7 +579,12 @@ export function DashboardProvider({ children }) {
     };
  
     // Lock Workspace
-    const lockWorkspace = () => {
+    const lockWorkspace = ({ revokeServer = true } = {}) => {
+        if (revokeServer && getSessionToken()) {
+            callSheetsAPI('logout').catch((error) => {
+                console.error('Server logout failed:', error);
+            });
+        }
         setIsUnlocked(false);
         setUserRole(null);
         setUserName(null);

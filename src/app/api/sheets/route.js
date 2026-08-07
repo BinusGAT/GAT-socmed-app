@@ -709,7 +709,7 @@ export async function POST(request) {
 
     // 2. Validate token for all other actions
     let allowedRoles = ['Admin'];
-    if (['read_all', 'list_sessions', 'revoke_session'].includes(action)) {
+    if (['read_all', 'list_sessions', 'revoke_session', 'logout'].includes(action)) {
       allowedRoles = ['Admin', 'Creator', 'Viewer'];
     } else if (['save_script', 'save_schedule', 'delete_schedule', 'delete_script', 'save_meeting', 'delete_meeting', 'save_ga_summary', 'save_ga_item', 'delete_ga_item'].includes(action)) {
       allowedRoles = ['Admin', 'Creator'];
@@ -732,10 +732,9 @@ export async function POST(request) {
           sql: 'DELETE FROM audit_log WHERE createdAt < ?',
           args: [Date.now() - AUDIT_RETENTION_MS]
         });
-        const [laporanRes, scheduleRes, memberListRes, scriptsRes, meetingsRes, notificationsRes, gaSummaryRes, gaItemsRes, appSettingsRes, platformsRes, categoriesRes, internUsersRes, auditRes] = await Promise.all([
+        const [laporanRes, scheduleRes, scriptsRes, meetingsRes, notificationsRes, gaSummaryRes, gaItemsRes, appSettingsRes, platformsRes, categoriesRes, internUsersRes, auditRes] = await Promise.all([
           db.execute("SELECT * FROM laporan"),
           db.execute("SELECT * FROM schedule"),
-          db.execute("SELECT * FROM member_list"),
           db.execute("SELECT * FROM scripts"),
           db.execute("SELECT * FROM meetings"),
           db.execute("SELECT * FROM notifications ORDER BY createdAt DESC"),
@@ -755,8 +754,35 @@ export async function POST(request) {
             `,
             args: []
           }),
-          db.execute("SELECT * FROM audit_log ORDER BY createdAt DESC LIMIT 200")
+          db.execute("SELECT * FROM audit_log WHERE entityType <> 'session' ORDER BY createdAt DESC LIMIT 200")
         ]);
+
+        const internUsers = internUsersRes.rows.map((intern) => ({
+          id: String(intern.id),
+          name: String(intern.name),
+          role: String(intern.role || 'intern')
+        }));
+        const assignmentBackfill = [];
+        for (const task of scheduleRes.rows) {
+          if (task.AssignedUserId || !task.PIC) continue;
+          const pic = String(task.PIC).trim().toLowerCase();
+          const picFirstName = pic.split(/\s+/)[0];
+          const matches = internUsers.filter((intern) => {
+            const fullName = intern.name.trim().toLowerCase();
+            return fullName === pic || fullName.split(/\s+/)[0] === picFirstName;
+          });
+          if (matches.length !== 1) continue;
+          const matchedUserId = matches[0].id;
+          task.AssignedUserId = matchedUserId;
+          for (const row of laporanRes.rows) {
+            if (row.ID === task.ID) row.AssignedUserId = matchedUserId;
+          }
+          assignmentBackfill.push(
+            { sql: 'UPDATE schedule SET AssignedUserId = ? WHERE ID = ?', args: [matchedUserId, task.ID] },
+            { sql: 'UPDATE laporan SET AssignedUserId = ? WHERE ID = ?', args: [matchedUserId, task.ID] }
+          );
+        }
+        if (assignmentBackfill.length > 0) await db.batch(assignmentBackfill);
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -787,8 +813,11 @@ export async function POST(request) {
           success: true,
           laporan: { success: true, data: laporanRes.rows },
           schedule: { success: true, data: scheduleRes.rows },
-          memberList: { success: true, data: memberListRes.rows },
-          internList: { success: true, data: internUsersRes.rows },
+          memberList: {
+            success: true,
+            data: internUsers.map((intern) => ({ NAMA: intern.name, STREAM: intern.role, USER_ID: intern.id }))
+          },
+          internList: { success: true, data: internUsers },
           scripts: { success: true, data: scriptsRes.rows },
           meetings: { success: true, data: meetingsRes.rows },
           notifications: {
@@ -834,8 +863,16 @@ export async function POST(request) {
           sql: 'DELETE FROM sessions WHERE sessionId = ? AND userId = ?',
           args: [sessionId, String(auth.userId || '')]
         });
-        await writeAudit(auth, 'revoked', 'session', sessionId, {});
         result = { success: true, message: 'Session revoked.' };
+        break;
+      }
+
+      case 'logout': {
+        await db.execute({
+          sql: 'DELETE FROM sessions WHERE token = ?',
+          args: [token]
+        });
+        result = { success: true, message: 'Logged out successfully.' };
         break;
       }
 
