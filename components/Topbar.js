@@ -17,6 +17,7 @@ export default function Topbar({
         currentView,
         isUnlocked,
         userRole,
+        userName,
         lockWorkspace,
         darkMode,
         toggleDarkMode,
@@ -254,12 +255,10 @@ export default function Topbar({
                     >
                         <div className="text-right hidden md:block">
                             <p className="text-body-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
-                                {isUnlocked ? `${userRole} Account` : 'Guest Mode'}
+                                {isUnlocked ? (userName || `${userRole} Account`) : 'Guest Mode'}
                             </p>
                             <p className="text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold">
-                                {isUnlocked
-                                    ? (userRole === 'Viewer' ? 'Viewer' : 'Staff Member')
-                                    : 'Visitor Mode'}
+                                {isUnlocked ? userRole : 'Visitor Mode'}
                             </p>
                         </div>
                         <div className="w-10 h-10 rounded-full border border-outline-variant group-hover:border-primary transition-colors flex items-center justify-center bg-surface-container-high text-on-surface-variant group-hover:text-primary">

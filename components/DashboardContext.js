@@ -36,6 +36,7 @@ export function DashboardProvider({ children }) {
     const [currentView, setCurrentView] = useState('dashboard');
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [userRole, setUserRole] = useState(null);
+    const [userName, setUserName] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [globalAlert, setGlobalAlert] = useState(null); // { message, type }
     const [darkMode, setDarkMode] = useState(true);
@@ -103,14 +104,17 @@ export function DashboardProvider({ children }) {
             setIsUnlocked(true);
             const savedRole = localStorage.getItem('user_role');
             setUserRole(savedRole);
+            setUserName(localStorage.getItem('user_name'));
             const savedToken = localStorage.getItem('session_token');
             setSessionToken(savedToken || '');
         } else {
             setIsUnlocked(false);
             setUserRole(null);
+            setUserName(null);
             setSessionToken('');
             localStorage.removeItem('cud_unlocked');
             localStorage.removeItem('user_role');
+            localStorage.removeItem('user_name');
             localStorage.removeItem('session_token');
             localStorage.removeItem('unlocked_at');
             localStorage.removeItem('expires_at');
@@ -159,9 +163,11 @@ export function DashboardProvider({ children }) {
         const handleUnauthorized = () => {
             setIsUnlocked(false);
             setUserRole(null);
+            setUserName(null);
             setSessionToken('');
             localStorage.removeItem('cud_unlocked');
             localStorage.removeItem('user_role');
+            localStorage.removeItem('user_name');
             localStorage.removeItem('session_token');
             localStorage.removeItem('unlocked_at');
             localStorage.removeItem('expires_at');
@@ -572,8 +578,10 @@ export function DashboardProvider({ children }) {
                 localStorage.setItem('failed_attempts', '0');
                 setIsUnlocked(true);
                 setUserRole(userRole);
+                setUserName(result.user?.name || null);
                 localStorage.setItem('cud_unlocked', 'true');
                 localStorage.setItem('user_role', userRole);
+                localStorage.setItem('user_name', result.user?.name || '');
                 localStorage.setItem('session_token', result.token || '');
                 localStorage.setItem('unlocked_at', Date.now().toString());
                 localStorage.setItem('expires_at', String(result.expiresAt));
@@ -606,9 +614,11 @@ export function DashboardProvider({ children }) {
     const lockWorkspace = () => {
         setIsUnlocked(false);
         setUserRole(null);
+        setUserName(null);
         setSessionToken('');
         localStorage.removeItem('cud_unlocked');
         localStorage.removeItem('user_role');
+        localStorage.removeItem('user_name');
         localStorage.removeItem('session_token');
         localStorage.removeItem('unlocked_at');
         localStorage.removeItem('expires_at');
@@ -1037,6 +1047,7 @@ export function DashboardProvider({ children }) {
             currentView, setCurrentView,
             isUnlocked,
             userRole,
+            userName,
             isLoading, setIsLoading,
             globalAlert, showAlert,
             darkMode, toggleDarkMode,
