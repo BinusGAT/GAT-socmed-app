@@ -37,6 +37,7 @@ export function DashboardProvider({ children }) {
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [userRole, setUserRole] = useState(null);
     const [userName, setUserName] = useState(null);
+    const [userId, setUserId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [globalAlert, setGlobalAlert] = useState(null); // { message, type }
     const [darkMode, setDarkMode] = useState(true);
@@ -62,6 +63,7 @@ export function DashboardProvider({ children }) {
     const [draftsData, setDraftsData] = useState([]);
     const [meetingsData, setMeetingsData] = useState([]);
     const [notificationsData, setNotificationsData] = useState([]);
+    const [auditLogData, setAuditLogData] = useState([]);
     const [selectedMeetingId, setSelectedMeetingId] = useState(null);
     const [gaSummaryData, setGaSummaryData] = useState({
         visitors: '± 6K',
@@ -106,16 +108,19 @@ export function DashboardProvider({ children }) {
             const savedRole = localStorage.getItem('user_role');
             setUserRole(savedRole);
             setUserName(localStorage.getItem('user_name'));
+            setUserId(localStorage.getItem('user_id'));
             const savedToken = localStorage.getItem('session_token');
             setSessionToken(savedToken || '');
         } else {
             setIsUnlocked(false);
             setUserRole(null);
             setUserName(null);
+            setUserId(null);
             setSessionToken('');
             localStorage.removeItem('cud_unlocked');
             localStorage.removeItem('user_role');
             localStorage.removeItem('user_name');
+            localStorage.removeItem('user_id');
             localStorage.removeItem('session_token');
             localStorage.removeItem('unlocked_at');
             localStorage.removeItem('expires_at');
@@ -165,10 +170,12 @@ export function DashboardProvider({ children }) {
             setIsUnlocked(false);
             setUserRole(null);
             setUserName(null);
+            setUserId(null);
             setSessionToken('');
             localStorage.removeItem('cud_unlocked');
             localStorage.removeItem('user_role');
             localStorage.removeItem('user_name');
+            localStorage.removeItem('user_id');
             localStorage.removeItem('session_token');
             localStorage.removeItem('unlocked_at');
             localStorage.removeItem('expires_at');
@@ -203,6 +210,7 @@ export function DashboardProvider({ children }) {
             setCurrentData([]);
             setScheduleData([]);
             setInternListData([]);
+            setAuditLogData([]);
             setDraftsData([]);
             setMeetingsData([]);
         }
@@ -433,6 +441,7 @@ export function DashboardProvider({ children }) {
                 const rawScripts = result.scripts?.data || [];
                 const rawMeetings = result.meetings?.data || [];
                 const rawNotifications = result.notifications?.data || [];
+                const rawAuditLog = result.auditLog?.data || [];
 
                 // Normalize script drafts to expected field names
                 const scripts = rawScripts.map(s => ({
@@ -456,6 +465,7 @@ export function DashboardProvider({ children }) {
                 setInternListData(internList);
                 setDraftsData(scripts);
                 setNotificationsData(rawNotifications);
+                setAuditLogData(rawAuditLog);
 
                 const rawAppSettings = result.appSettings?.data || [];
                 const appSettingsObj = {};
@@ -583,9 +593,11 @@ export function DashboardProvider({ children }) {
                 setIsUnlocked(true);
                 setUserRole(userRole);
                 setUserName(result.user?.name || null);
+                setUserId(result.user?.id || null);
                 localStorage.setItem('cud_unlocked', 'true');
                 localStorage.setItem('user_role', userRole);
                 localStorage.setItem('user_name', result.user?.name || '');
+                localStorage.setItem('user_id', result.user?.id || '');
                 localStorage.setItem('session_token', result.token || '');
                 localStorage.setItem('unlocked_at', Date.now().toString());
                 localStorage.setItem('expires_at', String(result.expiresAt));
@@ -619,10 +631,12 @@ export function DashboardProvider({ children }) {
         setIsUnlocked(false);
         setUserRole(null);
         setUserName(null);
+        setUserId(null);
         setSessionToken('');
         localStorage.removeItem('cud_unlocked');
         localStorage.removeItem('user_role');
         localStorage.removeItem('user_name');
+        localStorage.removeItem('user_id');
         localStorage.removeItem('session_token');
         localStorage.removeItem('unlocked_at');
         localStorage.removeItem('expires_at');
@@ -633,7 +647,8 @@ export function DashboardProvider({ children }) {
     const addLaporanRow = async (row) => {
         setIsLoading(true);
         try {
-            const result = await callSheetsAPI('create', row);
+            const assignedIntern = internListData.find((intern) => intern.name === row.PIC);
+            const result = await callSheetsAPI('create', { ...row, AssignedUserId: assignedIntern?.id || '' });
             if (result && result.success) {
                 await loadFromGoogleSheets(true);
                 showAlert('💾 Record added successfully!', 'success');
@@ -650,7 +665,8 @@ export function DashboardProvider({ children }) {
     const updateLaporanRow = async (row, rowIndex) => {
         setIsLoading(true);
         try {
-            const payload = { ...row, rowIndex };
+            const assignedIntern = internListData.find((intern) => intern.name === row.PIC);
+            const payload = { ...row, rowIndex, AssignedUserId: row.AssignedUserId || assignedIntern?.id || '' };
             const result = await callSheetsAPI('update', payload);
             if (result && result.success) {
                 await loadFromGoogleSheets(true);
@@ -703,7 +719,12 @@ export function DashboardProvider({ children }) {
     const saveCalendarTask = async (task) => {
         setIsLoading(true);
         try {
-            const result = await callSheetsAPI('save_schedule', task);
+            const assignedIntern = internListData.find((intern) => intern.name === (task.PIC || task.pic));
+            const payload = {
+                ...task,
+                AssignedUserId: task.AssignedUserId || task.assignedUserId || assignedIntern?.id || ''
+            };
+            const result = await callSheetsAPI('save_schedule', payload);
             if (result && result.success) {
                 await loadFromGoogleSheets(true);
                 showAlert('💾 Task scheduled successfully!', 'success');
@@ -714,6 +735,21 @@ export function DashboardProvider({ children }) {
         } finally {
             setIsLoading(false);
         }
+        return false;
+    };
+
+    const listSessions = async () => {
+        const result = await callSheetsAPI('list_sessions');
+        return result?.sessions || [];
+    };
+
+    const revokeSession = async (sessionId) => {
+        const result = await callSheetsAPI('revoke_session', { sessionId });
+        if (result?.success) {
+            showAlert('Session revoked.', 'success');
+            return true;
+        }
+        showAlert(result?.error || 'Failed to revoke session.', 'error');
         return false;
     };
 
@@ -1052,6 +1088,7 @@ export function DashboardProvider({ children }) {
             isUnlocked,
             userRole,
             userName,
+            userId,
             isLoading, setIsLoading,
             globalAlert, showAlert,
             darkMode, toggleDarkMode,
@@ -1077,6 +1114,7 @@ export function DashboardProvider({ children }) {
             draftsData,
             meetingsData,
             notificationsData,
+            auditLogData,
             gaSummaryData,
             gaItemsData,
             appSettingsData,
@@ -1112,6 +1150,8 @@ export function DashboardProvider({ children }) {
             deleteCategory,
             saveMember,
             deleteMember,
+            listSessions,
+            revokeSession,
             refreshData: () => loadFromGoogleSheets(false)
         }}>
             {children}

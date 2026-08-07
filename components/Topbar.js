@@ -18,6 +18,7 @@ export default function Topbar({
         isUnlocked,
         userRole,
         userName,
+        userId,
         lockWorkspace,
         darkMode,
         toggleDarkMode,
@@ -76,6 +77,7 @@ export default function Topbar({
         // 1. Custom Broadcast notifications
         const customNotifs = (notificationsData || [])
             .filter(n => {
+                if (n.targetUserId && String(n.targetUserId) !== String(userId || '')) return false;
                 if (n.targetRole === 'All') return true;
                 const roles = String(n.targetRole).split(',');
                 if (isUnlocked && userRole && roles.includes(userRole)) return true;

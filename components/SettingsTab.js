@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import { DeleteConfirmModal } from './Modals';
+import AuditLogTab from './AuditLogTab';
+import SessionsTab from './SessionsTab';
 
 export default function SettingsTab() {
     const {
@@ -23,7 +25,10 @@ export default function SettingsTab() {
         userRole
     } = useDashboard();
 
-    const [activeSubTab, setActiveSubTab] = useState('general');
+    const [activeSubTab, setActiveSubTab] = useState(userRole === 'Creator' ? 'sessions' : 'general');
+    const settingsTabs = userRole === 'Admin'
+        ? ['general', 'members', 'categories', 'audit', 'sessions']
+        : ['sessions'];
 
     // General Settings States
     const [appName, setAppName] = useState('');
@@ -67,18 +72,6 @@ export default function SettingsTab() {
 
     if (!isUnlocked) {
         return <LockScreen sectionName="Settings" />;
-    }
-
-    if (userRole !== 'Admin') {
-        return (
-            <div className="flex flex-col items-center justify-center p-12 text-center bg-surface-container/20 border border-outline-variant/20 rounded-xl h-[400px] glass-panel">
-                <span className="material-symbols-outlined text-[64px] text-error mb-4">gpp_maybe</span>
-                <h3 className="text-headline-sm font-bold text-on-surface">Access Denied</h3>
-                <p className="text-body-md text-on-surface-variant max-w-sm mt-2">
-                    Only administrators are permitted to view or edit workspace settings. Please contact your manager.
-                </p>
-            </div>
-        );
     }
 
     // Submit General Settings
@@ -190,8 +183,8 @@ export default function SettingsTab() {
         <div className="space-y-6">
 
             {/* Settings subnavigation */}
-            <div className="flex bg-surface-container-low border border-outline-variant/20 rounded-xl p-1 max-w-md">
-                {['general', 'members', 'categories'].map(tab => (
+            <div className="flex flex-wrap bg-surface-container-low border border-outline-variant/20 rounded-xl p-1 max-w-2xl">
+                {settingsTabs.map(tab => (
                     <button
                         key={tab}
                         type="button"
@@ -200,13 +193,13 @@ export default function SettingsTab() {
                             activeSubTab === tab ? 'bg-primary text-on-primary shadow-xs' : 'text-on-surface-variant hover:text-on-surface'
                         }`}
                     >
-                        {tab === 'members' ? 'Interns' : tab}
+                        {tab === 'members' ? 'Interns' : tab === 'audit' ? 'Audit Log' : tab}
                     </button>
                 ))}
             </div>
 
             {/* 1. GENERAL BRANDING TAB */}
-            {activeSubTab === 'general' && (
+            {userRole === 'Admin' && activeSubTab === 'general' && (
                 <div className="glass-panel border border-outline-variant/30 rounded-xl p-6 shadow-xl max-w-2xl space-y-6">
                     <h4 className="font-bold text-headline-sm text-on-surface flex items-center gap-2">
                         <span className="material-symbols-outlined text-primary">app_settings_alt</span> Branding & Metadata
@@ -286,7 +279,7 @@ export default function SettingsTab() {
             )}
 
             {/* 2. READ-ONLY INTERN DIRECTORY */}
-            {activeSubTab === 'members' && (
+            {userRole === 'Admin' && activeSubTab === 'members' && (
                 <div className="glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
                     <div className="space-y-1">
                         <h4 className="font-bold text-body-lg text-on-surface flex items-center gap-2">
@@ -322,7 +315,7 @@ export default function SettingsTab() {
             )}
 
             {/* 4. CATEGORIES TAB */}
-            {activeSubTab === 'categories' && (
+            {userRole === 'Admin' && activeSubTab === 'categories' && (
                 <div className="glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
                     <div className="flex justify-between items-center">
                         <h4 className="font-bold text-body-lg text-on-surface flex items-center gap-2">
@@ -382,6 +375,9 @@ export default function SettingsTab() {
                     </div>
                 </div>
             )}
+
+            {userRole === 'Admin' && activeSubTab === 'audit' && <AuditLogTab />}
+            {activeSubTab === 'sessions' && <SessionsTab />}
 
             {/* ========================================================
                FORM INPUT MODAL FOR MEMBERS / PLATFORMS / CATEGORIES

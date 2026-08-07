@@ -19,6 +19,7 @@ import MeetingsTab from '../../components/MeetingsTab';
 import AnalyticsTab from '../../components/AnalyticsTab';
 import WebAnalyticsTab from '../../components/WebAnalyticsTab';
 import SettingsTab from '../../components/SettingsTab';
+import MyWorkTab from '../../components/MyWorkTab';
 import { formatDisplayDate } from '../../utils/helpers';
 import LockScreen from '../../components/LockScreen';
 
@@ -168,6 +169,8 @@ function DashboardAppContent() {
         switch (view) {
             case 'dashboard':
                 return <DashboardTab onOpenDatePicker={openDatePicker} />;
+            case 'my-work':
+                return <MyWorkTab />;
             case 'calendar':
                 return <CalendarTab onOpenExport={() => setCalendarExportOpen(true)} />;
             case 'tasklist':
@@ -190,6 +193,7 @@ function DashboardAppContent() {
     // Define bottom nav items for mobile layout
     const mobileNavItems = [
         { id: 'dashboard', label: 'Home', icon: 'dashboard' },
+        { id: 'my-work', label: 'My Work', icon: 'work_history' },
         { id: 'calendar', label: 'Planner', icon: 'calendar_month' },
         { id: 'tasklist', label: 'Tasks', icon: 'assignment', restricted: true },
         { id: 'content', label: 'Library', icon: 'folder_open', restricted: true },

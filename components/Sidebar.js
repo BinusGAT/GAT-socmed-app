@@ -18,6 +18,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
     const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', fillActive: true },
+        { id: 'my-work', label: 'My Work', icon: 'work_history', fillActive: true },
         { id: 'calendar', label: 'Calendar', icon: 'calendar_month' },
         { id: 'tasklist', label: 'Task List', icon: 'assignment', domId: 'navItemTasklist', restricted: true },
         { id: 'content', label: 'Posts library', icon: 'folder_open', domId: 'navItemContent', restricted: true },
@@ -28,7 +29,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
     const visibleItems = navItems.filter(item => {
         if (userRole === 'Viewer') {
-            return item.id === 'dashboard' || item.id === 'analytics' || item.id === 'web-analytics';
+            return ['dashboard', 'analytics', 'web-analytics', 'my-work'].includes(item.id);
         }
         return !item.restricted || isUnlocked;
     });
@@ -122,7 +123,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
             {/* Footer Links */}
             <div className="border-t border-outline-variant/20 pt-stack-md mx-container-padding space-y-1">
-                {userRole === 'Admin' && isUnlocked && (
+                {isUnlocked && (
                     <button
                         className={`w-full text-left py-2.5 px-3 rounded-lg flex items-center gap-3 transition-all duration-200 cursor-pointer ${currentView === 'settings'
                                 ? 'bg-surface-container-highest/60 text-primary font-semibold font-display-sm'

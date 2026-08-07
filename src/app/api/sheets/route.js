@@ -13,6 +13,7 @@ const db = {
 const failedAttempts = new Map();
 const MAX_ATTEMPTS = 5;
 const LOCKDOWN_DURATION = 6 * 60 * 60 * 1000; // 6 hours
+const AUDIT_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 let isDbInitialized = false;
 
 
@@ -53,7 +54,7 @@ async function validateAuth(token, allowedRoles) {
 
   try {
     const res = await db.execute({
-      sql: "SELECT role, expiresAt FROM sessions WHERE token = ? LIMIT 1",
+      sql: "SELECT * FROM sessions WHERE token = ? LIMIT 1",
       args: [token]
     });
     const session = res.rows[0];
@@ -68,12 +69,41 @@ async function validateAuth(token, allowedRoles) {
     }
 
     if (allowedRoles.includes(session.role)) {
-      return { valid: true, role: session.role };
+      await db.execute({
+        sql: "UPDATE sessions SET lastSeenAt = ? WHERE token = ?",
+        args: [Date.now(), token]
+      });
+      return {
+        valid: true,
+        role: session.role,
+        userId: session.userId,
+        userName: session.userName,
+        userEmail: session.userEmail,
+        sessionId: session.sessionId
+      };
     }
   } catch (err) {
     console.error('Session validation error:', err);
   }
   return { valid: false, role: null };
+}
+
+async function writeAudit(auth, action, entityType, entityId, details = {}) {
+  await db.execute({
+    sql: `INSERT INTO audit_log (id, userId, userName, role, action, entityType, entityId, details, createdAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      crypto.randomUUID(),
+      auth.userId ? String(auth.userId) : '',
+      auth.userName || 'Unknown user',
+      auth.role || '',
+      action,
+      entityType,
+      String(entityId || ''),
+      JSON.stringify(details),
+      Date.now()
+    ]
+  });
 }
 
 function getIsoDateString(dateVal) {
@@ -177,12 +207,13 @@ async function syncGroupsByIds(ids) {
     const pic = firstRow.PIC;
     const title = firstRow["Content Title"];
     const category = firstRow.Category;
+    const assignedUserId = firstRow.AssignedUserId || '';
     const month = getIndonesianMonth(dateStr);
 
     batchQueries.push({
-      sql: `INSERT OR REPLACE INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [id, dateStr, pic, title, category, isCompleted, month]
+      sql: `INSERT OR REPLACE INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month, AssignedUserId)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [id, dateStr, pic, title, category, isCompleted, month, assignedUserId]
     });
   }
 
@@ -206,9 +237,23 @@ export async function POST(request) {
         CREATE TABLE IF NOT EXISTS sessions (
           token TEXT PRIMARY KEY,
           role TEXT NOT NULL,
-          expiresAt INTEGER NOT NULL
+          expiresAt INTEGER NOT NULL,
+          sessionId TEXT,
+          userId TEXT,
+          userName TEXT,
+          userEmail TEXT,
+          createdAt INTEGER,
+          lastSeenAt INTEGER,
+          userAgent TEXT
         )
       `);
+
+      for (const column of [
+        'sessionId TEXT', 'userId TEXT', 'userName TEXT', 'userEmail TEXT',
+        'createdAt INTEGER', 'lastSeenAt INTEGER', 'userAgent TEXT'
+      ]) {
+        try { await db.execute(`ALTER TABLE sessions ADD COLUMN ${column}`); } catch (e) {}
+      }
 
       await db.execute(`
         CREATE TABLE IF NOT EXISTS member_list (
@@ -225,9 +270,11 @@ export async function POST(request) {
           "Content Title" TEXT NOT NULL,
           Category TEXT NOT NULL,
           Status INTEGER NOT NULL,
-          Month TEXT NOT NULL
+          Month TEXT NOT NULL,
+          AssignedUserId TEXT
         )
       `);
+      try { await db.execute('ALTER TABLE schedule ADD COLUMN AssignedUserId TEXT'); } catch (e) {}
 
       await db.execute(`
         CREATE TABLE IF NOT EXISTS scripts (
@@ -276,6 +323,7 @@ export async function POST(request) {
           "Comment Text" TEXT
         )
       `);
+      try { await db.execute('ALTER TABLE laporan ADD COLUMN AssignedUserId TEXT'); } catch (e) {}
 
       await db.execute(`
         CREATE TABLE IF NOT EXISTS notifications (
@@ -284,13 +332,37 @@ export async function POST(request) {
           targetRole TEXT NOT NULL,
           isUrgent INTEGER DEFAULT 0,
           createdAt INTEGER NOT NULL,
-          createdBy TEXT NOT NULL
+          createdBy TEXT NOT NULL,
+          targetUserId TEXT,
+          type TEXT,
+          taskId TEXT
         )
       `);
 
       try {
         await db.execute("ALTER TABLE notifications ADD COLUMN isUrgent INTEGER DEFAULT 0");
       } catch (e) {}
+      for (const column of ['targetUserId TEXT', 'type TEXT', 'taskId TEXT']) {
+        try { await db.execute(`ALTER TABLE notifications ADD COLUMN ${column}`); } catch (e) {}
+      }
+
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS audit_log (
+          id TEXT PRIMARY KEY,
+          userId TEXT,
+          userName TEXT NOT NULL,
+          role TEXT,
+          action TEXT NOT NULL,
+          entityType TEXT NOT NULL,
+          entityId TEXT,
+          details TEXT,
+          createdAt INTEGER NOT NULL
+        )
+      `);
+      await db.execute({
+        sql: 'DELETE FROM audit_log WHERE createdAt < ?',
+        args: [Date.now() - AUDIT_RETENTION_MS]
+      });
 
       // Google Analytics Summary Table
       await db.execute(`
@@ -587,13 +659,17 @@ export async function POST(request) {
         failedAttempts.delete(ip);
 
         const sessionToken = crypto.randomBytes(32).toString('hex');
+        const sessionId = crypto.randomUUID();
+        const userAgent = request.headers.get('user-agent') || 'Unknown device';
         await db.execute({
           sql: "DELETE FROM sessions WHERE expiresAt < ?",
           args: [Date.now()]
         });
         await db.execute({
-          sql: "INSERT OR REPLACE INTO sessions (token, role, expiresAt) VALUES (?, ?, ?)",
-          args: [sessionToken, matchedRole, expiresAt]
+          sql: `INSERT OR REPLACE INTO sessions
+                (token, role, expiresAt, sessionId, userId, userName, userEmail, createdAt, lastSeenAt, userAgent)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [sessionToken, matchedRole, expiresAt, sessionId, String(userRow.id), String(userRow.name), String(userRow.email), now, now, userAgent]
         });
 
         return NextResponse.json({ 
@@ -601,6 +677,7 @@ export async function POST(request) {
           valid: true, 
           role: matchedRole,
           user: {
+            id: String(userRow.id),
             name: String(userRow.name),
             email: String(userRow.email),
             role_name: primaryRoleName,
@@ -632,7 +709,7 @@ export async function POST(request) {
 
     // 2. Validate token for all other actions
     let allowedRoles = ['Admin'];
-    if (action === 'read_all') {
+    if (['read_all', 'list_sessions', 'revoke_session'].includes(action)) {
       allowedRoles = ['Admin', 'Creator', 'Viewer'];
     } else if (['save_script', 'save_schedule', 'delete_schedule', 'delete_script', 'save_meeting', 'delete_meeting', 'save_ga_summary', 'save_ga_item', 'delete_ga_item'].includes(action)) {
       allowedRoles = ['Admin', 'Creator'];
@@ -651,7 +728,11 @@ export async function POST(request) {
 
     switch (action) {
       case 'read_all': {
-        const [laporanRes, scheduleRes, memberListRes, scriptsRes, meetingsRes, notificationsRes, gaSummaryRes, gaItemsRes, appSettingsRes, platformsRes, categoriesRes, internUsersRes] = await Promise.all([
+        await db.execute({
+          sql: 'DELETE FROM audit_log WHERE createdAt < ?',
+          args: [Date.now() - AUDIT_RETENTION_MS]
+        });
+        const [laporanRes, scheduleRes, memberListRes, scriptsRes, meetingsRes, notificationsRes, gaSummaryRes, gaItemsRes, appSettingsRes, platformsRes, categoriesRes, internUsersRes, auditRes] = await Promise.all([
           db.execute("SELECT * FROM laporan"),
           db.execute("SELECT * FROM schedule"),
           db.execute("SELECT * FROM member_list"),
@@ -673,8 +754,34 @@ export async function POST(request) {
               ORDER BY LOWER(u.name), u.id
             `,
             args: []
-          })
+          }),
+          db.execute("SELECT * FROM audit_log ORDER BY createdAt DESC LIMIT 200")
         ]);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const deadlineNotifications = scheduleRes.rows
+          .filter((task) => String(task.AssignedUserId || '') === String(auth.userId || '') && Number(task.Status) !== 1)
+          .map((task) => {
+            const due = new Date(`${task.Date}T00:00:00`);
+            const days = Math.round((due.getTime() - today.getTime()) / 86400000);
+            if (!Number.isFinite(days) || days > 3) return null;
+            const overdue = days < 0;
+            return {
+              id: `deadline-${task.ID}-${task.Date}`,
+              message: overdue
+                ? `Overdue: ${task['Content Title']} was due ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} ago.`
+                : `${task['Content Title']} is due ${days === 0 ? 'today' : `in ${days} day${days === 1 ? '' : 's'}`}.`,
+              targetRole: auth.role,
+              targetUserId: String(auth.userId || ''),
+              isUrgent: overdue || days === 0 ? 1 : 0,
+              createdAt: Date.now(),
+              createdBy: 'System',
+              type: overdue ? 'overdue' : 'deadline',
+              taskId: task.ID
+            };
+          })
+          .filter(Boolean);
 
         result = {
           success: true,
@@ -684,13 +791,51 @@ export async function POST(request) {
           internList: { success: true, data: internUsersRes.rows },
           scripts: { success: true, data: scriptsRes.rows },
           meetings: { success: true, data: meetingsRes.rows },
-          notifications: { success: true, data: notificationsRes.rows },
+          notifications: {
+            success: true,
+            data: [
+              ...deadlineNotifications,
+              ...notificationsRes.rows.filter((notification) => !notification.targetUserId || String(notification.targetUserId) === String(auth.userId || ''))
+            ]
+          },
+          auditLog: { success: true, data: auth.role === 'Admin' ? auditRes.rows : [] },
           gaSummary: { success: true, data: gaSummaryRes.rows },
           gaItems: { success: true, data: gaItemsRes.rows },
           appSettings: { success: true, data: appSettingsRes.rows },
           platforms: { success: true, data: platformsRes.rows },
           categories: { success: true, data: categoriesRes.rows }
         };
+        break;
+      }
+
+      case 'list_sessions': {
+        const sessionsRes = await db.execute({
+          sql: `SELECT sessionId, createdAt, lastSeenAt, expiresAt, userAgent
+                FROM sessions WHERE userId = ? AND expiresAt >= ? ORDER BY lastSeenAt DESC`,
+          args: [String(auth.userId || ''), Date.now()]
+        });
+        result = {
+          success: true,
+          sessions: sessionsRes.rows.map((session) => ({
+            ...session,
+            current: session.sessionId === auth.sessionId
+          }))
+        };
+        break;
+      }
+
+      case 'revoke_session': {
+        const sessionId = String(params.sessionId || '');
+        if (!sessionId || sessionId === auth.sessionId) {
+          result = { success: false, error: 'The current session cannot be revoked from this screen.' };
+          break;
+        }
+        await db.execute({
+          sql: 'DELETE FROM sessions WHERE sessionId = ? AND userId = ?',
+          args: [sessionId, String(auth.userId || '')]
+        });
+        await writeAudit(auth, 'revoked', 'session', sessionId, {});
+        result = { success: true, message: 'Session revoked.' };
         break;
       }
 
@@ -731,16 +876,18 @@ export async function POST(request) {
               Date, ID, "Content Title", PIC, Category, Platform, 
               Views, "Account Reach", Likes, Comments, Follows, Repost, Shares, 
               "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text"
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              , AssignedUserId
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
               params.Date, newId, params['Content Title'], params.PIC, params.Category, plat,
               viewsVal, reachVal, likesVal, commentsVal, followsVal, repostVal, sharesVal,
-              totalEngVal, rateVal, kpiVal, 3, urlVal, commentVal
+              totalEngVal, rateVal, kpiVal, 3, urlVal, commentVal, String(params.AssignedUserId || '')
             ]
           });
         }
         await db.batch(insertQueries);
         await syncGroupById(newId);
+        await writeAudit(auth, 'created', 'content', newId, { title: params['Content Title'] || '' });
         result = { success: true, message: 'All 3 platform rows created successfully' };
         break;
       }
@@ -787,23 +934,25 @@ export async function POST(request) {
               "Engagement Rate (%)" = ?,
               "KPI Score" = ?,
               URL = ?,
-              "Comment Text" = ?
+              "Comment Text" = ?,
+              AssignedUserId = ?
             WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ?`,
             args: [
               params.Date, params['Content Title'], params.PIC, params.Category, params.Platform,
               views, parseInt(params['Account Reach']) || 0, likes, comments, follows, reposts, shares,
-              totalEngagement, engagementRate, parseInt(params['KPI Score']) || 3, params.URL || '', params['Comment Text'] || '',
+              totalEngagement, engagementRate, parseInt(params['KPI Score']) || 3, params.URL || '', params['Comment Text'] || '', String(params.AssignedUserId || ''),
               matchDate, matchTitle, matchPic, matchCategory, matchPlatform
             ]
           });
 
           // Update main details for all other rows sharing this ID
           await db.execute({
-            sql: `UPDATE laporan SET Date = ?, "Content Title" = ?, PIC = ?, Category = ? WHERE ID = ?`,
-            args: [params.Date, params['Content Title'], params.PIC, params.Category, id]
+            sql: `UPDATE laporan SET Date = ?, "Content Title" = ?, PIC = ?, Category = ?, AssignedUserId = ? WHERE ID = ?`,
+            args: [params.Date, params['Content Title'], params.PIC, params.Category, String(params.AssignedUserId || ''), id]
           });
 
           await syncGroupById(id);
+          await writeAudit(auth, 'updated', 'content', id, { title: params['Content Title'] || '' });
         }
         result = { success: true, message: 'Data updated successfully' };
         break;
@@ -837,6 +986,7 @@ export async function POST(request) {
             await syncGroupsByIds([fetchedId]);
           }
         }
+        await writeAudit(auth, 'deleted', 'content', fetchedId || '', { title: params['Content Title'] || '' });
         result = { success: true, message: 'Data deleted successfully' };
         break;
       }
@@ -898,18 +1048,22 @@ export async function POST(request) {
         const pic = params.PIC || '';
         const title = params.Content_Title || params['Content Title'] || '';
         const category = params.Category || '';
+        const assignedUserId = String(params.AssignedUserId || params.assignedUserId || '');
+        let taskId = id;
+        let previousAssignedUserId = '';
 
         if (id) {
           // Get the old title to update the corresponding script title if needed
           const oldRow = await db.execute({
-            sql: `SELECT "Content Title" FROM laporan WHERE ID = ? LIMIT 1`,
+            sql: `SELECT "Content Title", AssignedUserId FROM laporan WHERE ID = ? LIMIT 1`,
             args: [id]
           });
           const oldTitle = oldRow.rows[0]?.["Content Title"] || '';
+          previousAssignedUserId = String(oldRow.rows[0]?.AssignedUserId || '');
 
           await db.execute({
-            sql: `UPDATE laporan SET Date = ?, "Content Title" = ?, PIC = ?, Category = ? WHERE ID = ?`,
-            args: [dateStr, title, pic, category, id]
+            sql: `UPDATE laporan SET Date = ?, "Content Title" = ?, PIC = ?, Category = ?, AssignedUserId = ? WHERE ID = ?`,
+            args: [dateStr, title, pic, category, assignedUserId, id]
           });
           await syncGroupById(id);
 
@@ -949,14 +1103,15 @@ export async function POST(request) {
           }
         } else {
           const newId = await getNextId();
+          taskId = newId;
           const platforms = ['Instagram', 'TikTok', 'Youtube'];
           const insertQueries = platforms.map(plat => ({
             sql: `INSERT INTO laporan (
               Date, ID, "Content Title", PIC, Category, Platform, 
               Views, "Account Reach", Likes, Comments, Follows, Repost, Shares, 
-              "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text"
-            ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 3, 3, '', '')`,
-            args: [dateStr, newId, title, pic, category, plat]
+              "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text", AssignedUserId
+            ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 3, 3, '', '', ?)`,
+            args: [dateStr, newId, title, pic, category, plat, assignedUserId]
           }));
           await db.batch(insertQueries);
           await syncGroupById(newId);
@@ -980,6 +1135,17 @@ export async function POST(request) {
             }
           }
         }
+        if (assignedUserId && assignedUserId !== previousAssignedUserId) {
+          await db.execute({
+            sql: `INSERT OR REPLACE INTO notifications
+                  (id, message, targetRole, isUrgent, createdAt, createdBy, targetUserId, type, taskId)
+                  VALUES (?, ?, 'Creator', 0, ?, ?, ?, 'assignment', ?)`,
+            args: [`assignment-${taskId}-${assignedUserId}`, `New assignment: ${title}`, Date.now(), auth.userName || auth.role, assignedUserId, taskId]
+          });
+        }
+        await writeAudit(auth, id ? 'updated' : 'created', 'task', taskId, {
+          title, date: dateStr, assignedUserId, assigneeName: pic
+        });
         result = { success: true, message: id ? 'Schedule updated successfully' : 'Schedule created successfully' };
         break;
       }
@@ -994,6 +1160,7 @@ export async function POST(request) {
           sql: "DELETE FROM schedule WHERE ID = ?",
           args: [id]
         });
+        await writeAudit(auth, 'deleted', 'task', id, {});
         result = { success: true, message: 'Schedule deleted successfully' };
         break;
       }
@@ -1013,6 +1180,7 @@ export async function POST(request) {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [title, status, category, hook, scriptText, hashtags, references, caption]
         });
+        await writeAudit(auth, 'saved', 'script', title, { status, category });
         result = { success: true, message: 'Script saved successfully' };
         break;
       }
@@ -1023,6 +1191,7 @@ export async function POST(request) {
           sql: "DELETE FROM scripts WHERE LOWER(Title) = LOWER(?)",
           args: [title]
         });
+        await writeAudit(auth, 'deleted', 'script', title, {});
         result = { success: true, message: 'Script deleted successfully' };
         break;
       }
@@ -1042,6 +1211,7 @@ export async function POST(request) {
                 VALUES (?, ?, ?, ?, ?, ?)`,
           args: [id, date, attendees, absentees, recap, videoRecap]
         });
+        await writeAudit(auth, 'saved', 'meeting', id, { date });
         result = { success: true, message: 'Meeting saved successfully', id: id };
         break;
       }
@@ -1052,6 +1222,7 @@ export async function POST(request) {
           sql: "DELETE FROM meetings WHERE ID = ?",
           args: [id]
         });
+        await writeAudit(auth, 'deleted', 'meeting', id, {});
         result = { success: true, message: 'Meeting deleted successfully' };
         break;
       }
@@ -1068,6 +1239,7 @@ export async function POST(request) {
           sql: "INSERT OR REPLACE INTO notifications (id, message, targetRole, isUrgent, createdAt, createdBy) VALUES (?, ?, ?, ?, ?, ?)",
           args: [id, message, targetRole, isUrgent, createdAt, createdBy]
         });
+        await writeAudit(auth, 'broadcast', 'notification', id, { targetRole });
         result = { success: true, message: 'Notification broadcasted successfully', id };
         break;
       }
