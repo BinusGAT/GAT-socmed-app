@@ -22,7 +22,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         userRole,
         saveMeetingMemo,
         deleteMeetingMemo,
-        memberListData,
+        internListData,
         showAlert,
         selectedMeetingId,
         setSelectedMeetingId
@@ -187,12 +187,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     const filteredMeetings = getFilteredMeetings();
 
     const getMeetingMembers = () => {
-        const list = (memberListData || []).map(m => m.NAMA).filter(Boolean);
-        const hasPakFajar = list.some(name => name.toLowerCase() === 'pak fajar');
-        if (!hasPakFajar) {
-            list.unshift('Pak Fajar');
-        }
-        return list;
+        return (internListData || []).map((intern) => intern.name).filter(Boolean);
     };
 
     const handleAttendeeToggle = (name) => {
@@ -779,7 +774,11 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                 <div className="space-y-2">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Attendees Presence Checklist</label>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-surface-container-low/40 border border-outline-variant/20 rounded p-4">
-                                        {meetingMembers.map(name => {
+                                        {meetingMembers.length === 0 ? (
+                                            <span className="col-span-full text-[11.5px] text-on-surface-variant/60 italic">
+                                                No users with the intern role were found.
+                                            </span>
+                                        ) : meetingMembers.map(name => {
                                             const isChecked = formAttendees.includes(name);
                                             return (
                                                 <label 

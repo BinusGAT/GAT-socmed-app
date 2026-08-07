@@ -58,6 +58,7 @@ export function DashboardProvider({ children }) {
     const [currentData, setCurrentData] = useState([]);
     const [scheduleData, setScheduleData] = useState([]);
     const [memberListData, setMemberListData] = useState([]);
+    const [internListData, setInternListData] = useState([]);
     const [draftsData, setDraftsData] = useState([]);
     const [meetingsData, setMeetingsData] = useState([]);
     const [notificationsData, setNotificationsData] = useState([]);
@@ -201,6 +202,7 @@ export function DashboardProvider({ children }) {
             // Clear all data states when locked so no data is shown
             setCurrentData([]);
             setScheduleData([]);
+            setInternListData([]);
             setDraftsData([]);
             setMeetingsData([]);
         }
@@ -427,6 +429,7 @@ export function DashboardProvider({ children }) {
                 const laporan = result.laporan?.data || [];
                 const schedule = result.schedule?.data || [];
                 const memberList = result.memberList?.data || [];
+                const internList = result.internList?.data || [];
                 const rawScripts = result.scripts?.data || [];
                 const rawMeetings = result.meetings?.data || [];
                 const rawNotifications = result.notifications?.data || [];
@@ -450,6 +453,7 @@ export function DashboardProvider({ children }) {
                 setCurrentData(processedLaporan);
                 setScheduleData(schedule);
                 setMemberListData(memberList);
+                setInternListData(internList);
                 setDraftsData(scripts);
                 setNotificationsData(rawNotifications);
 
@@ -1069,6 +1073,7 @@ export function DashboardProvider({ children }) {
             currentData,
             scheduleData,
             memberListData,
+            internListData,
             draftsData,
             meetingsData,
             notificationsData,

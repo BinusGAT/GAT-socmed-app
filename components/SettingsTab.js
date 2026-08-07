@@ -8,7 +8,7 @@ import { DeleteConfirmModal } from './Modals';
 export default function SettingsTab() {
     const {
         appSettingsData,
-        memberListData,
+        internListData,
         platformsData,
         categoriesData,
         saveAppSetting,
@@ -200,7 +200,7 @@ export default function SettingsTab() {
                             activeSubTab === tab ? 'bg-primary text-on-primary shadow-xs' : 'text-on-surface-variant hover:text-on-surface'
                         }`}
                     >
-                        {tab}
+                        {tab === 'members' ? 'Interns' : tab}
                     </button>
                 ))}
             </div>
@@ -285,20 +285,13 @@ export default function SettingsTab() {
                 </div>
             )}
 
-            {/* 2. MEMBERS TAB */}
+            {/* 2. READ-ONLY INTERN DIRECTORY */}
             {activeSubTab === 'members' && (
                 <div className="glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="space-y-1">
                         <h4 className="font-bold text-body-lg text-on-surface flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary">groups</span> Workspace Members
+                            <span className="material-symbols-outlined text-primary">groups</span> Intern Directory
                         </h4>
-                        <button
-                            type="button"
-                            onClick={() => openAddModal('member')}
-                            className="bg-primary text-on-primary hover:opacity-90 font-semibold py-1.5 px-3 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center gap-1"
-                        >
-                            <span className="material-symbols-outlined text-[16px]">add</span> Add Member
-                        </button>
                     </div>
 
                     <div className="overflow-x-auto border border-outline-variant/20 rounded-xl">
@@ -306,33 +299,20 @@ export default function SettingsTab() {
                             <thead className="bg-surface-container-low text-on-surface-variant uppercase text-[10px] tracking-wider border-b border-outline-variant/20">
                                 <tr>
                                     <th className="px-5 py-4">Name</th>
-                                    <th className="px-5 py-4">Role/Stream</th>
-                                    <th className="px-5 py-4 text-right">Actions</th>
+                                    <th className="px-5 py-4">Role</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-outline-variant/10">
-                                {memberListData.map((member) => (
-                                    <tr key={member.NAMA} className="hover:bg-surface-container-low/30 transition-colors">
-                                        <td className="px-5 py-4 font-semibold text-on-surface">{member.NAMA}</td>
-                                        <td className="px-5 py-4 text-on-surface-variant">{member.STREAM}</td>
-                                        <td className="px-5 py-4 text-right flex justify-end gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => openEditModal('member', member)}
-                                                className="text-primary hover:bg-primary/15 p-1 rounded transition-colors cursor-pointer"
-                                                title="Edit member"
-                                            >
-                                                <span className="material-symbols-outlined text-[18px]">edit</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => triggerDelete('member', member.NAMA)}
-                                                className="text-error hover:bg-error/15 p-1 rounded transition-colors cursor-pointer"
-                                                title="Delete member"
-                                            >
-                                                <span className="material-symbols-outlined text-[18px]">delete</span>
-                                            </button>
+                                {internListData.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="2" className="px-5 py-8 text-center text-on-surface-variant/60 italic">
+                                            No users with the intern role were found.
                                         </td>
+                                    </tr>
+                                ) : internListData.map((intern) => (
+                                    <tr key={intern.id} className="hover:bg-surface-container-low/30 transition-colors">
+                                        <td className="px-5 py-4 font-semibold text-on-surface">{intern.name}</td>
+                                        <td className="px-5 py-4 text-on-surface-variant capitalize">{intern.role}</td>
                                     </tr>
                                 ))}
                             </tbody>

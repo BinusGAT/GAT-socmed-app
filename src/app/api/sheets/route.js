@@ -651,7 +651,7 @@ export async function POST(request) {
 
     switch (action) {
       case 'read_all': {
-        const [laporanRes, scheduleRes, memberListRes, scriptsRes, meetingsRes, notificationsRes, gaSummaryRes, gaItemsRes, appSettingsRes, platformsRes, categoriesRes] = await Promise.all([
+        const [laporanRes, scheduleRes, memberListRes, scriptsRes, meetingsRes, notificationsRes, gaSummaryRes, gaItemsRes, appSettingsRes, platformsRes, categoriesRes, internUsersRes] = await Promise.all([
           db.execute("SELECT * FROM laporan"),
           db.execute("SELECT * FROM schedule"),
           db.execute("SELECT * FROM member_list"),
@@ -662,7 +662,18 @@ export async function POST(request) {
           db.execute("SELECT * FROM google_analytics_items ORDER BY sort_order DESC, id ASC"),
           db.execute("SELECT * FROM app_settings"),
           db.execute("SELECT * FROM platforms"),
-          db.execute("SELECT * FROM categories")
+          db.execute("SELECT * FROM categories"),
+          gatAppExecute({
+            sql: `
+              SELECT DISTINCT u.id, u.name, r.name AS role
+              FROM users u
+              JOIN user_roles ur ON ur.user_id = u.id
+              JOIN roles r ON r.id = ur.role_id
+              WHERE LOWER(TRIM(r.name)) = 'intern'
+              ORDER BY LOWER(u.name), u.id
+            `,
+            args: []
+          })
         ]);
 
         result = {
@@ -670,6 +681,7 @@ export async function POST(request) {
           laporan: { success: true, data: laporanRes.rows },
           schedule: { success: true, data: scheduleRes.rows },
           memberList: { success: true, data: memberListRes.rows },
+          internList: { success: true, data: internUsersRes.rows },
           scripts: { success: true, data: scriptsRes.rows },
           meetings: { success: true, data: meetingsRes.rows },
           notifications: { success: true, data: notificationsRes.rows },
