@@ -535,10 +535,12 @@ export async function POST(request) {
                 u.email, 
                 u.nim, 
                 u.name, 
-                r.name AS role_name 
+                GROUP_CONCAT(r.name) AS role_names
               FROM users u
-              JOIN roles r ON u.role_id = r.id
+              LEFT JOIN user_roles ur ON ur.user_id = u.id
+              LEFT JOIN roles r ON r.id = ur.role_id
               WHERE LOWER(u.email) = ? AND u.nim = ?
+              GROUP BY u.id, u.email, u.nim, u.name
             `,
             args: [email, nim]
           });
@@ -560,17 +562,27 @@ export async function POST(request) {
         }
 
         const userRow = userRes.rows[0];
-        const roleName = String(userRow.role_name || '').toLowerCase();
+        const rolePriority = { admin: 0, intern: 1 };
+        const roleNames = [...new Set(
+          String(userRow.role_names || '')
+            .split(',')
+            .map((role) => role.trim().toLowerCase())
+            .filter(Boolean)
+        )].sort((a, b) => (rolePriority[a] ?? 2) - (rolePriority[b] ?? 2));
+        const hasAdminRole = roleNames.includes('admin');
+        const hasInternRole = roleNames.includes('intern');
 
-        if (roleName === 'student') {
+        if (!hasAdminRole && !hasInternRole) {
           return NextResponse.json({ 
             success: false, 
             error: 'Access Denied' 
           });
         }
 
-        const matchedRole = 'Admin';
-        const sessionDurationMs = getSessionDurationMs(roleName);
+        // Admin has precedence when a user has both admin and intern roles.
+        const primaryRoleName = hasAdminRole ? 'admin' : 'intern';
+        const matchedRole = hasAdminRole ? 'Admin' : 'Creator';
+        const sessionDurationMs = getSessionDurationMs(primaryRoleName);
         const expiresAt = Date.now() + sessionDurationMs;
         failedAttempts.delete(ip);
 
@@ -591,7 +603,8 @@ export async function POST(request) {
           user: {
             name: String(userRow.name),
             email: String(userRow.email),
-            role_name: String(userRow.role_name)
+            role_name: primaryRoleName,
+            roles: roleNames
           },
           token: sessionToken,
           expiresAt,
