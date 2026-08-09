@@ -83,7 +83,7 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                         <h1 className="font-headline-md text-headline-md font-bold text-on-surface leading-tight text-pretty">
                             CC Internal Gate
                         </h1>
-                        <p className="text-[10px] text-primary uppercase tracking-widest font-bold">
+                        <p className="text-xs text-primary tracking-wide font-semibold">
                             {sectionName} Lock
                         </p>
                     </div>
@@ -107,7 +107,7 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
 
                     {/* Email Input */}
                     <div className="space-y-1.5">
-                        <label htmlFor="lockScreenEmail" className="text-[10px] text-on-surface-variant uppercase tracking-widest block font-bold">
+                        <label htmlFor="lockScreenEmail" className="text-xs text-on-surface-variant tracking-wide block font-semibold">
                             Email Address <span className="text-error">*</span>
                         </label>
                         <input
@@ -129,7 +129,7 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
 
                     {/* Password (NIM) Input */}
                     <div className="space-y-1.5">
-                        <label htmlFor="lockScreenNim" className="text-[10px] text-on-surface-variant uppercase tracking-widest block font-bold">
+                        <label htmlFor="lockScreenNim" className="text-xs text-on-surface-variant tracking-wide block font-semibold">
                             Password (NIM) <span className="text-error">*</span>
                         </label>
                         <input
@@ -167,7 +167,7 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                     </div>
                 </form>
 
-                <div className="text-center text-[9px] text-on-surface-variant/40 pt-2.5 border-t border-outline-variant/10 uppercase tracking-widest font-bold">
+                <div className="text-center text-xs text-on-surface-variant/70 pt-2.5 border-t border-outline-variant/10 tracking-wide font-medium">
                     {appSettingsData?.company_name || 'Internal Content Team'}
                 </div>
             </div>

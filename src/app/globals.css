@@ -2,6 +2,28 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Release A readability floor: legacy micro-copy remains compact without
+   dropping below 12px. New functional labels should use text-xs or larger. */
+.text-\[9px\],
+.text-\[10px\],
+.text-\[11px\] {
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+}
+
+.text-on-surface-variant\/40,
+.text-on-surface-variant\/50,
+.text-on-surface-variant\/60,
+.text-on-surface-variant\/70,
+.text-on-surface-variant\/80 {
+  color: var(--on-surface-variant) !important;
+}
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -81,14 +103,14 @@
   --surface-container-high: #26272f;
   --surface-container-highest: #2d2e37;
   --on-surface: #f3f4f6;
-  --on-surface-variant: #9ca3af;
+  --on-surface-variant: #cbd5e1;
   --inverse-surface: #f3f4f6;
   --inverse-on-surface: #1c1d22;
   --outline: #374151;
   --outline-variant: #2d2e37;
   --surface-tint: #6366f1;
-  --primary: #6366f1;
-  --on-primary: #ffffff;
+  --primary: #a5b4fc;
+  --on-primary: #111827;
   --primary-container: #4f46e5;
   --on-primary-container: #ffffff;
   --inverse-primary: #818cf8;
@@ -96,6 +118,7 @@
   --on-secondary: #ffffff;
   --secondary-container: #4338ca;
   --on-secondary-container: #ffffff;
+  --tertiary: #94a3b8;
   --error: #f87171;
   --on-error: #450a0a;
   --error-container: #7f1d1d;
@@ -452,8 +475,8 @@ input[type="checkbox"]:checked::before {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.443 0.11 240.79);
-  --primary-foreground: oklch(0.977 0.013 236.62);
+  --primary: #a5b4fc;
+  --primary-foreground: #111827;
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);

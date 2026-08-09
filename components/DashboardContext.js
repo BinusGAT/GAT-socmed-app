@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { callSheetsAPI } from '../utils/api';
+import { normalizeFeedbackMessage } from '../utils/feedback';
 import { 
     normalizePicName, 
     getLocalDateInputValue, 
@@ -226,7 +227,7 @@ export function DashboardProvider({ children }) {
 
     // Show Alert helper
     const showAlert = (message, type = 'success') => {
-        setGlobalAlert({ message, type });
+        setGlobalAlert({ message: normalizeFeedbackMessage(message, type), type });
         // Auto-dismiss alert after 4 seconds
         setTimeout(() => {
             setGlobalAlert(null);

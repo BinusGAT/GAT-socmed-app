@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import { DeleteConfirmModal } from './Modals';
+import SortableTableHeader from './SortableTableHeader';
 import { 
     normalizePicName, 
     getTaskCalculatedStatus,
@@ -290,48 +291,14 @@ export default function TaskListTab({ onOpenDatePicker }) {
             <div className="glass-panel rounded-xl overflow-hidden border border-outline-variant/30 shadow-md">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse text-body-sm">
-                        <thead className="bg-surface-container-low text-on-surface-variant uppercase text-[10px] tracking-wider border-b border-outline-variant/20">
+                        <caption className="sr-only">Scheduled content tasks. Activate a sortable column heading to change the sort order.</caption>
+                        <thead className="bg-surface-container-low text-on-surface-variant text-xs tracking-wide border-b border-outline-variant/20">
                             <tr>
-                                <th onClick={() => handleSort('Date')} className="px-5 py-4 cursor-pointer hover:text-primary transition-colors">
-                                    <div className="flex items-center gap-1">
-                                        Scheduled Date 
-                                        <span className="material-symbols-outlined text-[14px]">
-                                            {sortField === 'Date' ? (sortAsc ? 'arrow_drop_up' : 'arrow_drop_down') : 'swap_vert'}
-                                        </span>
-                                    </div>
-                                </th>
-                                <th onClick={() => handleSort('contentTitle')} className="px-5 py-4 cursor-pointer hover:text-primary transition-colors">
-                                    <div className="flex items-center gap-1">
-                                        Content Title / Topic
-                                        <span className="material-symbols-outlined text-[14px]">
-                                            {sortField === 'contentTitle' ? (sortAsc ? 'arrow_drop_up' : 'arrow_drop_down') : 'swap_vert'}
-                                        </span>
-                                    </div>
-                                </th>
-                                <th onClick={() => handleSort('pic')} className="px-5 py-4 cursor-pointer hover:text-primary transition-colors">
-                                    <div className="flex items-center gap-1">
-                                        PIC
-                                        <span className="material-symbols-outlined text-[14px]">
-                                            {sortField === 'pic' ? (sortAsc ? 'arrow_drop_up' : 'arrow_drop_down') : 'swap_vert'}
-                                        </span>
-                                    </div>
-                                </th>
-                                <th onClick={() => handleSort('category')} className="px-5 py-4 cursor-pointer hover:text-primary transition-colors">
-                                    <div className="flex items-center gap-1">
-                                        Category
-                                        <span className="material-symbols-outlined text-[14px]">
-                                            {sortField === 'category' ? (sortAsc ? 'arrow_drop_up' : 'arrow_drop_down') : 'swap_vert'}
-                                        </span>
-                                    </div>
-                                </th>
-                                <th onClick={() => handleSort('calculatedStatus')} className="px-5 py-4 cursor-pointer hover:text-primary transition-colors">
-                                    <div className="flex items-center gap-1">
-                                        Timeline Status
-                                        <span className="material-symbols-outlined text-[14px]">
-                                            {sortField === 'calculatedStatus' ? (sortAsc ? 'arrow_drop_up' : 'arrow_drop_down') : 'swap_vert'}
-                                        </span>
-                                    </div>
-                                </th>
+                                <SortableTableHeader column="Date" activeColumn={sortField} direction={sortAsc ? 'asc' : 'desc'} onSort={handleSort} className="px-5 py-1.5">Scheduled date</SortableTableHeader>
+                                <SortableTableHeader column="contentTitle" activeColumn={sortField} direction={sortAsc ? 'asc' : 'desc'} onSort={handleSort} className="px-5 py-1.5">Content title / topic</SortableTableHeader>
+                                <SortableTableHeader column="pic" activeColumn={sortField} direction={sortAsc ? 'asc' : 'desc'} onSort={handleSort} className="px-5 py-1.5">PIC</SortableTableHeader>
+                                <SortableTableHeader column="category" activeColumn={sortField} direction={sortAsc ? 'asc' : 'desc'} onSort={handleSort} className="px-5 py-1.5">Category</SortableTableHeader>
+                                <SortableTableHeader column="calculatedStatus" activeColumn={sortField} direction={sortAsc ? 'asc' : 'desc'} onSort={handleSort} className="px-5 py-1.5">Timeline status</SortableTableHeader>
                                 {!actionsDisabled && <th className="px-5 py-4 text-center">Actions</th>}
                             </tr>
                         </thead>

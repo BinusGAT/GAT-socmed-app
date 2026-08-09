@@ -252,7 +252,7 @@ function DashboardAppContent() {
     }
 
     return (
-        <div className="flex min-h-screen w-full relative bg-background">
+        <div className="flex min-h-screen w-full max-w-full overflow-x-clip relative bg-background">
             <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[120] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-on-primary focus:font-semibold">
                 Skip to main content
             </a>
@@ -263,7 +263,7 @@ function DashboardAppContent() {
             )}
 
             {/* Main Content Area */}
-            <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-h-screen w-full lg:pl-[280px] pt-16 pb-20 lg:pb-0">
+            <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 flex flex-col min-h-screen lg:pl-[280px] pt-16 pb-20 lg:pb-0">
                 <Topbar
                     toggleSidebar={toggleSidebar}
                     openUnlockModal={() => setUnlockOpen(true)}
@@ -308,7 +308,7 @@ function DashboardAppContent() {
                 </div>
 
                 {/* Footer copyright */}
-                <footer className="w-full py-5 px-6 border-t border-outline-variant/10 bg-surface-container-lowest flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] text-on-surface-variant/50">
+                <footer className="w-full py-5 px-6 border-t border-outline-variant/10 bg-surface-container-lowest flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-on-surface-variant">
                     <div className="flex items-center gap-2">
                         <span>&copy; {new Date().getFullYear()} {appSettingsData?.app_full_name || 'Content suite'}. All rights reserved.</span>
                         <span className="px-1.5 py-0.5 rounded bg-surface-container-high text-[9px] font-bold tracking-wider text-on-surface-variant uppercase">{appSettingsData?.app_version || 'v0.1.0-alpha'}</span>
@@ -324,7 +324,7 @@ function DashboardAppContent() {
             </main>
 
             {/* Mobile Bottom Navigation Bar */}
-            <nav aria-label="Mobile primary navigation" className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-md border-t border-outline-variant/20 flex items-center justify-around px-2 z-[90]">
+            <nav aria-label="Mobile primary navigation" className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-md border-t border-outline-variant/20 flex items-center justify-around gap-1 px-2 z-[90] overflow-x-auto overscroll-x-contain">
                 {visibleMobileItems.map((item) => {
                     const isActive = currentView === item.id;
                     return (

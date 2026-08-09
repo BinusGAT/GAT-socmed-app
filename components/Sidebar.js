@@ -98,7 +98,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                 )}
 
                 {/* Navigation Links */}
-                <nav className="px-3 space-y-1">
+                <nav aria-label="Primary navigation" className="px-3 space-y-1">
                     {visibleItems.map((item) => {
                         const isActive = currentView === item.id;
                         return (
@@ -111,7 +111,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                                         : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/40 dark:hover:text-zinc-200'
                                     }`}
                             >
-                                <span className="material-symbols-outlined text-[19px] transition-transform duration-150 text-zinc-500 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-200" style={isActive ? { color: '#6366f1', fontVariationSettings: item.fillActive ? "'FILL' 1" : undefined } : undefined}>
+                            <span className="material-symbols-outlined text-[19px] transition-transform duration-150 text-zinc-500 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-200" style={isActive ? { color: 'var(--primary)', fontVariationSettings: item.fillActive ? "'FILL' 1" : undefined } : undefined}>
                                     {item.icon}
                                 </span>
                                 <span>{item.label}</span>

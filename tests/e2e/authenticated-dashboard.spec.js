@@ -1,0 +1,67 @@
+import { expect, test } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+const seededData = {
+  success: true,
+  laporan: { data: [
+    { Date: '2026-08-08', ID: 'POST-002', 'Content Title': 'Community recap', PIC: 'Alya', Category: 'News', Platform: 'Instagram', Views: '2400', 'Total Engagement': '210', 'KPI Summary': 'Good', URL: 'https://example.test/2' },
+    { Date: '2026-08-09', ID: 'POST-001', 'Content Title': 'Internship guide', PIC: 'Bima', Category: 'Article Reels', Platform: 'TikTok', Views: '1200', 'Total Engagement': '96', 'KPI Summary': 'Average', URL: 'https://example.test/1' }
+  ] },
+  schedule: { data: [
+    { Date: '2026-08-11', ID: 'TASK-001', contentTitle: 'Campus highlights', pic: 'Alya', category: 'Story Telling', Status: false }
+  ] },
+  memberList: { data: [] }, internList: { data: [] }, lecturerList: { data: [] },
+  scripts: { data: [] }, meetings: { data: [] }, notifications: { data: [] }, auditLog: { data: [] },
+  appSettings: { data: [{ key: 'app_name', value: 'GAT' }, { key: 'app_full_name', value: 'GAT Content Suite' }] },
+  platforms: { data: [] }, categories: { data: [] }, gaSummary: { data: [] }, gaItems: { data: [] }
+};
+
+async function openAuthenticatedDashboard(page) {
+  await page.route('**/api/sheets', async (route) => {
+    const request = route.request();
+    if (request.method() !== 'POST') return route.continue();
+    const { action } = request.postDataJSON();
+    const body = action === 'validate_mode'
+      ? { success: true, valid: true, role: 'Admin', expiresAt: Date.now() + 3_600_000, user: { id: 'e2e-admin', name: 'Release A Admin' } }
+      : action === 'read_all' ? seededData : { success: true };
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+  });
+
+  await page.goto('/');
+  await page.getByRole('textbox', { name: 'Email Address *' }).fill('release-a@example.test');
+  await page.getByLabel('Password (NIM) *').fill('test-only-password');
+  await page.getByRole('button', { name: 'Login' }).click();
+  await expect(page.locator('main#main-content')).toBeVisible();
+}
+
+test('authenticated dashboard has no detectable WCAG A or AA violations', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test('content table sorting is keyboard accessible and exposes its direction', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const isCompact = (page.viewportSize()?.width || 0) < 1024;
+  if (isCompact) {
+    await page.getByRole('button', { name: /Tasks/ }).last().click();
+  }
+  const dateHeader = page.getByRole('columnheader', { name: /date/i }).first();
+  await expect(dateHeader).toHaveAttribute('aria-sort', 'ascending');
+  const sortButton = dateHeader.getByRole('button');
+  await sortButton.focus();
+  await page.keyboard.press('Enter');
+  await expect(dateHeader).toHaveAttribute('aria-sort', 'descending');
+  await expect(sortButton).toBeFocused();
+});
+
+test('authenticated dashboard does not overflow the page at mobile width', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const dimensions = await page.evaluate(() => ({
+    viewportWidth: document.documentElement.clientWidth,
+    contentWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.contentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
+});

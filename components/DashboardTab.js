@@ -14,6 +14,7 @@ import {
     formatDisplayDate
 } from '../utils/helpers';
 import PlatformBadge from './PlatformBadge.jsx';
+import SortableTableHeader from './SortableTableHeader';
 
 const parseCleanInt = (val) => {
     if (val === undefined || val === null || val === '') return 0;
@@ -1016,12 +1017,14 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                 </div>
                             ) : (
                                 <table className="w-full text-left border-collapse text-body-sm">
+                                    <caption className="sr-only">Content performance records. Activate a sortable column heading to change the sort order.</caption>
                                     <thead className="bg-surface-container-lowest text-on-surface-variant uppercase text-[10px] tracking-wider border-b border-outline-variant/20">
                                         <tr>
                                             {isUnlocked && userRole === 'Admin' && (
                                                 <th className="px-4 py-3.5 w-10 text-center">
                                                     <input
                                                         type="checkbox"
+                                                        aria-label="Select all visible content records"
                                                         className="rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                                                         checked={selectedRows.length > 0 && selectedRows.length === processedData.length}
                                                         onChange={toggleSelectAll}
@@ -1029,22 +1032,12 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                                 </th>
                                             )}
                                             <th className="px-3 py-3.5 w-12 text-center">No</th>
-                                            <th className="px-4 py-3.5 cursor-pointer hover:text-primary transition-colors" onClick={() => handleHeaderSort('Date')}>
-                                                Date {sortColumn === 'Date' && (sortDirection === 'asc' ? '▲' : '▼')}
-                                            </th>
-                                            <th className="px-4 py-3.5 cursor-pointer hover:text-primary transition-colors" onClick={() => handleHeaderSort('Content Title')}>
-                                                Content Title {sortColumn === 'Content Title' && (sortDirection === 'asc' ? '▲' : '▼')}
-                                            </th>
+                                            <SortableTableHeader column="Date" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5">Date</SortableTableHeader>
+                                            <SortableTableHeader column="Content Title" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5">Content title</SortableTableHeader>
                                             <th className="px-4 py-3.5">Platform</th>
-                                            <th className="px-4 py-3.5 text-right cursor-pointer hover:text-primary transition-colors" onClick={() => handleHeaderSort('Views')}>
-                                                Views {sortColumn === 'Views' && (sortDirection === 'asc' ? '▲' : '▼')}
-                                            </th>
-                                            <th className="px-4 py-3.5 text-right cursor-pointer hover:text-primary transition-colors" onClick={() => handleHeaderSort('Total Engagement')}>
-                                                Engagement {sortColumn === 'Total Engagement' && (sortDirection === 'asc' ? '▲' : '▼')}
-                                            </th>
-                                            <th className="px-4 py-3.5 text-center cursor-pointer hover:text-primary transition-colors" onClick={() => handleHeaderSort('KPI Summary')}>
-                                                Summary {sortColumn === 'KPI Summary' && (sortDirection === 'asc' ? '▲' : '▼')}
-                                            </th>
+                                            <SortableTableHeader column="Views" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 text-right" align="right">Views</SortableTableHeader>
+                                            <SortableTableHeader column="Total Engagement" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 text-right" align="right">Engagement</SortableTableHeader>
+                                            <SortableTableHeader column="KPI Summary" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 text-center" align="center">Summary</SortableTableHeader>
                                             <th className="px-4 py-3.5 text-center">Link</th>
                                             {isUnlocked && userRole === 'Admin' && <th className="px-4 py-3.5 text-center">Edit</th>}
                                         </tr>
@@ -1066,6 +1059,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                                         <td className="px-4 py-3 w-10 text-center">
                                                             <input
                                                                 type="checkbox"
+                                                                aria-label={`Select ${row['Content Title'] || `content record ${idx + 1}`}`}
                                                                 className="rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                                                                 checked={isRowSelected}
                                                                 onChange={() => toggleSelectRow(row.ID)}
@@ -1189,6 +1183,10 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                 return (
                                     <button
                                         key={idx}
+                                        type="button"
+                                        aria-hidden={day.isDummy ? 'true' : undefined}
+                                        aria-label={day.isDummy ? undefined : `Show schedule for ${formatDisplayDate(day.dateStr)}`}
+                                        tabIndex={day.isDummy ? -1 : undefined}
                                         className={`h-8 w-full border-none rounded text-body-sm cursor-pointer flex items-center justify-center transition-all micro-interaction ${day.isDummy
                                                 ? 'bg-transparent text-transparent pointer-events-none'
                                                 : isSelected
@@ -1219,7 +1217,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                             )}
                         </div>
 
-                        <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+                        <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1" tabIndex={0} aria-label="Scheduled uploads for the selected date">
                             {scheduledTimeline.length === 0 ? (
                                 <div className="py-8 text-center text-on-surface-variant/60 text-body-sm space-y-2">
                                     <span className="material-symbols-outlined text-[36px]">check_circle</span>
@@ -1461,10 +1459,11 @@ export default function DashboardTab({ onOpenDatePicker }) {
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
-                                        <label className="text-body-sm font-semibold text-on-surface-variant">
+                                        <label htmlFor="dashboard-pic" className="text-body-sm font-semibold text-on-surface-variant">
                                             PIC <span className="text-error">*</span>
                                         </label>
                                         <select
+                                            id="dashboard-pic"
                                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                             value={formPic}
                                             onChange={(e) => setFormPic(e.target.value)}
@@ -1478,10 +1477,11 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                         </select>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-body-sm font-semibold text-on-surface-variant">
+                                        <label htmlFor="dashboard-category" className="text-body-sm font-semibold text-on-surface-variant">
                                             Category <span className="text-error">*</span>
                                         </label>
                                         <select
+                                            id="dashboard-category"
                                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                             value={formCategory}
                                             onChange={(e) => setFormCategory(e.target.value)}
@@ -1500,8 +1500,9 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                     <div className="space-y-4 pt-2 border-t border-outline-variant/15">
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="space-y-1">
-                                                <label className="text-body-sm font-semibold text-on-surface-variant">Platform</label>
+                                                <label htmlFor="dashboard-platform" className="text-body-sm font-semibold text-on-surface-variant">Platform</label>
                                                 <select
+                                                    id="dashboard-platform"
                                                     className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                                     value={formPlatform}
                                                     onChange={(e) => setFormPlatform(e.target.value)}
