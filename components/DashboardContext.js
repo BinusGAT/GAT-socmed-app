@@ -11,6 +11,10 @@ import {
 } from '../utils/helpers';
 
 const DashboardContext = createContext();
+const readStoredValue = (key, fallback = '') => {
+    if (typeof window === 'undefined') return fallback;
+    return localStorage.getItem(key) ?? fallback;
+};
 
 export function useDashboard() {
     return useContext(DashboardContext);
@@ -57,9 +61,10 @@ export function DashboardProvider({ children }) {
     const [mainFilterPlatform, setMainFilterPlatform] = useState('');
 
     // Tasklist Filter States
-    const [tasklistSearch, setTasklistSearch] = useState('');
-    const [tasklistFilterPic, setTasklistFilterPic] = useState('');
-    const [tasklistFilterStatus, setTasklistFilterStatus] = useState('');
+    const [tasklistSearch, setTasklistSearch] = useState(() => readStoredValue('GAT_task_filter_search'));
+    const [tasklistFilterPic, setTasklistFilterPic] = useState(() => readStoredValue('GAT_task_filter_pic'));
+    const [tasklistFilterStatus, setTasklistFilterStatus] = useState(() => readStoredValue('GAT_task_filter_status'));
+    const [connectionState, setConnectionState] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'online');
 
     // Data States
     const [currentData, setCurrentData] = useState([]);
@@ -72,7 +77,10 @@ export function DashboardProvider({ children }) {
     const [notificationsData, setNotificationsData] = useState([]);
     const [auditLogData, setAuditLogData] = useState([]);
     const [selectedMeetingId, setSelectedMeetingId] = useState(null);
-    const [selectedTaskId, setSelectedTaskId] = useState(null);
+    const [selectedTaskId, setSelectedTaskId] = useState(() => {
+        if (typeof window === 'undefined') return null;
+        return new URLSearchParams(window.location.search).get('task');
+    });
     const [gaSummaryData, setGaSummaryData] = useState({
         visitors: '± 6K',
         pageviews: '201',
@@ -232,8 +240,10 @@ export function DashboardProvider({ children }) {
     // Keep authenticated navigation shareable and compatible with browser back/forward.
     useEffect(() => {
         const handlePopState = () => {
-            const nextView = new URLSearchParams(window.location.search).get('view') || 'dashboard';
+            const params = new URLSearchParams(window.location.search);
+            const nextView = params.get('view') || 'dashboard';
             setCurrentView(nextView);
+            setSelectedTaskId(params.get('task'));
         };
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
@@ -244,8 +254,27 @@ export function DashboardProvider({ children }) {
         const url = new URL(window.location.href);
         if (currentView === 'dashboard') url.searchParams.delete('view');
         else url.searchParams.set('view', currentView);
+        if (selectedTaskId) url.searchParams.set('task', selectedTaskId);
+        else url.searchParams.delete('task');
         window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
-    }, [currentView, isUnlocked]);
+    }, [currentView, selectedTaskId, isUnlocked]);
+
+    useEffect(() => {
+        localStorage.setItem('GAT_task_filter_search', tasklistSearch);
+        localStorage.setItem('GAT_task_filter_pic', tasklistFilterPic);
+        localStorage.setItem('GAT_task_filter_status', tasklistFilterStatus);
+    }, [tasklistSearch, tasklistFilterPic, tasklistFilterStatus]);
+
+    useEffect(() => {
+        const handleOffline = () => setConnectionState('offline');
+        const handleOnline = () => setConnectionState((state) => state === 'offline' ? 'stale' : state);
+        window.addEventListener('offline', handleOffline);
+        window.addEventListener('online', handleOnline);
+        return () => {
+            window.removeEventListener('offline', handleOffline);
+            window.removeEventListener('online', handleOnline);
+        };
+    }, []);
 
     // Show Alert helper
     const showAlert = (message, type = 'success') => {
@@ -422,6 +451,7 @@ export function DashboardProvider({ children }) {
         try {
             const result = await callSheetsAPI('read_all');
             if (result && result.success) {
+                setConnectionState('online');
                 const laporan = result.laporan?.data || [];
                 const schedule = result.schedule?.data || [];
                 const memberList = result.memberList?.data || [];
@@ -508,6 +538,7 @@ export function DashboardProvider({ children }) {
                 if (!quiet) showAlert('Database synchronized successfully!', 'success');
             }
         } catch (error) {
+            setConnectionState(navigator.onLine ? 'stale' : 'offline');
             const isAuthError = error.message && (
                 error.message.includes('Unauthorized') || 
                 error.message.includes('Access token') ||
@@ -1081,6 +1112,7 @@ export function DashboardProvider({ children }) {
             isSyncing: isLoading && loadingPhase === 'sync',
             isMutating: isLoading && loadingPhase === 'mutation',
             globalAlert, showAlert,
+            connectionState,
             darkMode, toggleDarkMode,
             selectedMeetingId, setSelectedMeetingId,
             selectedTaskId, setSelectedTaskId,
@@ -1112,6 +1144,8 @@ export function DashboardProvider({ children }) {
             appSettingsData,
             platformsData,
             categoriesData,
+
+            retryConnection: () => loadFromGoogleSheets(false),
 
             // Lockdown/Auth
             unlockWorkspace,

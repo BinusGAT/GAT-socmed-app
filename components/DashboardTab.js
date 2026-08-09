@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import {
@@ -923,7 +924,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                 {/* Instagram Box */}
                                 <div className="bg-surface-container-low border border-outline-variant/15 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:bg-surface-container hover:border-primary/20 hover:scale-[1.03] hover:shadow-sm group">
                                     <div className="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                                        <i className="fa-brands fa-instagram text-rose-400 text-[16px]"></i>
+                                        <Image src="/img/icons/instagram-logo.png" width={18} height={18} alt="" aria-hidden="true" className="h-[18px] w-[18px] object-contain" />
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[9px] text-on-surface-variant/80 uppercase tracking-widest font-bold font-mono">Instagram</p>
@@ -934,7 +935,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                 {/* TikTok Box */}
                                 <div className="bg-surface-container-low border border-outline-variant/15 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:bg-surface-container hover:border-primary/20 hover:scale-[1.03] hover:shadow-sm group">
                                     <div className="w-8 h-8 rounded-full bg-teal-500/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                                        <i className="fa-brands fa-tiktok text-teal-400 text-[15px]"></i>
+                                        <Image src="/img/icons/tiktok-logo.png" width={17} height={17} alt="" aria-hidden="true" className="h-[17px] w-[17px] object-contain" />
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[9px] text-on-surface-variant/80 uppercase tracking-widest font-bold font-mono">TikTok</p>
@@ -945,7 +946,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                 {/* YouTube Box */}
                                 <div className="bg-surface-container-low border border-outline-variant/15 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:bg-surface-container hover:border-primary/20 hover:scale-[1.03] hover:shadow-sm group">
                                     <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                                        <i className="fa-brands fa-youtube text-red-500 text-[15px]"></i>
+                                        <Image src="/img/icons/youtube-logo.webp" width={18} height={18} alt="" aria-hidden="true" className="h-[18px] w-[18px] object-contain" />
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[9px] text-on-surface-variant/80 uppercase tracking-widest font-bold font-mono">YouTube</p>

@@ -16,13 +16,16 @@ const seededData = {
   platforms: { data: [] }, categories: { data: [] }, gaSummary: { data: [] }, gaItems: { data: [] }
 };
 
-async function openAuthenticatedDashboard(page, { readDelayMs = 0 } = {}) {
+async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = false } = {}) {
   await page.route('**/api/sheets', async (route) => {
     const request = route.request();
     if (request.method() !== 'POST') return route.continue();
     const { action } = request.postDataJSON();
     if (action === 'read_all' && readDelayMs) {
       await new Promise((resolve) => setTimeout(resolve, readDelayMs));
+    }
+    if (action === 'read_all' && failRead) {
+      return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ success: false, error: 'Database unavailable' }) });
     }
     const body = action === 'validate_mode'
       ? { success: true, valid: true, role: 'Admin', expiresAt: Date.now() + 3_600_000, user: { id: 'e2e-admin', name: 'Release A Admin' } }
@@ -87,6 +90,7 @@ test('opens the selected My Work assignment in the task editor', async ({ page }
     .click();
   await page.getByRole('button', { name: 'Open task Campus highlights' }).click();
   await expect(page.getByRole('heading', { name: 'Update Scheduled Task (TASK-001)' })).toBeVisible();
+  await expect(page).toHaveURL(/view=tasklist&task=TASK-001/);
 });
 
 test('keeps the authenticated view in the URL across refresh', async ({ page }) => {
@@ -115,4 +119,49 @@ test('keeps task editor values visible when required fields are missing', async 
   await page.getByRole('button', { name: 'Save Task' }).click();
   await expect(page.getByText('Choose a scheduled date, PIC, and category before saving.')).toBeVisible();
   await expect(page.getByPlaceholder('Enter title (optional)')).toHaveValue('Orientation recap');
+});
+
+test('persists task search filters across refresh', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const navigationName = (page.viewportSize()?.width || 0) < 1024
+    ? 'Mobile primary navigation'
+    : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true })
+    .getByRole('button', { name: /Tasks|Task List/ })
+    .click();
+  await page.getByPlaceholder('Search tasks...').fill('Campus');
+  await page.reload();
+  await expect(page.getByPlaceholder('Search tasks...')).toHaveValue('Campus');
+});
+
+test('protects an unsaved task draft when closing the editor', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const navigationName = (page.viewportSize()?.width || 0) < 1024
+    ? 'Mobile primary navigation'
+    : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true })
+    .getByRole('button', { name: /Tasks|Task List/ })
+    .click();
+  await page.getByRole('button', { name: /Add Scheduled Task/ }).click();
+  await page.getByPlaceholder('Enter title (optional)').fill('Recovered orientation draft');
+  await page.getByRole('button', { name: 'Close task editor' }).click();
+  await expect(page.getByRole('alertdialog', { name: 'Discard unsaved changes?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Keep editing' }).click();
+  await expect(page.getByPlaceholder('Enter title (optional)')).toHaveValue('Recovered orientation draft');
+});
+
+test('shows cached-data guidance when the browser goes offline', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  await expect(page.getByRole('status', { name: 'Loading dashboard' })).toBeHidden();
+  await page.context().setOffline(true);
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+  await expect(page.getByText('You are offline. Showing the latest saved workspace data.')).toBeVisible();
+  await page.context().setOffline(false);
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+});
+
+test('offers retry guidance when live synchronization fails', async ({ page }) => {
+  await openAuthenticatedDashboard(page, { failRead: true });
+  await expect(page.getByText('Workspace data may be out of date.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Retry sync' })).toBeVisible();
 });

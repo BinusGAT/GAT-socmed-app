@@ -7,6 +7,7 @@ import LockScreen from './LockScreen';
 import { DeleteConfirmModal } from './Modals';
 import SortableTableHeader from './SortableTableHeader';
 import EmptyState from './EmptyState';
+import DiscardChangesModal from './DiscardChangesModal';
 import { 
     normalizePicName, 
     getTaskCalculatedStatus,
@@ -25,6 +26,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
         isUnlocked,
         isMutating,
         userRole,
+        userId,
         saveCalendarTask,
         deleteCalendarTask,
         memberListData,
@@ -45,6 +47,10 @@ export default function TaskListTab({ onOpenDatePicker }) {
     const [modalCategory, setModalCategory] = useState('');
     const [modalStatus, setModalStatus] = useState(false);
     const [formError, setFormError] = useState('');
+    const [initialFormState, setInitialFormState] = useState(null);
+    const [isDiscardOpen, setIsDiscardOpen] = useState(false);
+    const [draftRecovered, setDraftRecovered] = useState(false);
+    const handledTaskIdRef = React.useRef(null);
 
     // Delete confirmation state
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -117,15 +123,35 @@ export default function TaskListTab({ onOpenDatePicker }) {
     };
 
     const processedTasks = getProcessedTasks();
+    const taskDraftKey = `GAT_task_editor_draft:${userId || 'anonymous'}`;
+    const currentFormState = { title: modalTitle, date: modalDate, pic: modalPic, category: modalCategory, status: modalStatus };
+    const isFormDirty = isModalOpen && initialFormState && JSON.stringify(currentFormState) !== JSON.stringify(initialFormState);
+
+    const applyFormState = (state) => {
+        setModalTitle(state.title || '');
+        setModalDate(state.date || getLocalDateInputValue());
+        setModalPic(state.pic || '');
+        setModalCategory(state.category || '');
+        setModalStatus(Boolean(state.status));
+        setInitialFormState(state);
+    };
 
     const openAddModal = () => {
         if (!isUnlocked || userRole === 'Viewer') return;
         setModalTaskId('');
-        setModalTitle('');
-        setModalDate(getLocalDateInputValue());
-        setModalPic('');
-        setModalCategory('');
-        setModalStatus(false);
+        const blankState = { title: '', date: getLocalDateInputValue(), pic: '', category: '', status: false };
+        let nextState = blankState;
+        let recovered = false;
+        try {
+            const storedDraft = localStorage.getItem(taskDraftKey);
+            if (storedDraft) {
+                nextState = JSON.parse(storedDraft);
+                recovered = true;
+            }
+        } catch {}
+        applyFormState(nextState);
+        if (recovered) setInitialFormState(blankState);
+        setDraftRecovered(recovered);
         setFormError('');
         setIsModalOpen(true);
     };
@@ -133,23 +159,62 @@ export default function TaskListTab({ onOpenDatePicker }) {
     const openEditModal = (task) => {
         if (!isUnlocked || userRole === 'Viewer') return;
         setModalTaskId(task.id);
-        setModalTitle(task.contentTitle);
-        setModalDate(task.date || getLocalDateInputValue());
-        setModalPic(normalizePicName(resolveMemberName(task.pic, memberListData)));
-        setModalCategory(task.category);
-        setModalStatus(task.status);
+        const nextState = {
+            title: task.contentTitle,
+            date: task.date || getLocalDateInputValue(),
+            pic: normalizePicName(resolveMemberName(task.pic, memberListData)),
+            category: task.category,
+            status: task.status,
+        };
+        applyFormState(nextState);
+        setDraftRecovered(false);
         setFormError('');
         setIsModalOpen(true);
     };
 
     useEffect(() => {
         if (!selectedTaskId) return;
+        if (handledTaskIdRef.current === selectedTaskId) return;
         const selectedTask = getTasks().find((task) => String(task.id) === String(selectedTaskId));
         if (!selectedTask) return;
 
+        handledTaskIdRef.current = selectedTaskId;
         openEditModal(selectedTask);
-        setSelectedTaskId(null);
     }, [selectedTaskId, scheduleData, currentData]);
+
+    useEffect(() => {
+        if (!isModalOpen || modalTaskId || !isFormDirty) return;
+        localStorage.setItem(taskDraftKey, JSON.stringify(currentFormState));
+    }, [isModalOpen, modalTaskId, modalTitle, modalDate, modalPic, modalCategory, modalStatus, isFormDirty, taskDraftKey]);
+
+    useEffect(() => {
+        if (!isFormDirty) return;
+        const handleBeforeUnload = (event) => {
+            event.preventDefault();
+            event.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isFormDirty]);
+
+    const closeEditor = () => {
+        if (isFormDirty) {
+            setIsDiscardOpen(true);
+            return;
+        }
+        setIsModalOpen(false);
+        setSelectedTaskId(null);
+        handledTaskIdRef.current = null;
+    };
+
+    const discardAndClose = () => {
+        if (!modalTaskId) localStorage.removeItem(taskDraftKey);
+        setDraftRecovered(false);
+        setIsDiscardOpen(false);
+        setIsModalOpen(false);
+        setSelectedTaskId(null);
+        handledTaskIdRef.current = null;
+    };
 
     const handleModalDateClick = () => {
         onOpenDatePicker((selectedDate) => {
@@ -195,7 +260,11 @@ export default function TaskListTab({ onOpenDatePicker }) {
 
         const success = await saveCalendarTask(taskPayload);
         if (success) {
+            if (!modalTaskId) localStorage.removeItem(taskDraftKey);
+            setDraftRecovered(false);
             setIsModalOpen(false);
+            setSelectedTaskId(null);
+            handledTaskIdRef.current = null;
         }
     };
 
@@ -424,13 +493,14 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                 <span className="material-symbols-outlined text-primary text-[22px]">assignment</span>
                                 {modalTaskId ? `Update Scheduled Task (${modalTaskId})` : 'Add Scheduled Task'}
                             </h2>
-                            <button className="text-on-surface-variant hover:text-on-surface p-1 cursor-pointer" onClick={() => setIsModalOpen(false)}>
+                            <button type="button" aria-label="Close task editor" className="text-on-surface-variant hover:text-on-surface p-1 cursor-pointer" onClick={closeEditor}>
                                 <span className="material-symbols-outlined text-[20px]">close</span>
                             </button>
                         </div>
                         
                         <form onSubmit={handleModalSubmit} autoComplete="off" noValidate>
                             <div className="px-5 py-4 space-y-4">
+                                {draftRecovered && <p role="status" className="draft-recovery-note"><span className="material-symbols-outlined" aria-hidden="true">restore</span>Recovered an unsaved task draft from this browser.</p>}
                                 {formError && <p role="alert" className="form-error-summary"><span className="material-symbols-outlined" aria-hidden="true">error</span>{formError}</p>}
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Content Title / Topic</label>
@@ -486,7 +556,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                 </div>
                             </div>
                             <div className="px-5 py-4 border-t border-outline-variant/20 flex justify-end gap-3 bg-surface-container-lowest">
-                                <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded-lg text-body-sm transition-colors cursor-pointer" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                                <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded-lg text-body-sm transition-colors cursor-pointer" onClick={closeEditor}>Cancel</button>
                                 <button type="submit" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-4 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center gap-1.5 disabled:cursor-wait disabled:opacity-70">
                                     <span className={`material-symbols-outlined text-[18px] ${isMutating ? 'animate-spin' : ''}`}>{isMutating ? 'progress_activity' : 'save'}</span> {isMutating ? 'Saving…' : 'Save Task'}
                                 </button>
@@ -509,6 +579,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                 title="Delete scheduled task?"
                 message={`Are you sure you want to remove task ID: ${taskToDelete}?`}
             />
+            <DiscardChangesModal isOpen={isDiscardOpen} onKeepEditing={() => setIsDiscardOpen(false)} onDiscard={discardAndClose} />
         </div>
     );
 }

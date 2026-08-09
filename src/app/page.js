@@ -35,6 +35,8 @@ function DashboardAppContent() {
         userRole,
         globalAlert,
         showAlert,
+        connectionState,
+        retryConnection,
         dateRange,
         currentData,
         setSelectedMeetingId,
@@ -284,6 +286,14 @@ function DashboardAppContent() {
 
                 {isLoading && !isInitialLoading && loadingPhase !== 'authentication' && (
                     <BackgroundActivity kind={loadingPhase} />
+                )}
+
+                {connectionState !== 'online' && (
+                    <div role="status" className="connection-banner">
+                        <span className="material-symbols-outlined" aria-hidden="true">{connectionState === 'offline' ? 'cloud_off' : 'cloud_sync'}</span>
+                        <span>{connectionState === 'offline' ? 'You are offline. Showing the latest saved workspace data.' : 'Workspace data may be out of date.'}</span>
+                        <button type="button" onClick={retryConnection} disabled={isLoading}>Retry sync</button>
+                    </div>
                 )}
 
                 {/* Global Alert Notification Banner */}
