@@ -16,11 +16,14 @@ const seededData = {
   platforms: { data: [] }, categories: { data: [] }, gaSummary: { data: [] }, gaItems: { data: [] }
 };
 
-async function openAuthenticatedDashboard(page) {
+async function openAuthenticatedDashboard(page, { readDelayMs = 0 } = {}) {
   await page.route('**/api/sheets', async (route) => {
     const request = route.request();
     if (request.method() !== 'POST') return route.continue();
     const { action } = request.postDataJSON();
+    if (action === 'read_all' && readDelayMs) {
+      await new Promise((resolve) => setTimeout(resolve, readDelayMs));
+    }
     const body = action === 'validate_mode'
       ? { success: true, valid: true, role: 'Admin', expiresAt: Date.now() + 3_600_000, user: { id: 'e2e-admin', name: 'Release A Admin' } }
       : action === 'read_all' ? seededData : { success: true };
@@ -33,6 +36,14 @@ async function openAuthenticatedDashboard(page) {
   await page.getByRole('button', { name: 'Login' }).click();
   await expect(page.locator('main#main-content')).toBeVisible();
 }
+
+test('uses a structural skeleton without blocking the authenticated shell', async ({ page }) => {
+  await openAuthenticatedDashboard(page, { readDelayMs: 500 });
+  const skeleton = page.getByRole('status', { name: 'Loading dashboard' });
+  await expect(skeleton).toBeVisible();
+  await expect(page.locator('nav[aria-label="Mobile primary navigation"]')).toBeAttached();
+  await expect(skeleton).toBeHidden();
+});
 
 test('authenticated dashboard has no detectable WCAG A or AA violations', async ({ page }) => {
   await openAuthenticatedDashboard(page);

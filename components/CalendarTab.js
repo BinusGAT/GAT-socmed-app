@@ -21,6 +21,7 @@ export default function CalendarTab({ onOpenExport }) {
         meetingsData,
         currentData,
         isUnlocked,
+        isMutating,
         userRole,
         saveCalendarTask,
         deleteCalendarTask,
@@ -594,9 +595,9 @@ export default function CalendarTab({ onOpenExport }) {
                                 </div>
 
                                 <div className="flex gap-2 pt-2">
-                                    <button type="submit" className="flex-1 bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-3 rounded text-body-sm transition-opacity flex items-center justify-center gap-1.5 cursor-pointer micro-interaction">
-                                        <span className="material-symbols-outlined text-[16px]">save</span>
-                                        {editingTaskId ? 'Save' : 'Add'}
+                                    <button type="submit" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="flex-1 bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-3 rounded text-body-sm transition-opacity flex items-center justify-center gap-1.5 cursor-pointer micro-interaction disabled:cursor-wait disabled:opacity-70">
+                                        <span className={`material-symbols-outlined text-[16px] ${isMutating ? 'animate-spin' : ''}`}>{isMutating ? 'progress_activity' : 'save'}</span>
+                                        {isMutating ? 'Saving…' : editingTaskId ? 'Save' : 'Add'}
                                     </button>
                                     {editingTaskId && userRole !== 'Creator' && (
                                         <button 

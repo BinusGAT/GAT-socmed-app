@@ -19,6 +19,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     const {
         meetingsData,
         isUnlocked,
+        isMutating,
         userRole,
         saveMeetingMemo,
         deleteMeetingMemo,
@@ -948,8 +949,8 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                             {/* Form submit/cancel actions */}
                             <div className="flex gap-3 pt-2">
                                 {isUnlocked && userRole !== 'Creator' && (
-                                    <button type="submit" className="flex-1 bg-primary text-on-primary hover:opacity-90 font-bold py-2.5 px-4 rounded-lg text-body-sm transition-opacity flex items-center justify-center gap-1.5 cursor-pointer micro-interaction shadow-md">
-                                        <span className="material-symbols-outlined text-[18px]">save</span> Save Memo
+                                    <button type="submit" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="flex-1 bg-primary text-on-primary hover:opacity-90 font-bold py-2.5 px-4 rounded-lg text-body-sm transition-opacity flex items-center justify-center gap-1.5 cursor-pointer micro-interaction shadow-md disabled:cursor-wait disabled:opacity-70">
+                                        <span className={`material-symbols-outlined text-[18px] ${isMutating ? 'animate-spin' : ''}`}>{isMutating ? 'progress_activity' : 'save'}</span> {isMutating ? 'Saving…' : 'Save Memo'}
                                     </button>
                                 )}
                                 <button type="button" className="flex-1 bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-2.5 px-4 rounded-lg text-body-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5 micro-interaction" onClick={handleCancelEdit}>

@@ -27,6 +27,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
         currentData,
         scheduleData,
         isUnlocked,
+        isMutating,
         userRole,
         addLaporanRow,
         updateLaporanRow,
@@ -1642,8 +1643,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
                     <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction cursor-pointer" onClick={resetForm}>
                         Cancel
                     </button>
-                    <button type="submit" form="drawerForm" className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction cursor-pointer flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[18px]">save</span> Save Changes
+                    <button type="submit" form="drawerForm" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction cursor-pointer flex items-center gap-1.5 disabled:cursor-wait disabled:opacity-70">
+                        <span className={`material-symbols-outlined text-[18px] ${isMutating ? 'animate-spin' : ''}`}>{isMutating ? 'progress_activity' : 'save'}</span> {isMutating ? 'Saving…' : 'Save Changes'}
                     </button>
                 </div>
             </div>

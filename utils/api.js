@@ -1,4 +1,6 @@
-export async function callSheetsAPI(action, params = {}) {
+const inFlightRequests = new Map();
+
+async function executeSheetsAPI(action, params = {}) {
   const payload = {
     action,
     params
@@ -60,4 +62,16 @@ export async function callSheetsAPI(action, params = {}) {
     }
     throw error;
   }
+}
+
+export function callSheetsAPI(action, params = {}) {
+  const requestKey = JSON.stringify([action, params]);
+  const existingRequest = inFlightRequests.get(requestKey);
+  if (existingRequest) return existingRequest;
+
+  const request = executeSheetsAPI(action, params).finally(() => {
+    if (inFlightRequests.get(requestKey) === request) inFlightRequests.delete(requestKey);
+  });
+  inFlightRequests.set(requestKey, request);
+  return request;
 }

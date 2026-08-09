@@ -22,12 +22,15 @@ import SettingsTab from '../../components/SettingsTab';
 import MyWorkTab from '../../components/MyWorkTab';
 import { formatDisplayDate } from '../../utils/helpers';
 import LockScreen from '../../components/LockScreen';
+import { BackgroundActivity, DashboardSkeleton } from '../../components/LoadingStates';
 
 function DashboardAppContent() {
     const {
         currentView,
         setCurrentView,
         isLoading,
+        loadingPhase,
+        isInitialLoading,
         isUnlocked,
         userRole,
         globalAlert,
@@ -40,6 +43,7 @@ function DashboardAppContent() {
 
     // Layout states
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     // Sync active view mode class and lock status to body element for CSS alignment
     useEffect(() => {
@@ -96,6 +100,7 @@ function DashboardAppContent() {
     };
 
     const handleExportAll = () => {
+        if (isExporting) return;
         if (currentData.length === 0) {
             showAlert('No data to export', 'error');
             return;
@@ -106,6 +111,7 @@ function DashboardAppContent() {
             return;
         }
 
+        setIsExporting(true);
         try {
             const XLSX = window.XLSX;
 
@@ -137,6 +143,8 @@ function DashboardAppContent() {
             showAlert('💾 Database exported to Excel successfully!', 'success');
         } catch (error) {
             showAlert(`❌ Export failed: ${error.message}`, 'error');
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -269,22 +277,13 @@ function DashboardAppContent() {
                     openUnlockModal={() => setUnlockOpen(true)}
                     openDateRangeModal={() => setDateRangeOpen(true)}
                     onExport={handleExportAll}
+                    isExporting={isExporting}
                     dateRangeText={getDateRangeText()}
                     openHelpModal={() => setHelpOpen(true)}
                 />
 
-                {/* Loading overlay */}
-                {isLoading && (
-                    <div className="fixed inset-0 bg-background/40 backdrop-blur-md flex items-center justify-center z-[9999] animate-fade-in">
-                        <div className="noise-overlay"></div>
-                        <div className="bg-surface-container/70 backdrop-blur-xl border border-outline-variant/30 rounded-2xl p-6 flex flex-col items-center gap-4 max-w-[280px] shadow-2xl relative">
-                            <div className="relative w-12 h-12 flex items-center justify-center">
-                                <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping"></div>
-                                <div className="w-8 h-8 border-3 border-primary/10 border-t-primary rounded-full animate-spin"></div>
-                            </div>
-                            <span className="text-body-sm text-on-surface font-bold tracking-wide">Syncing Database...</span>
-                        </div>
-                    </div>
+                {isLoading && !isInitialLoading && loadingPhase !== 'authentication' && (
+                    <BackgroundActivity kind={loadingPhase} />
                 )}
 
                 {/* Global Alert Notification Banner */}
@@ -303,8 +302,8 @@ function DashboardAppContent() {
                 )}
 
                 {/* Active Tab View */}
-                <div className="flex-1 p-6 relative">
-                    {renderActiveTab()}
+                <div className="flex-1 p-6 relative" aria-busy={isLoading ? 'true' : 'false'}>
+                    {isInitialLoading ? <DashboardSkeleton /> : renderActiveTab()}
                 </div>
 
                 {/* Footer copyright */}

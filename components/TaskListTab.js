@@ -22,6 +22,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
         scheduleData,
         currentData,
         isUnlocked,
+        isMutating,
         userRole,
         saveCalendarTask,
         deleteCalendarTask,
@@ -455,8 +456,8 @@ export default function TaskListTab({ onOpenDatePicker }) {
                             </div>
                             <div className="px-5 py-4 border-t border-outline-variant/20 flex justify-end gap-3 bg-surface-container-lowest">
                                 <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded-lg text-body-sm transition-colors cursor-pointer" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                                <button type="submit" className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-4 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center gap-1.5">
-                                    <span className="material-symbols-outlined text-[18px]">save</span> Save Task
+                                <button type="submit" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-4 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center gap-1.5 disabled:cursor-wait disabled:opacity-70">
+                                    <span className={`material-symbols-outlined text-[18px] ${isMutating ? 'animate-spin' : ''}`}>{isMutating ? 'progress_activity' : 'save'}</span> {isMutating ? 'Saving…' : 'Save Task'}
                                 </button>
                             </div>
                         </form>

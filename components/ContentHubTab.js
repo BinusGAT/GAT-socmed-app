@@ -15,6 +15,7 @@ export default function ContentHubTab() {
         scheduleData,
         currentData,
         isUnlocked,
+        isMutating,
         userRole,
         saveScriptDraft,
         deleteScriptDraft,
@@ -587,8 +588,8 @@ export default function ContentHubTab() {
                             {/* Save Draft & Copy Copywriting Actions */}
                             <div className="flex flex-col sm:flex-row gap-3 pt-2">
                                 {isUnlocked && (
-                                    <button type="submit" className="flex-1 bg-primary text-on-primary hover:opacity-90 font-bold py-2.5 px-4 rounded-lg text-body-sm transition-opacity flex items-center justify-center gap-1.5 cursor-pointer micro-interaction shadow-sm">
-                                        <span className="material-symbols-outlined text-[18px]">save</span> Save Script Draft
+                                    <button type="submit" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="flex-1 bg-primary text-on-primary hover:opacity-90 font-bold py-2.5 px-4 rounded-lg text-body-sm transition-opacity flex items-center justify-center gap-1.5 cursor-pointer micro-interaction shadow-sm disabled:cursor-wait disabled:opacity-70">
+                                        <span className={`material-symbols-outlined text-[18px] ${isMutating ? 'animate-spin' : ''}`}>{isMutating ? 'progress_activity' : 'save'}</span> {isMutating ? 'Saving…' : 'Save Script Draft'}
                                     </button>
                                 )}
                                 <button type="button" className="flex-1 bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-2.5 px-4 rounded-lg text-body-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer micro-interaction" onClick={handleCopyCopywriting}>

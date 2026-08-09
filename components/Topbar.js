@@ -10,6 +10,7 @@ export default function Topbar({
     openUnlockModal,
     openDateRangeModal,
     onExport,
+    isExporting = false,
     dateRangeText,
     openHelpModal
 }) {
@@ -23,6 +24,7 @@ export default function Topbar({
         darkMode,
         toggleDarkMode,
         refreshData,
+        isSyncing,
         searchQuery,
         setSearchQuery,
         scheduleData,
@@ -295,9 +297,11 @@ export default function Topbar({
                                         <button
                                             className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer"
                                             onClick={() => { setProfileOpen(false); refreshData(); }}
+                                            disabled={isSyncing}
+                                            aria-busy={isSyncing ? 'true' : 'false'}
                                         >
-                                            <span className="material-symbols-outlined text-[18px] text-primary">sync</span>
-                                            <span>Sync Database</span>
+                                            <span className={`material-symbols-outlined text-[18px] text-primary ${isSyncing ? 'animate-spin' : ''}`}>sync</span>
+                                            <span>{isSyncing ? 'Syncing database…' : 'Sync Database'}</span>
                                         </button>
                                     )}
 
@@ -306,9 +310,11 @@ export default function Topbar({
                                         <button
                                             className="w-full text-left px-4 py-2.5 hover:bg-surface-container-high text-on-surface flex items-center gap-3 transition-colors cursor-pointer"
                                             onClick={() => { setProfileOpen(false); onExport(); }}
+                                            disabled={isExporting}
+                                            aria-busy={isExporting ? 'true' : 'false'}
                                         >
-                                            <span className="material-symbols-outlined text-[18px] text-primary">download</span>
-                                            <span>Export Database</span>
+                                            <span className={`material-symbols-outlined text-[18px] text-primary ${isExporting ? 'animate-spin' : ''}`}>{isExporting ? 'progress_activity' : 'download'}</span>
+                                            <span>{isExporting ? 'Exporting…' : 'Export Database'}</span>
                                         </button>
                                     )}
 

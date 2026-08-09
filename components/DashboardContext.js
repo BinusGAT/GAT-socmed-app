@@ -39,7 +39,8 @@ export function DashboardProvider({ children }) {
     const [userRole, setUserRole] = useState(null);
     const [userName, setUserName] = useState(null);
     const [userId, setUserId] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoadingState] = useState(false);
+    const [loadingPhase, setLoadingPhase] = useState('idle');
     const [globalAlert, setGlobalAlert] = useState(null); // { message, type }
     const [darkMode, setDarkMode] = useState(true);
     const [isNewPostDrawerOpen, setIsNewPostDrawerOpen] = useState(false);
@@ -78,6 +79,11 @@ export function DashboardProvider({ children }) {
     const [appSettingsData, setAppSettingsData] = useState({});
     const [platformsData, setPlatformsData] = useState([]);
     const [categoriesData, setCategoriesData] = useState([]);
+
+    const setIsLoading = (active, phase = 'mutation') => {
+        setIsLoadingState(active);
+        setLoadingPhase(active ? phase : 'idle');
+    };
 
     // Load initial states
     useEffect(() => {
@@ -394,7 +400,7 @@ export function DashboardProvider({ children }) {
         const showLoading = !quiet || !hasLocalData;
         
         if (showLoading) {
-            setIsLoading(true);
+            setIsLoading(true, quiet ? 'initial' : 'sync');
         }
 
         try {
@@ -506,7 +512,7 @@ export function DashboardProvider({ children }) {
                 }
             }
         } finally {
-            setIsLoading(false);
+            if (showLoading) setIsLoading(false);
         }
     };
 
@@ -523,7 +529,7 @@ export function DashboardProvider({ children }) {
             throw new Error('System is locked down due to too many failed attempts.');
         }
 
-        setIsLoading(true);
+        setIsLoading(true, 'authentication');
         try {
             let payload = {};
             if (typeof credentials === 'object' && credentials !== null) {
@@ -1054,6 +1060,10 @@ export function DashboardProvider({ children }) {
             userName,
             userId,
             isLoading, setIsLoading,
+            loadingPhase,
+            isInitialLoading: isLoading && loadingPhase === 'initial',
+            isSyncing: isLoading && loadingPhase === 'sync',
+            isMutating: isLoading && loadingPhase === 'mutation',
             globalAlert, showAlert,
             darkMode, toggleDarkMode,
             selectedMeetingId, setSelectedMeetingId,
