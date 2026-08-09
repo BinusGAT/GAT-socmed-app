@@ -69,6 +69,7 @@ export function DashboardProvider({ children }) {
     const [notificationsData, setNotificationsData] = useState([]);
     const [auditLogData, setAuditLogData] = useState([]);
     const [selectedMeetingId, setSelectedMeetingId] = useState(null);
+    const [selectedTaskId, setSelectedTaskId] = useState(null);
     const [gaSummaryData, setGaSummaryData] = useState({
         visitors: '± 6K',
         pageviews: '201',
@@ -1068,6 +1069,7 @@ export function DashboardProvider({ children }) {
             globalAlert, showAlert,
             darkMode, toggleDarkMode,
             selectedMeetingId, setSelectedMeetingId,
+            selectedTaskId, setSelectedTaskId,
             isNewPostDrawerOpen, setIsNewPostDrawerOpen,
 
             // Filters

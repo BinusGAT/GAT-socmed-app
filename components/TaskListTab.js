@@ -31,7 +31,8 @@ export default function TaskListTab({ onOpenDatePicker }) {
         showAlert,
         tasklistSearch, setTasklistSearch,
         tasklistFilterPic, setTasklistFilterPic,
-        tasklistFilterStatus, setTasklistFilterStatus
+        tasklistFilterStatus, setTasklistFilterStatus,
+        selectedTaskId, setSelectedTaskId
     } = useDashboard();
 
     // Modal state
@@ -136,6 +137,15 @@ export default function TaskListTab({ onOpenDatePicker }) {
         setModalStatus(task.status);
         setIsModalOpen(true);
     };
+
+    useEffect(() => {
+        if (!selectedTaskId) return;
+        const selectedTask = getTasks().find((task) => String(task.id) === String(selectedTaskId));
+        if (!selectedTask) return;
+
+        openEditModal(selectedTask);
+        setSelectedTaskId(null);
+    }, [selectedTaskId, scheduleData, currentData]);
 
     const handleModalDateClick = () => {
         onOpenDatePicker((selectedDate) => {

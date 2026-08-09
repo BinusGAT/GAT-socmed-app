@@ -16,7 +16,12 @@ function getDueState(dateValue, completed) {
 }
 
 export default function MyWorkTab() {
-    const { scheduleData, userId, userName, setCurrentView } = useDashboard();
+    const { scheduleData, userId, userName, setCurrentView, setSelectedTaskId } = useDashboard();
+
+    const openTask = (taskId) => {
+        setSelectedTaskId(taskId);
+        setCurrentView('tasklist');
+    };
     const normalizedUserName = String(userName || '').trim().toLowerCase();
     const userFirstName = normalizedUserName.split(/\s+/)[0];
     const tasks = (scheduleData || [])
@@ -56,7 +61,7 @@ export default function MyWorkTab() {
                         {tasks.map((task) => {
                             const dueState = getDueState(task.Date, Number(task.Status) === 1);
                             return (
-                                <button key={task.ID} type="button" onClick={() => setCurrentView('tasklist')} className="w-full text-left px-5 py-4 hover:bg-surface-container-low transition-colors grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 md:items-center">
+                                <button key={task.ID} type="button" onClick={() => openTask(task.ID)} aria-label={`Open task ${task['Content Title'] || task.ID}`} className="w-full text-left px-5 py-4 hover:bg-surface-container-low transition-colors grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 md:items-center focus-visible:bg-surface-container-low">
                                     <div className="min-w-0">
                                         <p className="font-semibold text-on-surface truncate">{task['Content Title']}</p>
                                         <p className="text-[11px] text-on-surface-variant mt-1">{task.ID} · {task.Category}</p>

@@ -8,7 +8,7 @@ const seededData = {
     { Date: '2026-08-09', ID: 'POST-001', 'Content Title': 'Internship guide', PIC: 'Bima', Category: 'Article Reels', Platform: 'TikTok', Views: '1200', 'Total Engagement': '96', 'KPI Summary': 'Average', URL: 'https://example.test/1' }
   ] },
   schedule: { data: [
-    { Date: '2026-08-11', ID: 'TASK-001', contentTitle: 'Campus highlights', pic: 'Alya', category: 'Story Telling', Status: false }
+    { Date: '2026-08-11', ID: 'TASK-001', 'Content Title': 'Campus highlights', PIC: 'Alya', Category: 'Story Telling', AssignedUserId: 'e2e-admin', Status: false }
   ] },
   memberList: { data: [] }, internList: { data: [] }, lecturerList: { data: [] },
   scripts: { data: [] }, meetings: { data: [] }, notifications: { data: [] }, auditLog: { data: [] },
@@ -75,4 +75,16 @@ test('authenticated dashboard does not overflow the page at mobile width', async
     contentWidth: document.documentElement.scrollWidth,
   }));
   expect(dimensions.contentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
+});
+
+test('opens the selected My Work assignment in the task editor', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const navigationName = (page.viewportSize()?.width || 0) < 1024
+    ? 'Mobile primary navigation'
+    : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true })
+    .getByRole('button', { name: /My Work/ })
+    .click();
+  await page.getByRole('button', { name: 'Open task Campus highlights' }).click();
+  await expect(page.getByRole('heading', { name: 'Update Scheduled Task (TASK-001)' })).toBeVisible();
 });
