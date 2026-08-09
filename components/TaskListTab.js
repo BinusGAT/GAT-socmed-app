@@ -6,6 +6,7 @@ import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import { DeleteConfirmModal } from './Modals';
 import SortableTableHeader from './SortableTableHeader';
+import EmptyState from './EmptyState';
 import { 
     normalizePicName, 
     getTaskCalculatedStatus,
@@ -43,6 +44,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
     const [modalPic, setModalPic] = useState('');
     const [modalCategory, setModalCategory] = useState('');
     const [modalStatus, setModalStatus] = useState(false);
+    const [formError, setFormError] = useState('');
 
     // Delete confirmation state
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -124,6 +126,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
         setModalPic('');
         setModalCategory('');
         setModalStatus(false);
+        setFormError('');
         setIsModalOpen(true);
     };
 
@@ -135,6 +138,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
         setModalPic(normalizePicName(resolveMemberName(task.pic, memberListData)));
         setModalCategory(task.category);
         setModalStatus(task.status);
+        setFormError('');
         setIsModalOpen(true);
     };
 
@@ -159,6 +163,12 @@ export default function TaskListTab({ onOpenDatePicker }) {
             showAlert('Permission denied. Editing is locked.', 'error');
             return;
         }
+
+        if (!modalDate || !modalPic || !modalCategory) {
+            setFormError('Choose a scheduled date, PIC, and category before saving.');
+            return;
+        }
+        setFormError('');
 
         let taskID = modalTaskId;
         if (!taskID) {
@@ -319,7 +329,17 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                     <td colSpan={actionsDisabled ? 5 : 6} className="p-12 text-center text-on-surface-variant/60">
                                         <div className="flex flex-col items-center justify-center space-y-2">
                                             <span className="material-symbols-outlined text-[42px] text-on-surface-variant/35">info</span>
-                                            <span>No scheduled tasks found matching search conditions.</span>
+                                            <EmptyState
+                                                icon={scheduleData.length ? 'filter_alt_off' : 'event_busy'}
+                                                title={scheduleData.length ? 'No tasks match these filters' : 'No scheduled tasks yet'}
+                                                description={scheduleData.length ? 'Clear the current filters to see the full task directory.' : 'Add the first scheduled task to start planning content.'}
+                                                actionLabel={scheduleData.length ? 'Clear filters' : (!actionsDisabled ? 'Add scheduled task' : undefined)}
+                                                onAction={scheduleData.length ? () => {
+                                                    setTasklistSearch('');
+                                                    setTasklistFilterPic('');
+                                                    setTasklistFilterStatus('');
+                                                } : (!actionsDisabled ? openAddModal : undefined)}
+                                            />
                                         </div>
                                     </td>
                                 </tr>
@@ -409,8 +429,9 @@ export default function TaskListTab({ onOpenDatePicker }) {
                             </button>
                         </div>
                         
-                        <form onSubmit={handleModalSubmit} autoComplete="off">
+                        <form onSubmit={handleModalSubmit} autoComplete="off" noValidate>
                             <div className="px-5 py-4 space-y-4">
+                                {formError && <p role="alert" className="form-error-summary"><span className="material-symbols-outlined" aria-hidden="true">error</span>{formError}</p>}
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Content Title / Topic</label>
                                     <input 
@@ -440,7 +461,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                                             required
                                             value={modalPic}
-                                            onChange={(e) => setFormPic(e.target.value) || setModalPic(e.target.value)}
+                                            onChange={(e) => { setModalPic(e.target.value); setFormError(''); }}
                                         >
                                             <option value="" disabled hidden>Select PIC</option>
                                             {memberListData.map(m => (
@@ -484,6 +505,8 @@ export default function TaskListTab({ onOpenDatePicker }) {
                     setTaskToDelete(null);
                 }} 
                 onConfirm={handleDeleteConfirm} 
+                isPending={isMutating}
+                title="Delete scheduled task?"
                 message={`Are you sure you want to remove task ID: ${taskToDelete}?`}
             />
         </div>

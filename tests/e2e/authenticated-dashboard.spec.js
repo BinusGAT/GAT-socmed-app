@@ -88,3 +88,31 @@ test('opens the selected My Work assignment in the task editor', async ({ page }
   await page.getByRole('button', { name: 'Open task Campus highlights' }).click();
   await expect(page.getByRole('heading', { name: 'Update Scheduled Task (TASK-001)' })).toBeVisible();
 });
+
+test('keeps the authenticated view in the URL across refresh', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const navigationName = (page.viewportSize()?.width || 0) < 1024
+    ? 'Mobile primary navigation'
+    : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true })
+    .getByRole('button', { name: /My Work/ })
+    .click();
+  await expect(page).toHaveURL(/\?view=my-work$/);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'My Work' })).toBeVisible();
+});
+
+test('keeps task editor values visible when required fields are missing', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const navigationName = (page.viewportSize()?.width || 0) < 1024
+    ? 'Mobile primary navigation'
+    : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true })
+    .getByRole('button', { name: /Tasks|Task List/ })
+    .click();
+  await page.getByRole('button', { name: /Add Scheduled Task/ }).click();
+  await page.getByPlaceholder('Enter title (optional)').fill('Orientation recap');
+  await page.getByRole('button', { name: 'Save Task' }).click();
+  await expect(page.getByText('Choose a scheduled date, PIC, and category before saving.')).toBeVisible();
+  await expect(page.getByPlaceholder('Enter title (optional)')).toHaveValue('Orientation recap');
+});

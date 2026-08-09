@@ -171,7 +171,7 @@ function DashboardAppContent() {
     // Render active panel
     const renderActiveTab = () => {
         let view = currentView;
-        if (userRole === 'Viewer' && !['dashboard', 'analytics', 'web-analytics'].includes(view)) {
+        if (userRole === 'Viewer' && !['dashboard', 'analytics', 'web-analytics', 'my-work'].includes(view)) {
             view = 'dashboard';
         }
         switch (view) {

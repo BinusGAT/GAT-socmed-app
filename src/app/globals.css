@@ -527,3 +527,22 @@ input[type="checkbox"]:checked::before {
     @apply font-sans;
   }
 }
+/* Release C: reusable workflow states */
+.empty-state {
+  display: flex;
+  min-height: 15rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.empty-state__icon { color: color-mix(in srgb, var(--on-surface-variant) 48%, transparent); font-size: 2.75rem; }
+.empty-state__title { margin-top: .75rem; color: var(--on-surface); font-size: 1rem; font-weight: 650; }
+.empty-state__description { margin-top: .35rem; max-width: 32rem; color: var(--on-surface-variant); font-size: .875rem; line-height: 1.55; text-wrap: pretty; }
+.empty-state__action { margin-top: 1rem; border-radius: .5rem; background: var(--primary); color: var(--on-primary); padding: .6rem .9rem; font-size: .8125rem; font-weight: 650; transition: opacity 160ms ease, transform 160ms ease; }
+.empty-state__action:hover { opacity: .9; }
+.empty-state__action:active { transform: translateY(1px); }
+.form-error-summary { display: flex; align-items: flex-start; gap: .5rem; border: 1px solid color-mix(in srgb, var(--error) 32%, transparent); border-radius: .5rem; background: color-mix(in srgb, var(--error) 9%, transparent); color: var(--error); padding: .7rem .8rem; font-size: .8125rem; line-height: 1.4; }
+.form-error-summary .material-symbols-outlined { font-size: 1.1rem; }

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useDashboard } from './DashboardContext';
+import EmptyState from './EmptyState';
 
 function getDueState(dateValue, completed) {
     if (completed) return { label: 'Completed', className: 'bg-emerald-500/10 text-emerald-500' };
@@ -51,11 +52,7 @@ export default function MyWorkTab() {
 
             <div className="glass-panel rounded-xl overflow-hidden">
                 {tasks.length === 0 ? (
-                    <div className="py-16 px-6 text-center">
-                        <span className="material-symbols-outlined text-[42px] text-on-surface-variant/40">task_alt</span>
-                        <h3 className="font-semibold text-on-surface mt-3">No tasks assigned</h3>
-                        <p className="text-body-sm text-on-surface-variant mt-1">New assignments will appear here automatically.</p>
-                    </div>
+                    <EmptyState icon="task_alt" title="No tasks assigned" description="New assignments will appear here automatically." />
                 ) : (
                     <div className="divide-y divide-outline-variant/15">
                         {tasks.map((task) => {

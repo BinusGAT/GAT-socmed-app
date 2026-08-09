@@ -35,7 +35,10 @@ const normalizeMeetingsList = (rawMeetings) => {
 
 export function DashboardProvider({ children }) {
     // UI States
-    const [currentView, setCurrentView] = useState('dashboard');
+    const [currentView, setCurrentView] = useState(() => {
+        if (typeof window === 'undefined') return 'dashboard';
+        return new URLSearchParams(window.location.search).get('view') || 'dashboard';
+    });
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [userRole, setUserRole] = useState(null);
     const [userName, setUserName] = useState(null);
@@ -226,12 +229,23 @@ export function DashboardProvider({ children }) {
         return () => clearInterval(interval);
     }, [isUnlocked]);
 
-    // Reset Task List filters whenever the view changes
+    // Keep authenticated navigation shareable and compatible with browser back/forward.
     useEffect(() => {
-        setTasklistSearch('');
-        setTasklistFilterPic('');
-        setTasklistFilterStatus('');
-    }, [currentView]);
+        const handlePopState = () => {
+            const nextView = new URLSearchParams(window.location.search).get('view') || 'dashboard';
+            setCurrentView(nextView);
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
+    useEffect(() => {
+        if (!isUnlocked) return;
+        const url = new URL(window.location.href);
+        if (currentView === 'dashboard') url.searchParams.delete('view');
+        else url.searchParams.set('view', currentView);
+        window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    }, [currentView, isUnlocked]);
 
     // Show Alert helper
     const showAlert = (message, type = 'success') => {
