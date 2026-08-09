@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   getAllowedRoles,
+  getExpectedRequestOrigin,
+  getVisibleAuditRows,
   isTrustedRequestOrigin,
   isRoleAllowed,
   ROLES,
@@ -11,6 +13,7 @@ import {
   getSessionCookieOptions,
   SESSION_COOKIE_NAME,
 } from '../../src/app/api/sheets/session-cookie';
+import { hashSessionToken, publicErrorResponse } from '../../src/app/api/sheets/security';
 
 describe('API authorization policy', () => {
   it('allows every authenticated role to read and manage its own sessions', () => {
@@ -49,6 +52,22 @@ describe('API authorization policy', () => {
     expect(isTrustedRequestOrigin('not-a-url', 'https://dashboard.example.test')).toBe(false);
   });
 
+  it('uses the configured application origin instead of forged proxy headers', () => {
+    expect(getExpectedRequestOrigin('https://internal.invalid', 'https://dashboard.example.test/path'))
+      .toBe('https://dashboard.example.test');
+    expect(isTrustedRequestOrigin('https://attacker.example', getExpectedRequestOrigin(
+      'https://internal.invalid',
+      'https://dashboard.example.test',
+    ))).toBe(false);
+  });
+
+  it('only exposes audit records to administrators', () => {
+    const rows = [{ id: 'audit-1', details: 'sensitive' }];
+    expect(getVisibleAuditRows(ROLES.ADMIN, rows)).toBe(rows);
+    expect(getVisibleAuditRows(ROLES.CREATOR, rows)).toEqual([]);
+    expect(getVisibleAuditRows(ROLES.VIEWER, rows)).toEqual([]);
+  });
+
   it('accepts a valid server-side session and refreshes last-seen time', async () => {
     const session = {
       token: 'server-token',
@@ -71,6 +90,8 @@ describe('API authorization policy', () => {
 
     expect(result).toMatchObject({ valid: true, role: ROLES.CREATOR, userId: 'user-1' });
     expect(calls).toHaveLength(2);
+    expect(calls[0].args).toEqual([hashSessionToken(session.token)]);
+    expect(calls[0].args).not.toContain(session.token);
     expect(calls[1].sql).toContain('UPDATE sessions SET lastSeenAt');
   });
 
@@ -116,6 +137,13 @@ describe('API authorization policy', () => {
       sameSite: 'strict',
       path: '/',
       maxAge: 0,
+    });
+  });
+
+  it('does not expose internal exception details to API clients', () => {
+    expect(publicErrorResponse()).toEqual({
+      success: false,
+      error: 'An internal server error occurred',
     });
   });
 });

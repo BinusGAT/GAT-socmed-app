@@ -78,10 +78,6 @@ export function DashboardProvider({ children }) {
     const [platformsData, setPlatformsData] = useState([]);
     const [categoriesData, setCategoriesData] = useState([]);
 
-    // Lockdown settings
-    const MAX_ATTEMPTS = 5;
-    const LOCKDOWN_DURATION = 6 * 60 * 60 * 1000; // 6 hours
-
     // Load initial states
     useEffect(() => {
         // Dark Mode
@@ -515,10 +511,8 @@ export function DashboardProvider({ children }) {
 
     // Check lockdown conditions
     const getLockdownTimeRemaining = () => {
-        const timestamp = localStorage.getItem('lockdown_timestamp');
-        if (!timestamp) return 0;
-        const diff = Date.now() - parseInt(timestamp, 10);
-        const remaining = LOCKDOWN_DURATION - diff;
+        const lockUntil = Number.parseInt(localStorage.getItem('login_lock_until') || '0', 10);
+        const remaining = lockUntil - Date.now();
         return remaining > 0 ? remaining : 0;
     };
 
@@ -540,7 +534,7 @@ export function DashboardProvider({ children }) {
             const result = await callSheetsAPI('validate_mode', payload);
             if (result && result.valid) {
                 const userRole = result.role || 'Admin';
-                localStorage.setItem('failed_attempts', '0');
+                localStorage.removeItem('login_lock_until');
                 setIsUnlocked(true);
                 setUserRole(userRole);
                 setUserName(result.user?.name || null);
@@ -555,19 +549,15 @@ export function DashboardProvider({ children }) {
                 showAlert(`🔓 Workspace unlocked successfully!`, 'success');
                 return true;
             } else {
-                let failedAttempts = parseInt(localStorage.getItem('failed_attempts') || '0', 10);
-                failedAttempts++;
-                localStorage.setItem('failed_attempts', failedAttempts.toString());
-                
-                const errorText = result?.error || `Incorrect credentials. (${MAX_ATTEMPTS - failedAttempts} attempts remaining)`;
-                if (failedAttempts >= MAX_ATTEMPTS) {
-                    localStorage.setItem('lockdown_timestamp', Date.now().toString());
-                    throw new Error('Too many failed attempts. System locked down for 6 hours.');
-                } else {
-                    throw new Error(errorText);
-                }
+                throw new Error(result?.error || 'Invalid credentials.');
             }
         } catch (error) {
+            if (error.status === 429 && error.retryAfterSeconds > 0) {
+                localStorage.setItem(
+                    'login_lock_until',
+                    String(Date.now() + error.retryAfterSeconds * 1000),
+                );
+            }
             console.error('Unlock error:', error);
             throw error;
         } finally {

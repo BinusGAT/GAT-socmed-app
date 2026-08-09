@@ -17,7 +17,7 @@ test('loads the protected login gate without browser errors', async ({ page }) =
   await expect(page).toHaveTitle(/GAT (App|Content Suite)/i);
   await expect(page.getByRole('heading', { name: 'CC Internal Gate' })).toBeVisible();
   await expect(page.getByRole('textbox', { name: 'Email Address *' })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'NIM *' })).toBeVisible();
+  await expect(page.getByLabel('Password (NIM) *')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Login' })).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -25,7 +25,7 @@ test('loads the protected login gate without browser errors', async ({ page }) =
 test('keeps the login controls usable at mobile width', async ({ page }) => {
   await page.goto('/');
   const email = page.getByRole('textbox', { name: 'Email Address *' });
-  const nim = page.getByRole('textbox', { name: 'NIM *' });
+  const nim = page.getByLabel('Password (NIM) *');
   await expect(email).toBeInViewport();
   await expect(nim).toBeInViewport();
   await email.fill('user@example.test');
@@ -36,7 +36,7 @@ test('keeps the login controls usable at mobile width', async ({ page }) => {
 test('provides a logical keyboard focus order', async ({ page }) => {
   await page.goto('/');
   const email = page.getByRole('textbox', { name: 'Email Address *' });
-  const nim = page.getByRole('textbox', { name: 'NIM *' });
+  const nim = page.getByLabel('Password (NIM) *');
   const clear = page.getByRole('button', { name: 'Clear' });
   const login = page.getByRole('button', { name: 'Login' });
 
@@ -79,4 +79,21 @@ test('serves the required browser security headers', async ({ request }) => {
   expect(headers['x-frame-options']).toBe('DENY');
   expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
   expect(headers['permissions-policy']).toContain('camera=()');
+});
+
+test('rejects forged cross-origin API requests', async ({ request }) => {
+  const response = await request.post('/api/sheets', {
+    headers: {
+      origin: 'https://attacker.example',
+      'x-forwarded-host': 'attacker.example',
+      'x-forwarded-proto': 'https',
+    },
+    data: { action: 'read_all' },
+  });
+
+  expect(response.status()).toBe(403);
+  await expect(response.json()).resolves.toMatchObject({
+    success: false,
+    error: 'Forbidden: cross-origin request rejected',
+  });
 });

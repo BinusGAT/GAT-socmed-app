@@ -33,11 +33,24 @@ export function isRoleAllowed(action, role) {
   return getAllowedRoles(action).includes(role);
 }
 
+export function getVisibleAuditRows(role, rows) {
+  return role === ROLES.ADMIN ? rows : [];
+}
+
 export function isTrustedRequestOrigin(origin, expectedOrigin) {
   if (!origin) return true;
   try {
     return new URL(origin).origin === new URL(expectedOrigin).origin;
   } catch {
     return false;
+  }
+}
+
+export function getExpectedRequestOrigin(fallbackOrigin, configuredOrigin = process.env.APP_ORIGIN) {
+  const candidate = configuredOrigin || fallbackOrigin;
+  try {
+    return new URL(candidate).origin;
+  } catch {
+    return fallbackOrigin;
   }
 }

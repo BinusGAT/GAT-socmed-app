@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getSessionDurationMs } from '../../../../utils/sessionPolicy';
 import { dbExecute, dbBatch, gatAppExecute } from '../../../../utils/db';
-import { getAllowedRoles, isTrustedRequestOrigin } from './authorization';
+import { getAllowedRoles, getExpectedRequestOrigin, getVisibleAuditRows, isTrustedRequestOrigin } from './authorization';
 import { getIndonesianMonth, getIsoDateString, parseMetricToNumber } from './domain';
 import { validateAuth, writeAudit } from './sessions';
 import {
@@ -10,17 +10,21 @@ import {
   getSessionCookieOptions,
   SESSION_COOKIE_NAME,
 } from './session-cookie';
+import {
+  clearAccountLoginFailures,
+  getClientIp,
+  getLoginRateLimit,
+  getLoginRateLimitKeys,
+  hashSessionToken,
+  publicErrorResponse,
+  recordLoginFailure,
+} from './security';
 
 const db = {
   execute: dbExecute,
   batch: dbBatch
 };
 
-// Server-side failed attempts tracking
-// Server-side failed attempts tracking
-const failedAttempts = new Map();
-const MAX_ATTEMPTS = 5;
-const LOCKDOWN_DURATION = 6 * 60 * 60 * 1000; // 6 hours
 const AUDIT_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 let isDbInitialized = false;
 
@@ -112,7 +116,8 @@ export async function POST(request) {
   const startTime = Date.now();
   console.log(`\n--- [API request start] ---`);
   try {
-    if (!isTrustedRequestOrigin(request.headers.get('origin'), request.nextUrl.origin)) {
+    const expectedOrigin = getExpectedRequestOrigin(request.nextUrl.origin);
+    if (!isTrustedRequestOrigin(request.headers.get('origin'), expectedOrigin)) {
       return NextResponse.json(
         { success: false, error: 'Forbidden: cross-origin request rejected' },
         { status: 403 },
@@ -134,6 +139,16 @@ export async function POST(request) {
           createdAt INTEGER,
           lastSeenAt INTEGER,
           userAgent TEXT
+        )
+      `);
+
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS login_attempts (
+          key TEXT PRIMARY KEY,
+          attempts INTEGER NOT NULL,
+          windowStartedAt INTEGER NOT NULL,
+          lockUntil INTEGER NOT NULL,
+          updatedAt INTEGER NOT NULL
         )
       `);
 
@@ -489,21 +504,21 @@ export async function POST(request) {
 
     // 1. Handle Validate Mode separately
     if (action === 'validate_mode') {
-      const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'global';
-      const record = failedAttempts.get(ip) || { count: 0, lockUntil: 0 };
       const now = Date.now();
-
-      if (record.lockUntil > now) {
-        const remainingTime = Math.ceil((record.lockUntil - now) / 1000);
-        return NextResponse.json(
-          { success: false, error: `Too many failed attempts. Locked out for ${remainingTime} seconds.` },
-          { status: 429 }
-        );
-      }
-
       const email = (params.email || '').trim().toLowerCase();
       const nim = (params.nim || '').trim();
-      const passcode = params.passcode || '';
+      if (!email || !nim || email.length > 254 || nim.length > 128) {
+        return NextResponse.json({ success: false, error: 'Invalid credentials.' }, { status: 401 });
+      }
+
+      const rateLimitKeys = getLoginRateLimitKeys(email, getClientIp(request.headers));
+      const currentLimit = await getLoginRateLimit(db, rateLimitKeys, now);
+      if (currentLimit.locked) {
+        return NextResponse.json(
+          { success: false, error: 'Too many login attempts. Try again later.' },
+          { status: 429, headers: { 'Retry-After': String(currentLimit.retryAfterSeconds) } },
+        );
+      }
 
       // If email and nim are provided, authenticate against GAT App DB
       if (email && nim) {
@@ -534,12 +549,11 @@ export async function POST(request) {
         }
 
         if (!userRes || userRes.rows.length === 0) {
-          record.count += 1;
-          failedAttempts.set(ip, record);
-          return NextResponse.json({ 
-            success: false, 
-            error: 'Invalid Email or NIM.' 
-          });
+          const limit = await recordLoginFailure(db, rateLimitKeys, now);
+          return NextResponse.json(
+            { success: false, error: 'Invalid credentials.' },
+            { status: limit.locked ? 429 : 401 },
+          );
         }
 
         const userRow = userRes.rows[0];
@@ -554,10 +568,8 @@ export async function POST(request) {
         const hasInternRole = roleNames.includes('intern');
 
         if (!hasAdminRole && !hasInternRole) {
-          return NextResponse.json({ 
-            success: false, 
-            error: 'Access Denied' 
-          });
+          await recordLoginFailure(db, rateLimitKeys, now);
+          return NextResponse.json({ success: false, error: 'Invalid credentials.' }, { status: 401 });
         }
 
         // Admin has precedence when a user has both admin and intern roles.
@@ -565,7 +577,7 @@ export async function POST(request) {
         const matchedRole = hasAdminRole ? 'Admin' : 'Creator';
         const sessionDurationMs = getSessionDurationMs(primaryRoleName);
         const expiresAt = Date.now() + sessionDurationMs;
-        failedAttempts.delete(ip);
+        await clearAccountLoginFailures(db, rateLimitKeys[0].key);
 
         const sessionToken = crypto.randomBytes(32).toString('hex');
         const sessionId = crypto.randomUUID();
@@ -578,7 +590,7 @@ export async function POST(request) {
           sql: `INSERT OR REPLACE INTO sessions
                 (token, role, expiresAt, sessionId, userId, userName, userEmail, createdAt, lastSeenAt, userAgent)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [sessionToken, matchedRole, expiresAt, sessionId, String(userRow.id), String(userRow.name), String(userRow.email), now, now, userAgent]
+          args: [hashSessionToken(sessionToken), matchedRole, expiresAt, sessionId, String(userRow.id), String(userRow.name), String(userRow.email), now, now, userAgent]
         });
 
         const response = NextResponse.json({
@@ -599,22 +611,6 @@ export async function POST(request) {
         return response;
       }
 
-      record.count += 1;
-      if (record.count >= MAX_ATTEMPTS) {
-        record.lockUntil = now + LOCKDOWN_DURATION;
-        failedAttempts.set(ip, record);
-        return NextResponse.json(
-          { success: false, error: 'Too many failed attempts. Locked out for 6 hours.' },
-          { status: 429 }
-        );
-      } else {
-        failedAttempts.set(ip, record);
-        return NextResponse.json({ 
-          success: true, 
-          valid: false, 
-          attemptsRemaining: MAX_ATTEMPTS - record.count 
-        });
-      }
     }
 
     // 2. Validate token for all other actions
@@ -757,7 +753,7 @@ export async function POST(request) {
               ...notificationsRes.rows.filter((notification) => !notification.targetUserId || String(notification.targetUserId) === String(auth.userId || ''))
             ]
           },
-          auditLog: { success: true, data: auth.role === 'Admin' ? auditRes.rows : [] },
+          auditLog: { success: true, data: getVisibleAuditRows(auth.role, auditRes.rows) },
           gaSummary: { success: true, data: gaSummaryRes.rows },
           gaItems: { success: true, data: gaItemsRes.rows },
           appSettings: { success: true, data: appSettingsRes.rows },
@@ -800,7 +796,7 @@ export async function POST(request) {
       case 'logout': {
         await db.execute({
           sql: 'DELETE FROM sessions WHERE token = ?',
-          args: [token]
+          args: [hashSessionToken(token)]
         });
         result = { success: true, message: 'Logged out successfully.' };
         break;
@@ -1442,7 +1438,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Error in API sheets proxy route:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'An internal server error occurred' },
+      publicErrorResponse(),
       { status: 500 }
     );
   }

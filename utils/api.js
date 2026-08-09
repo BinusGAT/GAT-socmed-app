@@ -28,12 +28,15 @@ export async function callSheetsAPI(action, params = {}) {
         // Not JSON
       }
       const errorMsg = (errorJson && errorJson.error) || `HTTP error! Status: ${response.status}`;
-      if (response.status === 401 || errorMsg.includes('Unauthorized') || errorMsg.includes('Access token')) {
+      if (action !== 'validate_mode' && (response.status === 401 || errorMsg.includes('Unauthorized') || errorMsg.includes('Access token'))) {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('unauthorized-api-call'));
         }
       }
-      throw new Error(errorMsg);
+      const requestError = new Error(errorMsg);
+      requestError.status = response.status;
+      requestError.retryAfterSeconds = Number.parseInt(response.headers.get('retry-after') || '0', 10);
+      throw requestError;
     }
 
     const result = await response.json();

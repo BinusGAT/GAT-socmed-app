@@ -127,18 +127,18 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                         />
                     </div>
 
-                    {/* NIM Input */}
+                    {/* Password (NIM) Input */}
                     <div className="space-y-1.5">
                         <label htmlFor="lockScreenNim" className="text-[10px] text-on-surface-variant uppercase tracking-widest block font-bold">
-                            NIM <span className="text-error">*</span>
+                            Password (NIM) <span className="text-error">*</span>
                         </label>
                         <input
-                            type="text"
+                            type="password"
                             id="lockScreenNim"
                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-2.5 text-body-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
-                            placeholder="Enter NIM"
+                            placeholder="Enter your NIM"
                             required
-                            autoComplete="off"
+                            autoComplete="current-password"
                             value={nim}
                             onChange={(e) => {
                                 setNim(e.target.value);

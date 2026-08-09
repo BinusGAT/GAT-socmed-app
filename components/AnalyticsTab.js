@@ -5,12 +5,12 @@ import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import { 
     normalizePicName, 
-    getPlatformBadgeHtml,
     formatNumber,
     parseDate,
     aggregateAllChartsData,
     getPicBadgeClasses
 } from '../utils/helpers';
+import PlatformBadge from './PlatformBadge.jsx';
 
 export default function AnalyticsTab() {
     const createSafeHtml = (htmlContent) => {
@@ -554,7 +554,7 @@ export default function AnalyticsTab() {
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <span dangerouslySetInnerHTML={createSafeHtml(getPlatformBadgeHtml(row.Platform))}></span>
+                                                    <PlatformBadge platform={row.Platform} />
                                                 </td>
                                                 <td className="px-4 py-3 text-right font-bold text-on-surface">
                                                     {formatNumber(row.Views)}
@@ -711,7 +711,7 @@ export default function AnalyticsTab() {
                                                     </span>
                                                 </td>
                                                 <td className="px-5 py-3">
-                                                    <span dangerouslySetInnerHTML={createSafeHtml(getPlatformBadgeHtml(row.Platform))}></span>
+                                                    <PlatformBadge platform={row.Platform} />
                                                 </td>
                                                 <td className="px-5 py-3 text-right font-bold text-on-surface">
                                                     {formatNumber(row.Views)}

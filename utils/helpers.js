@@ -187,35 +187,6 @@ export function normalizePlatformName(platformName) {
     return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-export function getPlatformBadgeClass(platformName) {
-    const norm = normalizePlatformName(platformName).toLowerCase();
-    if (norm === 'instagram') return 'badge-platform-instagram';
-    if (norm === 'tiktok') return 'badge-platform-tiktok';
-    if (norm === 'youtube') return 'badge-platform-youtube';
-    return `badge-platform-${norm}`;
-}
-
-export function getPlatformLogoHtml(platformName) {
-    const norm = normalizePlatformName(platformName);
-    const badgeClass = getPlatformBadgeClass(platformName);
-    const normLower = norm.toLowerCase();
-    
-    let iconHtml = '';
-    if (normLower === 'instagram') {
-        iconHtml = '<i class="fa-brands fa-instagram text-rose-400" style="font-size: 13px; margin-right: 5px; vertical-align: middle;"></i>';
-    } else if (normLower === 'tiktok') {
-        iconHtml = '<i class="fa-brands fa-tiktok text-teal-400" style="font-size: 12px; margin-right: 5px; vertical-align: middle;"></i>';
-    } else if (normLower === 'youtube') {
-        iconHtml = '<i class="fa-brands fa-youtube text-red-500" style="font-size: 12px; margin-right: 5px; vertical-align: middle;"></i>';
-    } else {
-        iconHtml = '<i class="fa-solid fa-globe text-primary" style="font-size: 12px; margin-right: 5px; vertical-align: middle;"></i>';
-    }
-    
-    return `<span class="badge ${badgeClass} platform-badge-with-logo" style="display:inline-flex; align-items:center; vertical-align:middle; line-height:1.2; padding:3.5px 8px;">${iconHtml}${norm}</span>`;
-}
-
-export const getPlatformBadgeHtml = getPlatformLogoHtml;
-
 export function getLocalDateInputValue() {
     const date = new Date();
     // Offset local timezone
@@ -411,4 +382,3 @@ export function getPicBadgeClasses(picName) {
     const index = Math.abs(hash) % colors.length;
     return colors[index];
 }
-

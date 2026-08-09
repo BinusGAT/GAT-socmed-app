@@ -291,7 +291,7 @@ export default function SettingsTab() {
                                 <tr>
                                     <th className="px-5 py-4">Name</th>
                                     <th className="px-5 py-4">Role</th>
-                                    <th className="px-5 py-4 text-center">Meeting attendees</th>
+                                    <th className="px-5 py-4 text-center">Show in app</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-outline-variant/10">
