@@ -11,7 +11,8 @@ import {
     resolveMemberName,
     normalizePlatformName,
     getTaskCalculatedStatus,
-    formatDisplayDate
+    formatDisplayDate,
+    getContentGroupKey
 } from '../utils/helpers';
 import PlatformBadge from './PlatformBadge.jsx';
 import SortableTableHeader from './SortableTableHeader';
@@ -230,7 +231,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
             ...item,
             _parsedDate: parseDate(item.Date),
             _normalizedPic: normalizePicName(item.PIC),
-            _normalizedTitle: String(item['Content Title'] || '').trim().toLowerCase()
+            _groupKey: getContentGroupKey(item)
         }));
 
         const spans = [];
@@ -248,10 +249,10 @@ export default function DashboardTab({ onOpenDatePicker }) {
         let i = 0;
         while (i < preprocessed.length) {
             let j = i + 1;
-            const currentTitle = preprocessed[i]._normalizedTitle;
+            const currentGroupKey = preprocessed[i]._groupKey;
 
-            if (currentTitle) {
-                while (j < preprocessed.length && preprocessed[j]._normalizedTitle === currentTitle) {
+            if (currentGroupKey) {
+                while (j < preprocessed.length && preprocessed[j]._groupKey === currentGroupKey) {
                     j++;
                 }
             }

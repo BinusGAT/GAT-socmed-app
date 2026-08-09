@@ -8,6 +8,14 @@ export const HEADERS = [
     'KPI Score', 'KPI Summary', 'URL', 'Comment Text'
 ];
 
+export function getContentGroupKey(row) {
+    const id = String(row?.ID || '').trim();
+    if (id) return `id:${id}`;
+
+    const title = String(row?.['Content Title'] || '').trim().toLowerCase();
+    return title ? `title:${title}` : '';
+}
+
 
 
 export function formatDate(dateInput) {

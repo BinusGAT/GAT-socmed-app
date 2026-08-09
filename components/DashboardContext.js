@@ -6,7 +6,8 @@ import { normalizeFeedbackMessage } from '../utils/feedback';
 import { 
     normalizePicName, 
     getLocalDateInputValue, 
-    parseDate 
+    parseDate,
+    getContentGroupKey
 } from '../utils/helpers';
 
 const DashboardContext = createContext();
@@ -305,18 +306,18 @@ export function DashboardProvider({ children }) {
             row['KPI Score'] = score;
 
             // Collect max KPI Score
-            const titleKey = String(row['Content Title'] || '').trim().toLowerCase();
-            if (titleKey) {
-                if (!maxKpiMap.has(titleKey) || score > maxKpiMap.get(titleKey)) {
-                    maxKpiMap.set(titleKey, score);
+            const groupKey = getContentGroupKey(row);
+            if (groupKey) {
+                if (!maxKpiMap.has(groupKey) || score > maxKpiMap.get(groupKey)) {
+                    maxKpiMap.set(groupKey, score);
                 }
             }
         });
 
         // Pass 2: apply the pre-calculated KPI Summary to all rows
         list.forEach(row => {
-            const titleKey = String(row['Content Title'] || '').trim().toLowerCase();
-            row['KPI Summary'] = titleKey ? (maxKpiMap.get(titleKey) || 3) : (parseInt(row['KPI Score']) || 3);
+            const groupKey = getContentGroupKey(row);
+            row['KPI Summary'] = groupKey ? (maxKpiMap.get(groupKey) || 3) : (parseInt(row['KPI Score']) || 3);
         });
 
         return list;
