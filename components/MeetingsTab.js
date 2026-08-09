@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import { DeleteConfirmModal, LinkModal } from './Modals';
+import DiscardChangesModal from './DiscardChangesModal';
+import { useUnsavedChanges } from '../utils/useUnsavedChanges';
 import { 
     normalizePicName, 
     getLocalDateInputValue,
@@ -27,7 +29,8 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         lecturerListData,
         showAlert,
         selectedMeetingId,
-        setSelectedMeetingId
+        setSelectedMeetingId,
+        userId
     } = useDashboard();
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -54,6 +57,13 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     const [formAttendees, setFormAttendees] = useState([]); // array of selected attendee names
     const [formRecap, setFormRecap] = useState('');
     const [formVideoRecap, setFormVideoRecap] = useState('');
+    const [newMemoBaseline, setNewMemoBaseline] = useState(null);
+    const [memoDraftRecovered, setMemoDraftRecovered] = useState(false);
+    const [isDiscardOpen, setIsDiscardOpen] = useState(false);
+    const memoDraftKey = `GAT_meeting_editor_draft:${userId || 'anonymous'}:NEW`;
+    const currentMemoState = { date: formDate, attendees: formAttendees, recap: formRecap, videoRecap: formVideoRecap };
+    const isNewMemoDirty = Boolean(selectedMeetingId === 'NEW' && isEditing && newMemoBaseline && JSON.stringify(currentMemoState) !== JSON.stringify(newMemoBaseline));
+    useUnsavedChanges(isNewMemoDirty);
 
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
     const savedSelectionRef = useRef(null);
@@ -111,10 +121,12 @@ export default function MeetingsTab({ onOpenDatePicker }) {
             }
         }
         if (selectedMeetingId === 'NEW') {
-            setFormDate(getLocalDateInputValue());
-            setFormAttendees([]);
-            setFormRecap('');
-            setFormVideoRecap('');
+            const blankState = { date: getLocalDateInputValue(), attendees: [], recap: '', videoRecap: '' };
+            let nextState = blankState;
+            try { const stored = localStorage.getItem(`GAT_meeting_editor_draft:${userId || 'anonymous'}:NEW`); if (stored) nextState = JSON.parse(stored); } catch {}
+            setFormDate(nextState.date); setFormAttendees(nextState.attendees); setFormRecap(nextState.recap); setFormVideoRecap(nextState.videoRecap);
+            setNewMemoBaseline(blankState);
+            setMemoDraftRecovered(JSON.stringify(nextState) !== JSON.stringify(blankState));
             setIsEditing(true);
             return;
         }
@@ -124,7 +136,14 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         setFormRecap('');
         setFormVideoRecap('');
         setIsEditing(false);
-    }, [selectedMeetingId, meetingsData]);
+        setNewMemoBaseline(null);
+        setMemoDraftRecovered(false);
+    }, [selectedMeetingId, meetingsData, userId]);
+
+    useEffect(() => {
+        if (!isNewMemoDirty) return;
+        localStorage.setItem(memoDraftKey, JSON.stringify(currentMemoState));
+    }, [isNewMemoDirty, memoDraftKey, formDate, formAttendees, formRecap, formVideoRecap]);
 
     // Auto-scroll left-hand directory list to position selected memo into view
     useEffect(() => {
@@ -229,10 +248,22 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     };
 
     const handleCancelEdit = () => {
+        if (isNewMemoDirty) {
+            setIsDiscardOpen(true);
+            return;
+        }
         setIsEditing(false);
         if (selectedMeetingId === 'NEW') {
             setSelectedMeetingId(null);
         }
+    };
+
+    const discardNewMemo = () => {
+        localStorage.removeItem(memoDraftKey);
+        setIsDiscardOpen(false);
+        setMemoDraftRecovered(false);
+        setIsEditing(false);
+        setSelectedMeetingId(null);
     };
 
     const handleSaveMemo = async (e) => {
@@ -269,6 +300,8 @@ export default function MeetingsTab({ onOpenDatePicker }) {
 
         const success = await saveMeetingMemo(memoPayload);
         if (success) {
+            if (selectedMeetingId === 'NEW') localStorage.removeItem(memoDraftKey);
+            setMemoDraftRecovered(false);
             setSelectedMeetingId(memoId);
             setIsEditing(false);
         }
@@ -789,6 +822,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                     ) : (
                         /* EDIT MODE */
                         <form onSubmit={handleSaveMemo} className="space-y-5" autoComplete="off">
+                            {memoDraftRecovered && <p role="status" className="draft-recovery-note"><span className="material-symbols-outlined" aria-hidden="true">restore</span>Recovered an unsaved meeting memo from this browser.</p>}
                             <div className="flex justify-between items-center border-b border-outline-variant/20 pb-3">
                                 <h4 className="font-bold text-body-md text-on-surface flex items-center gap-1.5">
                                     <span className="material-symbols-outlined text-primary">edit_note</span>
@@ -974,6 +1008,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                 onClose={() => setIsLinkModalOpen(false)}
                 onConfirm={handleLinkConfirm}
             />
+            <DiscardChangesModal isOpen={isDiscardOpen} onKeepEditing={() => setIsDiscardOpen(false)} onDiscard={discardNewMemo} />
         </div>
     );
 }

@@ -11,7 +11,7 @@ const seededData = {
     { Date: '2026-08-11', ID: 'TASK-001', 'Content Title': 'Campus highlights', PIC: 'Alya', Category: 'Story Telling', AssignedUserId: 'e2e-admin', Status: false }
   ] },
   memberList: { data: [] }, internList: { data: [] }, lecturerList: { data: [] },
-  scripts: { data: [] }, meetings: { data: [] }, notifications: { data: [] }, auditLog: { data: [] },
+  scripts: { data: [{ Title: 'Orientation storyboard', Category: 'Story Telling', Status: 'Idea', Script: '', Hashtags: '#orientation' }] }, meetings: { data: [] }, notifications: { data: [] }, auditLog: { data: [] },
   appSettings: { data: [{ key: 'app_name', value: 'GAT' }, { key: 'app_full_name', value: 'GAT Content Suite' }] },
   platforms: { data: [] }, categories: { data: [] }, gaSummary: { data: [] }, gaItems: { data: [] }
 };
@@ -153,6 +153,7 @@ test('protects an unsaved task draft when closing the editor', async ({ page }) 
 test('shows cached-data guidance when the browser goes offline', async ({ page }) => {
   await openAuthenticatedDashboard(page);
   await expect(page.getByRole('status', { name: 'Loading dashboard' })).toBeHidden();
+  await page.waitForTimeout(500);
   await page.context().setOffline(true);
   await page.evaluate(() => window.dispatchEvent(new Event('offline')));
   await expect(page.getByText('You are offline. Showing the latest saved workspace data.')).toBeVisible();
@@ -164,4 +165,36 @@ test('offers retry guidance when live synchronization fails', async ({ page }) =
   await openAuthenticatedDashboard(page, { failRead: true });
   await expect(page.getByText('Workspace data may be out of date.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Retry sync' })).toBeVisible();
+});
+
+test('protects unsaved storyboard writing before closing', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true })
+    .getByRole('button', { name: /Library|Posts library/ })
+    .click();
+  await page.getByRole('button', { name: /Orientation storyboard/ }).click();
+  await page.getByPlaceholder('Write video dialogue, voiceover cues, or visual notes here...').fill('Keep this unsaved storyboard copy.');
+  await page.getByPlaceholder('Write video dialogue, voiceover cues, or visual notes here...')
+    .locator('xpath=ancestor::form')
+    .getByRole('button', { name: /Close/ })
+    .click();
+  await expect(page.getByRole('alertdialog', { name: 'Discard unsaved changes?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Keep editing' }).click();
+  await expect(page.getByPlaceholder('Write video dialogue, voiceover cues, or visual notes here...')).toHaveValue('Keep this unsaved storyboard copy.');
+});
+
+test('protects an unsaved new meeting memo before closing', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true })
+    .getByRole('button', { name: /Memos|Meeting Memo/ })
+    .click();
+  await page.getByRole('button', { name: 'Create Memo' }).click();
+  const editor = page.locator('#meetingFormRecap');
+  await editor.fill('Decisions and follow-up actions');
+  await page.getByRole('button', { name: 'Close' }).last().click();
+  await expect(page.getByRole('alertdialog', { name: 'Discard unsaved changes?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Keep editing' }).click();
+  await expect(editor).toContainText('Decisions and follow-up actions');
 });

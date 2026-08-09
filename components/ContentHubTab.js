@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
+import DiscardChangesModal from './DiscardChangesModal';
+import { useUnsavedChanges } from '../utils/useUnsavedChanges';
 import {
     normalizePicName,
     parseDate,
@@ -21,7 +23,8 @@ export default function ContentHubTab() {
         deleteScriptDraft,
         showAlert,
         memberListData,
-        categoriesData
+        categoriesData,
+        userId
     } = useDashboard();
 
     const [selectedDraftTitle, setSelectedDraftTitle] = useState(null);
@@ -38,19 +41,31 @@ export default function ContentHubTab() {
     const [formHashtags, setFormHashtags] = useState('');
     const [formCaption, setFormCaption] = useState('');
     const [formReferences, setFormReferences] = useState('');
+    const [initialFormState, setInitialFormState] = useState(null);
+    const [draftRecovered, setDraftRecovered] = useState(false);
+    const [isDiscardOpen, setIsDiscardOpen] = useState(false);
+    const [pendingDraftTitle, setPendingDraftTitle] = useState(null);
+
+    const currentFormState = { title: formTitle, category: formCategory, status: formStatus, hook: formHook, script: formScript, hashtags: formHashtags, caption: formCaption, references: formReferences };
+    const isFormDirty = Boolean(selectedDraftTitle && initialFormState && JSON.stringify(currentFormState) !== JSON.stringify(initialFormState));
+    const draftStorageKey = selectedDraftTitle ? `GAT_storyboard_editor_draft:${userId || 'anonymous'}:${selectedDraftTitle}` : null;
+    useUnsavedChanges(isFormDirty);
 
     // Load active draft fields when selection changes
     useEffect(() => {
         const draft = (draftsData || []).find(d => d.title === selectedDraftTitle);
         if (draft) {
-            setFormTitle(draft.title || '');
-            setFormCategory(draft.category || 'Story Telling');
-            setFormStatus(draft.status || 'Idea');
-            setFormHook(draft.hook || '');
-            setFormScript(draft.script || '');
-            setFormHashtags(draft.hashtags || '');
-            setFormCaption(draft.caption || '');
-            setFormReferences(draft.references || '');
+            const serverState = { title: draft.title || '', category: draft.category || 'Story Telling', status: draft.status || 'Idea', hook: draft.hook || '', script: draft.script || '', hashtags: draft.hashtags || '', caption: draft.caption || '', references: draft.references || '' };
+            let nextState = serverState;
+            try {
+                const stored = localStorage.getItem(`GAT_storyboard_editor_draft:${userId || 'anonymous'}:${selectedDraftTitle}`);
+                if (stored) nextState = JSON.parse(stored);
+            } catch {}
+            setFormTitle(nextState.title); setFormCategory(nextState.category); setFormStatus(nextState.status);
+            setFormHook(nextState.hook); setFormScript(nextState.script); setFormHashtags(nextState.hashtags);
+            setFormCaption(nextState.caption); setFormReferences(nextState.references);
+            setInitialFormState(serverState);
+            setDraftRecovered(JSON.stringify(nextState) !== JSON.stringify(serverState));
         } else {
             setFormTitle('');
             setFormCategory('Story Telling');
@@ -60,8 +75,33 @@ export default function ContentHubTab() {
             setFormHashtags('');
             setFormCaption('');
             setFormReferences('');
+            setInitialFormState(null);
+            setDraftRecovered(false);
         }
-    }, [selectedDraftTitle, draftsData]);
+    }, [selectedDraftTitle, draftsData, userId]);
+
+    useEffect(() => {
+        if (!draftStorageKey || !isFormDirty) return;
+        localStorage.setItem(draftStorageKey, JSON.stringify(currentFormState));
+    }, [draftStorageKey, isFormDirty, formTitle, formCategory, formStatus, formHook, formScript, formHashtags, formCaption, formReferences]);
+
+    const requestDraftSelection = (title) => {
+        if (isFormDirty) {
+            setPendingDraftTitle(title ?? '__CLOSE__');
+            setIsDiscardOpen(true);
+            return;
+        }
+        setSelectedDraftTitle(title);
+    };
+
+    const discardDraftChanges = () => {
+        if (draftStorageKey) localStorage.removeItem(draftStorageKey);
+        const nextTitle = pendingDraftTitle === '__CLOSE__' ? null : pendingDraftTitle;
+        setIsDiscardOpen(false);
+        setPendingDraftTitle(null);
+        setDraftRecovered(false);
+        setSelectedDraftTitle(nextTitle);
+    };
 
     // Resolve PIC and Date from scheduleData
     const getResolvedSchedule = (title) => {
@@ -180,6 +220,18 @@ export default function ContentHubTab() {
         if (success) {
             setSelectedDraftTitle(updatedDraft.title);
             setFormTitle(updatedDraft.title);
+            if (draftStorageKey) localStorage.removeItem(draftStorageKey);
+            setInitialFormState({
+                title: updatedDraft.title,
+                category: updatedDraft.category,
+                status: updatedDraft.status,
+                hook: updatedDraft.hook,
+                script: updatedDraft.script,
+                hashtags: updatedDraft.hashtags,
+                caption: updatedDraft.caption,
+                references: updatedDraft.references
+            });
+            setDraftRecovered(false);
             showAlert('💾 Storyboard draft updated!', 'success');
         }
     };
@@ -376,7 +428,7 @@ export default function ContentHubTab() {
                                         key={index}
                                         type="button"
                                         onClick={() => {
-                                            setSelectedDraftTitle(d.title);
+                                            requestDraftSelection(d.title);
                                             setTimeout(() => {
                                                 const editorEl = document.querySelector('.creative-editor');
                                                 if (editorEl) {
@@ -427,6 +479,7 @@ export default function ContentHubTab() {
                         </div>
                     ) : (
                         <form onSubmit={handleFormSubmit} className="space-y-5" autoComplete="off">
+                            {draftRecovered && <p role="status" className="draft-recovery-note"><span className="material-symbols-outlined" aria-hidden="true">restore</span>Recovered unsaved storyboard changes from this browser.</p>}
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-outline-variant/20 pb-3 gap-3">
                                 <div>
                                     <h4 className="font-bold text-body-md text-on-surface">Storyboard Script Editor</h4>
@@ -453,7 +506,7 @@ export default function ContentHubTab() {
                                     <button
                                         type="button"
                                         className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer"
-                                        onClick={() => setSelectedDraftTitle(null)}
+                                        onClick={() => requestDraftSelection(null)}
                                     >
                                         <span className="material-symbols-outlined text-[15px]">close</span> Close
                                     </button>
@@ -600,7 +653,7 @@ export default function ContentHubTab() {
                     )}
                 </div>
             </div>
-
+            <DiscardChangesModal isOpen={isDiscardOpen} onKeepEditing={() => { setIsDiscardOpen(false); setPendingDraftTitle(null); }} onDiscard={discardDraftChanges} />
         </div>
     );
 }
