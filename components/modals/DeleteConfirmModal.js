@@ -2,28 +2,25 @@
 
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useDialogFocus } from '../../utils/useDialogFocus';
 
 export default function DeleteConfirmModal({ isOpen, onClose, onCancel, onConfirm, title = 'Delete item?', message, isPending = false }) {
   const cancelButtonRef = useRef(null);
   const titleId = useId();
   const descriptionId = useId();
   const closeDialog = onClose || onCancel;
+  const dialogRef = useDialogFocus(isOpen, { onEscape: isPending ? undefined : closeDialog, initialFocusRef: cancelButtonRef });
 
   useEffect(() => {
     if (!isOpen) return;
     cancelButtonRef.current?.focus();
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape' && !isPending) closeDialog?.();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isPending, closeDialog]);
+  }, [isOpen]);
 
   if (!isOpen || typeof window === 'undefined') return null;
 
   return createPortal(
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]" onMouseDown={(event) => event.target === event.currentTarget && !isPending && closeDialog?.()}>
-      <div role="alertdialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} className="w-full max-w-[400px] bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl flex flex-col items-center gap-4 text-center">
+      <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} className="w-full max-w-[400px] bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl flex flex-col items-center gap-4 text-center">
         <span className="material-symbols-outlined text-error text-[32px]" aria-hidden="true">warning</span>
         <h3 id={titleId} className="text-headline-md font-bold text-on-surface">{title}</h3>
         <p id={descriptionId} className="text-body-sm text-on-surface-variant/80 leading-relaxed">{message || 'This action cannot be undone.'}</p>

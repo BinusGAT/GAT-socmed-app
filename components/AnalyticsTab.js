@@ -241,6 +241,8 @@ export default function AnalyticsTab() {
     };
 
     const creatorLeaderboard = getCreatorLeaderboard();
+    const accessibleChartData = aggregateAllChartsData(activeData);
+    const describeSeries = (labels = [], values = []) => labels.map((label, index) => `${label}: ${formatNumber(values[index] || 0)}`).join('; ');
 
     // Chart lifecycle
     useEffect(() => {
@@ -732,7 +734,8 @@ export default function AnalyticsTab() {
                                 <span className="material-symbols-outlined text-primary">timeline</span> Views & Engagement Trend
                             </h4>
                             <div className="h-80 w-full relative">
-                                <canvas ref={trendCanvasRef}></canvas>
+                                <canvas ref={trendCanvasRef} role="img" aria-label="Views and engagement trend chart" aria-describedby="trend-chart-summary"></canvas>
+                                <p id="trend-chart-summary" className="sr-only">Views by date: {describeSeries(accessibleChartData.trendData?.sortedDates, accessibleChartData.trendData?.viewsData)}. Engagement by date: {describeSeries(accessibleChartData.trendData?.sortedDates, accessibleChartData.trendData?.engagementData)}.</p>
                             </div>
                         </div>
 
@@ -743,7 +746,8 @@ export default function AnalyticsTab() {
                                     <span className="material-symbols-outlined text-primary">pie_chart</span> Platform Distribution
                                 </h4>
                                 <div className="h-64 w-full relative">
-                                    <canvas ref={platformCanvasRef}></canvas>
+                                    <canvas ref={platformCanvasRef} role="img" aria-label="Platform distribution chart" aria-describedby="platform-chart-summary"></canvas>
+                                    <p id="platform-chart-summary" className="sr-only">Views by platform: {describeSeries(accessibleChartData.platformData?.platforms, accessibleChartData.platformData?.platformViews)}.</p>
                                 </div>
                             </div>
                             <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
@@ -751,7 +755,8 @@ export default function AnalyticsTab() {
                                     <span className="material-symbols-outlined text-primary">bar_chart</span> Total Views by Creator
                                 </h4>
                                 <div className="h-64 w-full relative">
-                                    <canvas ref={picCanvasRef}></canvas>
+                                    <canvas ref={picCanvasRef} role="img" aria-label="Total views by creator chart" aria-describedby="creator-chart-summary"></canvas>
+                                    <p id="creator-chart-summary" className="sr-only">Views by creator: {describeSeries(accessibleChartData.picData?.picLabels, accessibleChartData.picData?.picViews)}.</p>
                                 </div>
                             </div>
                         </div>
@@ -762,7 +767,8 @@ export default function AnalyticsTab() {
                                 <span className="material-symbols-outlined text-primary">bubble_chart</span> Category Share (Views)
                             </h4>
                             <div className="h-80 w-full relative">
-                                <canvas ref={categoryCanvasRef}></canvas>
+                                <canvas ref={categoryCanvasRef} role="img" aria-label="Category share by views chart" aria-describedby="category-chart-summary"></canvas>
+                                <p id="category-chart-summary" className="sr-only">Views by category: {describeSeries(accessibleChartData.categoryData?.catLabels, accessibleChartData.categoryData?.catViews)}.</p>
                             </div>
                         </div>
                     </div>

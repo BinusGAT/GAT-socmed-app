@@ -110,6 +110,24 @@ test('authenticated dashboard does not overflow the page at mobile width', async
   expect(dimensions.contentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
 });
 
+test('authenticated content reflows at 200 and 400 percent zoom equivalents', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  for (const width of [640, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    const dimensions = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }));
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+    await expect(page.getByRole('navigation', { name: 'Mobile primary navigation', exact: true })).toBeVisible();
+  }
+});
+
+test('core controls remain perceivable in Windows forced-colors mode', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active' });
+  await openAuthenticatedDashboard(page);
+  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
+  await expect(page.getByRole('navigation', { name: navigationName, exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /New Post/ })).toBeVisible();
+});
+
 test('dashboard prioritizes actionable deadlines and opens the exact task', async ({ page }) => {
   await openAuthenticatedDashboard(page);
   await expect(page.getByRole('heading', { name: 'What needs attention' })).toBeVisible();
@@ -216,8 +234,43 @@ test('keeps task editor values visible when required fields are missing', async 
   await page.getByRole('button', { name: /Add Scheduled Task/ }).click();
   await page.getByPlaceholder('Enter title (optional)').fill('Orientation recap');
   await page.getByRole('button', { name: 'Save Task' }).click();
-  await expect(page.getByText('Choose a scheduled date, PIC, and category before saving.')).toBeVisible();
+  await expect(page.locator('.form-error-summary')).toContainText('Choose a scheduled date, PIC, and category before saving.');
   await expect(page.getByPlaceholder('Enter title (optional)')).toHaveValue('Orientation recap');
+});
+
+test('task editor traps focus and restores it to its opener', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  await openAuthenticatedView(page, { mobileName: /Tasks/, desktopName: /Task List/, secondary: true });
+  const opener = page.getByRole('button', { name: /Add Scheduled Task/ });
+  await opener.click();
+  const dialog = page.getByRole('dialog', { name: 'Add Scheduled Task' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Close task editor' })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(dialog.getByRole('button', { name: 'Save Task' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(opener).toBeFocused();
+});
+
+test('announces successful saves and pending deletions', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  await openAuthenticatedView(page, { mobileName: /Library/, desktopName: /Posts library/ });
+  await page.getByRole('button', { name: /Orientation storyboard/ }).click();
+  await page.getByPlaceholder('e.g. https://instagram.com/reel/123, https://youtube.com/watch?v=abc').fill('https://example.test/reference');
+  await page.getByRole('button', { name: 'Save Script Draft' }).click();
+  await expect(page.getByRole('status').filter({ hasText: /Storyboard draft updated|Script draft saved/ })).toBeVisible();
+  await page.getByRole('button', { name: /Delete/ }).click();
+  await page.getByRole('alertdialog', { name: 'Delete storyboard draft?' }).getByRole('button', { name: 'Delete' }).click();
+  await expect(page.getByRole('status').filter({ hasText: /will be deleted shortly/ })).toBeVisible();
+});
+
+test('analytics charts expose accessible text alternatives', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  await openAuthenticatedView(page, { mobileName: /Content analytics/, desktopName: /^analytics Analytics$/i, secondary: true });
+  for (const name of ['Views and engagement trend chart', 'Platform distribution chart', 'Total views by creator chart', 'Category share by views chart']) {
+    await expect(page.getByRole('img', { name })).toHaveAttribute('aria-describedby');
+  }
 });
 
 test('persists task search filters across refresh', async ({ page }) => {

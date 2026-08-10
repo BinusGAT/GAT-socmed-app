@@ -1347,7 +1347,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
                             </div>
                         </div>
                         <div className="h-52 w-full relative">
-                            <canvas ref={activityCanvasRef}></canvas>
+                            <canvas ref={activityCanvasRef} role="img" aria-label={`${activeChartTab} performance by platform`} aria-describedby="dashboard-chart-summary"></canvas>
+                            <p id="dashboard-chart-summary" className="sr-only">Platform views: Instagram {formatNumber(platformStats.Instagram.views)}; TikTok {formatNumber(platformStats.TikTok.views)}; YouTube {formatNumber(platformStats.YouTube.views)}.</p>
                         </div>
                         <div className="flex flex-wrap justify-center gap-4 text-[11px] text-on-surface-variant/80 font-semibold">
                             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#E1306C' }}></span> Instagram</span>

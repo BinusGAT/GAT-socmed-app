@@ -11,6 +11,7 @@ import DiscardChangesModal from './DiscardChangesModal';
 import UndoDeleteToast from './UndoDeleteToast';
 import { useDeferredDelete } from '../utils/useDeferredDelete';
 import { isTaskAssignedToUser } from '../utils/rolePermissions';
+import { useDialogFocus } from '../utils/useDialogFocus';
 import { 
     normalizePicName, 
     getTaskCalculatedStatus,
@@ -222,6 +223,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
         setSelectedTaskId(null);
         handledTaskIdRef.current = null;
     };
+    const taskDialogRef = useDialogFocus(isModalOpen && !isDiscardOpen, { onEscape: closeEditor });
 
     const handleModalDateClick = () => {
         onOpenDatePicker((selectedDate) => {
@@ -501,9 +503,9 @@ export default function TaskListTab({ onOpenDatePicker }) {
             {/* Task Edit/Create Modal (centered overlay dialog) */}
             {isModalOpen && typeof window !== 'undefined' && createPortal(
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-background/60 backdrop-blur-xs px-4">
-                    <div className="bg-surface-container border border-outline-variant/30 rounded-xl max-w-md w-full overflow-hidden shadow-2xl animate-scale-up">
+                    <div ref={taskDialogRef} role="dialog" aria-modal="true" aria-labelledby="task-editor-title" tabIndex={-1} className="bg-surface-container border border-outline-variant/30 rounded-xl max-w-md w-full overflow-hidden shadow-2xl animate-scale-up">
                         <div className="px-5 py-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
-                            <h2 className="text-body-md font-bold text-on-surface flex items-center gap-2">
+                            <h2 id="task-editor-title" className="text-body-md font-bold text-on-surface flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary text-[22px]">assignment</span>
                                 {modalTaskId ? `Update Scheduled Task (${modalTaskId})` : 'Add Scheduled Task'}
                             </h2>

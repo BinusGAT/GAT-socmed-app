@@ -556,3 +556,13 @@ input[type="checkbox"]:checked::before {
 .undo-delete-toast .material-symbols-outlined { color: var(--error); font-size: 1.2rem; }
 .undo-delete-toast button { margin-left: auto; color: var(--primary); font-weight: 700; text-decoration: underline; text-underline-offset: .2rem; }
 @media (max-width: 1023px) { .undo-delete-toast { bottom: 5.75rem; } }
+
+@media (forced-colors: active) {
+  * { forced-color-adjust: auto; }
+  button, input, select, textarea, [role="dialog"], [role="alertdialog"], .glass-panel {
+    border: 1px solid CanvasText;
+  }
+  :focus-visible { outline: 3px solid Highlight !important; outline-offset: 3px; }
+  .material-symbols-outlined { forced-color-adjust: none; color: ButtonText; }
+  canvas { border: 1px solid CanvasText; }
+}
