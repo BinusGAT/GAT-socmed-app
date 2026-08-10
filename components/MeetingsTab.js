@@ -6,6 +6,8 @@ import LockScreen from './LockScreen';
 import { DeleteConfirmModal, LinkModal } from './Modals';
 import DiscardChangesModal from './DiscardChangesModal';
 import EmptyState from './EmptyState';
+import UndoDeleteToast from './UndoDeleteToast';
+import { useDeferredDelete } from '../utils/useDeferredDelete';
 import { useUnsavedChanges } from '../utils/useUnsavedChanges';
 import { 
     normalizePicName, 
@@ -39,6 +41,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
     const [dateFilter, setDateFilter] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const { pendingDeletion, scheduleDelete, undoDelete } = useDeferredDelete();
     const editorRef = useRef(null);
 
     // Scroll selected meeting item into view
@@ -308,7 +311,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         }
     };
 
-    const handleDeleteMemo = async () => {
+    const handleDeleteMemo = () => {
         if (!selectedMeetingId || selectedMeetingId === 'NEW') return;
         
         if (userRole === 'Creator') {
@@ -316,12 +319,15 @@ export default function MeetingsTab({ onOpenDatePicker }) {
             return;
         }
 
-        const success = await deleteMeetingMemo(selectedMeetingId);
-        if (success) {
-            setIsDeleteConfirmOpen(false);
-            setSelectedMeetingId(null);
-            setIsEditing(false);
-        }
+        const memoId = selectedMeetingId;
+        scheduleDelete({
+            label: `Meeting memo ${memoId}`,
+            execute: async () => {
+                const success = await deleteMeetingMemo(memoId);
+                if (success) { setSelectedMeetingId(null); setIsEditing(false); }
+            },
+        });
+        setIsDeleteConfirmOpen(false);
     };
 
     // WYSIWYG Formatting Helpers
@@ -1018,6 +1024,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                 onConfirm={handleLinkConfirm}
             />
             <DiscardChangesModal isOpen={isDiscardOpen} onKeepEditing={() => setIsDiscardOpen(false)} onDiscard={discardNewMemo} />
+            <UndoDeleteToast deletion={pendingDeletion} onUndo={() => { if (undoDelete()) showAlert('Meeting deletion canceled.', 'info'); }} />
         </div>
     );
 }

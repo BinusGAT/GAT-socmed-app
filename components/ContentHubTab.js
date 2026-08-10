@@ -5,6 +5,9 @@ import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import DiscardChangesModal from './DiscardChangesModal';
 import { useUnsavedChanges } from '../utils/useUnsavedChanges';
+import { DeleteConfirmModal } from './Modals';
+import UndoDeleteToast from './UndoDeleteToast';
+import { useDeferredDelete } from '../utils/useDeferredDelete';
 import {
     normalizePicName,
     parseDate,
@@ -45,6 +48,8 @@ export default function ContentHubTab() {
     const [draftRecovered, setDraftRecovered] = useState(false);
     const [isDiscardOpen, setIsDiscardOpen] = useState(false);
     const [pendingDraftTitle, setPendingDraftTitle] = useState(null);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const { pendingDeletion, scheduleDelete, undoDelete } = useDeferredDelete();
 
     const currentFormState = { title: formTitle, category: formCategory, status: formStatus, hook: formHook, script: formScript, hashtags: formHashtags, caption: formCaption, references: formReferences };
     const isFormDirty = Boolean(selectedDraftTitle && initialFormState && JSON.stringify(currentFormState) !== JSON.stringify(initialFormState));
@@ -242,7 +247,7 @@ export default function ContentHubTab() {
         }
     };
 
-    const handleDeleteDraft = async () => {
+    const handleDeleteDraft = () => {
         if (!selectedDraftTitle) return;
         const draft = (draftsData || []).find(d => d.title === selectedDraftTitle);
         if (!draft) return;
@@ -252,12 +257,20 @@ export default function ContentHubTab() {
             return;
         }
 
-        if (!confirm(`Are you sure you want to delete draft: "${draft.title}"?`)) return;
+        setIsDeleteOpen(true);
+    };
 
-        const success = await deleteScriptDraft(draft.title);
-        if (success) {
-            setSelectedDraftTitle(null);
-        }
+    const confirmDeleteDraft = () => {
+        const draftTitle = selectedDraftTitle;
+        if (!draftTitle) return;
+        scheduleDelete({
+            label: draftTitle,
+            execute: async () => {
+                const success = await deleteScriptDraft(draftTitle);
+                if (success) setSelectedDraftTitle(null);
+            },
+        });
+        setIsDeleteOpen(false);
     };
 
     const handleCopyCopywriting = () => {
@@ -660,6 +673,8 @@ export default function ContentHubTab() {
                 </div>
             </div>
             <DiscardChangesModal isOpen={isDiscardOpen} onKeepEditing={() => { setIsDiscardOpen(false); setPendingDraftTitle(null); }} onDiscard={discardDraftChanges} />
+            <DeleteConfirmModal isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} onConfirm={confirmDeleteDraft} title="Delete storyboard draft?" message={`Delete "${selectedDraftTitle}"? You will have a short window to undo.`} />
+            <UndoDeleteToast deletion={pendingDeletion} onUndo={() => { if (undoDelete()) showAlert('Draft deletion canceled.', 'info'); }} />
         </div>
     );
 }

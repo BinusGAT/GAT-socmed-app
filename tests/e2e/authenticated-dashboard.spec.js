@@ -16,11 +16,12 @@ const seededData = {
   platforms: { data: [] }, categories: { data: [] }, gaSummary: { data: [] }, gaItems: { data: [] }
 };
 
-async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = false } = {}) {
+async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = false, actionLog = null } = {}) {
   await page.route('**/api/sheets', async (route) => {
     const request = route.request();
     if (request.method() !== 'POST') return route.continue();
     const { action } = request.postDataJSON();
+    actionLog?.push(action);
     if (action === 'read_all' && readDelayMs) {
       await new Promise((resolve) => setTimeout(resolve, readDelayMs));
     }
@@ -233,6 +234,7 @@ test('deep-links to a meeting memo and restores it after refresh', async ({ page
 test('shows a recovery state for an unavailable meeting link', async ({ page }) => {
   await openAuthenticatedDashboard(page);
   await page.goto('/?view=meeting&meeting=MM-MISSING');
+  await page.reload();
   await expect(page.getByRole('heading', { name: 'Meeting memo unavailable' })).toBeVisible();
   await page.getByRole('button', { name: 'Back to memo directory' }).click();
   await expect(page).not.toHaveURL(/meeting=/);
@@ -247,4 +249,45 @@ test('persists content-library search across refresh', async ({ page }) => {
   await page.getByPlaceholder('Search backlog drafts...').fill('Orientation');
   await page.reload();
   await expect(page.getByPlaceholder('Search backlog drafts...')).toHaveValue('Orientation');
+});
+
+test('undoes a scheduled task deletion before the API call', async ({ page }) => {
+  const actionLog = [];
+  await openAuthenticatedDashboard(page, { actionLog });
+  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true })
+    .getByRole('button', { name: /Tasks|Task List/ })
+    .click();
+  await page.getByTitle('Delete schedule entry').click();
+  await page.getByRole('alertdialog', { name: 'Delete scheduled task?' }).getByRole('button', { name: 'Delete' }).click();
+  await expect(page.getByText(/Campus highlights.*will be deleted shortly/)).toBeVisible();
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await page.waitForTimeout(250);
+  expect(actionLog).not.toContain('delete_schedule');
+});
+
+test('permanently deletes once after the undo window expires', async ({ page }) => {
+  const actionLog = [];
+  await openAuthenticatedDashboard(page, { actionLog });
+  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true })
+    .getByRole('button', { name: /Tasks|Task List/ })
+    .click();
+  await page.getByTitle('Delete schedule entry').click();
+  await page.getByRole('alertdialog', { name: 'Delete scheduled task?' }).getByRole('button', { name: 'Delete' }).click();
+  await expect.poll(() => actionLog.filter((action) => action === 'delete_schedule').length, { timeout: 8000 }).toBe(1);
+});
+
+test('uses the accessible undo flow for storyboard deletion', async ({ page }) => {
+  const actionLog = [];
+  await openAuthenticatedDashboard(page, { actionLog });
+  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true })
+    .getByRole('button', { name: /Library|Posts library/ })
+    .click();
+  await page.getByRole('button', { name: /Orientation storyboard/ }).click();
+  await page.getByRole('button', { name: /Delete/ }).click();
+  await page.getByRole('alertdialog', { name: 'Delete storyboard draft?' }).getByRole('button', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'Undo' }).click();
+  expect(actionLog).not.toContain('delete_script');
 });

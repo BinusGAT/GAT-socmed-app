@@ -8,6 +8,8 @@ import { DeleteConfirmModal } from './Modals';
 import SortableTableHeader from './SortableTableHeader';
 import EmptyState from './EmptyState';
 import DiscardChangesModal from './DiscardChangesModal';
+import UndoDeleteToast from './UndoDeleteToast';
+import { useDeferredDelete } from '../utils/useDeferredDelete';
 import { 
     normalizePicName, 
     getTaskCalculatedStatus,
@@ -55,6 +57,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
     // Delete confirmation state
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState(null);
+    const { pendingDeletion, scheduleDelete, undoDelete } = useDeferredDelete();
 
     // Sort states
     const [sortField, setSortField] = useState('Date');
@@ -277,13 +280,18 @@ export default function TaskListTab({ onOpenDatePicker }) {
         setIsDeleteConfirmOpen(true);
     };
 
-    const handleDeleteConfirm = async () => {
+    const handleDeleteConfirm = () => {
         if (!isUnlocked || userRole !== 'Admin') {
             showAlert('Permission denied. Only admins can delete tasks.', 'error');
             return;
         }
         if (taskToDelete) {
-            await deleteCalendarTask(taskToDelete);
+            const taskId = taskToDelete;
+            const task = getTasks().find((item) => item.id === taskId);
+            scheduleDelete({
+                label: task?.contentTitle || `Task ${taskId}`,
+                execute: () => deleteCalendarTask(taskId),
+            });
             setIsDeleteConfirmOpen(false);
             setTaskToDelete(null);
         }
@@ -580,6 +588,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                 message={`Are you sure you want to remove task ID: ${taskToDelete}?`}
             />
             <DiscardChangesModal isOpen={isDiscardOpen} onKeepEditing={() => setIsDiscardOpen(false)} onDiscard={discardAndClose} />
+            <UndoDeleteToast deletion={pendingDeletion} onUndo={() => { if (undoDelete()) showAlert('Task deletion canceled.', 'info'); }} />
         </div>
     );
 }
