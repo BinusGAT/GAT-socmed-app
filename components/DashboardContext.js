@@ -39,7 +39,7 @@ const normalizeMeetingsList = (rawMeetings) => {
 
 export function DashboardProvider({ children }) {
     // UI States
-    const [currentView, setCurrentView] = useState(() => {
+    const [currentView, setCurrentViewState] = useState(() => {
         if (typeof window === 'undefined') return 'dashboard';
         return new URLSearchParams(window.location.search).get('view') || 'dashboard';
     });
@@ -55,10 +55,10 @@ export function DashboardProvider({ children }) {
 
     // Filter States
     const [dateRange, setDateRange] = useState({ start: '', end: '', mode: 'auto' });
-    const [searchQuery, setSearchQuery] = useState('');
-    const [mainFilterPic, setMainFilterPic] = useState('');
-    const [mainFilterCategory, setMainFilterCategory] = useState('');
-    const [mainFilterPlatform, setMainFilterPlatform] = useState('');
+    const [searchQuery, setSearchQuery] = useState(() => readStoredValue('GAT_dashboard_filter_search'));
+    const [mainFilterPic, setMainFilterPic] = useState(() => readStoredValue('GAT_dashboard_filter_pic'));
+    const [mainFilterCategory, setMainFilterCategory] = useState(() => readStoredValue('GAT_dashboard_filter_category'));
+    const [mainFilterPlatform, setMainFilterPlatform] = useState(() => readStoredValue('GAT_dashboard_filter_platform'));
 
     // Tasklist Filter States
     const [tasklistSearch, setTasklistSearch] = useState(() => readStoredValue('GAT_task_filter_search'));
@@ -76,7 +76,14 @@ export function DashboardProvider({ children }) {
     const [meetingsData, setMeetingsData] = useState([]);
     const [notificationsData, setNotificationsData] = useState([]);
     const [auditLogData, setAuditLogData] = useState([]);
-    const [selectedMeetingId, setSelectedMeetingId] = useState(null);
+    const [selectedMeetingId, setSelectedMeetingId] = useState(() => {
+        if (typeof window === 'undefined') return null;
+        return new URLSearchParams(window.location.search).get('meeting');
+    });
+    const [selectedPostId, setSelectedPostId] = useState(() => {
+        if (typeof window === 'undefined') return null;
+        return new URLSearchParams(window.location.search).get('post');
+    });
     const [selectedTaskId, setSelectedTaskId] = useState(() => {
         if (typeof window === 'undefined') return null;
         return new URLSearchParams(window.location.search).get('task');
@@ -96,6 +103,19 @@ export function DashboardProvider({ children }) {
     const setIsLoading = (active, phase = 'mutation') => {
         setIsLoadingState(active);
         setLoadingPhase(active ? phase : 'idle');
+    };
+
+    const setCurrentView = (nextView) => {
+        if (nextView === currentView) return;
+        setCurrentViewState(nextView);
+        if (typeof window === 'undefined' || !isUnlocked) return;
+        const url = new URL(window.location.href);
+        if (nextView === 'dashboard') url.searchParams.delete('view');
+        else url.searchParams.set('view', nextView);
+        if (nextView !== 'tasklist') url.searchParams.delete('task');
+        if (nextView !== 'meeting') url.searchParams.delete('meeting');
+        if (nextView !== 'dashboard') url.searchParams.delete('post');
+        window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
     };
 
     // Load initial states
@@ -242,8 +262,10 @@ export function DashboardProvider({ children }) {
         const handlePopState = () => {
             const params = new URLSearchParams(window.location.search);
             const nextView = params.get('view') || 'dashboard';
-            setCurrentView(nextView);
+            setCurrentViewState(nextView);
             setSelectedTaskId(params.get('task'));
+            setSelectedMeetingId(params.get('meeting'));
+            setSelectedPostId(params.get('post'));
         };
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
@@ -256,8 +278,19 @@ export function DashboardProvider({ children }) {
         else url.searchParams.set('view', currentView);
         if (selectedTaskId) url.searchParams.set('task', selectedTaskId);
         else url.searchParams.delete('task');
+        if (selectedMeetingId) url.searchParams.set('meeting', selectedMeetingId);
+        else url.searchParams.delete('meeting');
+        if (selectedPostId) url.searchParams.set('post', selectedPostId);
+        else url.searchParams.delete('post');
         window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
-    }, [currentView, selectedTaskId, isUnlocked]);
+    }, [currentView, selectedTaskId, selectedMeetingId, selectedPostId, isUnlocked]);
+
+    useEffect(() => {
+        localStorage.setItem('GAT_dashboard_filter_search', searchQuery);
+        localStorage.setItem('GAT_dashboard_filter_pic', mainFilterPic);
+        localStorage.setItem('GAT_dashboard_filter_category', mainFilterCategory);
+        localStorage.setItem('GAT_dashboard_filter_platform', mainFilterPlatform);
+    }, [searchQuery, mainFilterPic, mainFilterCategory, mainFilterPlatform]);
 
     useEffect(() => {
         localStorage.setItem('GAT_task_filter_search', tasklistSearch);
@@ -1116,6 +1149,7 @@ export function DashboardProvider({ children }) {
             darkMode, toggleDarkMode,
             selectedMeetingId, setSelectedMeetingId,
             selectedTaskId, setSelectedTaskId,
+            selectedPostId, setSelectedPostId,
             isNewPostDrawerOpen, setIsNewPostDrawerOpen,
 
             // Filters

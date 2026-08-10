@@ -28,9 +28,9 @@ export default function ContentHubTab() {
     } = useDashboard();
 
     const [selectedDraftTitle, setSelectedDraftTitle] = useState(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState('');
-    const [picFilter, setPicFilter] = useState('');
+    const [searchQuery, setSearchQuery] = useState(() => typeof window === 'undefined' ? '' : localStorage.getItem('GAT_content_filter_search') || '');
+    const [categoryFilter, setCategoryFilter] = useState(() => typeof window === 'undefined' ? '' : localStorage.getItem('GAT_content_filter_category') || '');
+    const [picFilter, setPicFilter] = useState(() => typeof window === 'undefined' ? '' : localStorage.getItem('GAT_content_filter_pic') || '');
 
     // Editor Form State
     const [formTitle, setFormTitle] = useState('');
@@ -50,6 +50,12 @@ export default function ContentHubTab() {
     const isFormDirty = Boolean(selectedDraftTitle && initialFormState && JSON.stringify(currentFormState) !== JSON.stringify(initialFormState));
     const draftStorageKey = selectedDraftTitle ? `GAT_storyboard_editor_draft:${userId || 'anonymous'}:${selectedDraftTitle}` : null;
     useUnsavedChanges(isFormDirty);
+
+    useEffect(() => {
+        localStorage.setItem('GAT_content_filter_search', searchQuery);
+        localStorage.setItem('GAT_content_filter_category', categoryFilter);
+        localStorage.setItem('GAT_content_filter_pic', picFilter);
+    }, [searchQuery, categoryFilter, picFilter]);
 
     // Load active draft fields when selection changes
     useEffect(() => {

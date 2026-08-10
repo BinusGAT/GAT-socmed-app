@@ -11,7 +11,7 @@ const seededData = {
     { Date: '2026-08-11', ID: 'TASK-001', 'Content Title': 'Campus highlights', PIC: 'Alya', Category: 'Story Telling', AssignedUserId: 'e2e-admin', Status: false }
   ] },
   memberList: { data: [] }, internList: { data: [] }, lecturerList: { data: [] },
-  scripts: { data: [{ Title: 'Orientation storyboard', Category: 'Story Telling', Status: 'Idea', Script: '', Hashtags: '#orientation' }] }, meetings: { data: [] }, notifications: { data: [] }, auditLog: { data: [] },
+  scripts: { data: [{ Title: 'Orientation storyboard', Category: 'Story Telling', Status: 'Idea', Script: '', Hashtags: '#orientation' }] }, meetings: { data: [{ ID: 'MM-001', Date: '2026-08-10', Attendees: 'Alya', Recap: 'Weekly content planning decisions', VideoRecap: '' }] }, notifications: { data: [] }, auditLog: { data: [] },
   appSettings: { data: [{ key: 'app_name', value: 'GAT' }, { key: 'app_full_name', value: 'GAT Content Suite' }] },
   platforms: { data: [] }, categories: { data: [] }, gaSummary: { data: [] }, gaItems: { data: [] }
 };
@@ -197,4 +197,54 @@ test('protects an unsaved new meeting memo before closing', async ({ page }) => 
   await expect(page.getByRole('alertdialog', { name: 'Discard unsaved changes?' })).toBeVisible();
   await page.getByRole('button', { name: 'Keep editing' }).click();
   await expect(editor).toContainText('Decisions and follow-up actions');
+});
+
+test('uses browser history when changing authenticated views', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
+  const navigation = page.getByRole('navigation', { name: navigationName, exact: true });
+  await navigation.getByRole('button', { name: /My Work/ }).click();
+  await expect(page.getByRole('heading', { name: 'My Work' })).toBeVisible();
+  await navigation.getByRole('button', { name: /Planner|Calendar/ }).click();
+  await page.goBack();
+  await expect(page.getByRole('heading', { name: 'My Work' })).toBeVisible();
+});
+
+test('deep-links to a post editor and restores it after refresh', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  await page.goto('/?post=POST-002');
+  await expect(page.getByText('Edit Post Metrics')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Edit Post Metrics')).toBeVisible();
+});
+
+test('deep-links to a meeting memo and restores it after refresh', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true })
+    .getByRole('button', { name: /Memos|Meeting Memo/ })
+    .click();
+  await page.getByRole('button', { name: /Weekly content planning decisions/ }).click();
+  await expect(page).toHaveURL(/view=meeting&meeting=MM-001/);
+  await page.reload();
+  await expect(page.locator('.meeting-recap-text-container')).toContainText('Weekly content planning decisions');
+});
+
+test('shows a recovery state for an unavailable meeting link', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  await page.goto('/?view=meeting&meeting=MM-MISSING');
+  await expect(page.getByRole('heading', { name: 'Meeting memo unavailable' })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to memo directory' }).click();
+  await expect(page).not.toHaveURL(/meeting=/);
+});
+
+test('persists content-library search across refresh', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true })
+    .getByRole('button', { name: /Library|Posts library/ })
+    .click();
+  await page.getByPlaceholder('Search backlog drafts...').fill('Orientation');
+  await page.reload();
+  await expect(page.getByPlaceholder('Search backlog drafts...')).toHaveValue('Orientation');
 });

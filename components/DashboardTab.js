@@ -37,6 +37,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
         deleteBatchLaporanRows,
         memberListData,
         categoriesData,
+        selectedPostId,
+        setSelectedPostId,
         platformsData,
         showAlert,
         searchQuery,
@@ -111,6 +113,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
     const activityCanvasRef = useRef(null);
     const activityChartRef = useRef(null);
     const viewsInputRef = useRef(null);
+    const handledPostIdRef = useRef(null);
 
     // Reset editor fields to defaults
     const resetForm = () => {
@@ -132,6 +135,8 @@ export default function DashboardTab({ onOpenDatePicker }) {
         setFormCommentText('');
         setFormTab('basic');
         setIsNewPostDrawerOpen(false);
+        setSelectedPostId(null);
+        handledPostIdRef.current = null;
     };
 
     // Open Custom Date Picker Overlay
@@ -438,8 +443,22 @@ export default function DashboardTab({ onOpenDatePicker }) {
         setFormUrl(row.URL || '');
         setFormCommentText(row['Comment Text'] || '');
         setFormTab('basic');
+        setSelectedPostId(row.ID || null);
+        handledPostIdRef.current = row.ID || null;
         setIsNewPostDrawerOpen(true);
     };
+
+    useEffect(() => {
+        if (!selectedPostId || handledPostIdRef.current === selectedPostId || currentData.length === 0) return;
+        const index = currentData.findIndex((row) => String(row.ID) === String(selectedPostId));
+        if (index >= 0) {
+            handledPostIdRef.current = selectedPostId;
+            loadRowForEdit(currentData[index], index);
+            return;
+        }
+        showAlert(`Post ${selectedPostId} is unavailable. It may have been removed.`, 'warning');
+        setSelectedPostId(null);
+    }, [selectedPostId, currentData]);
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();

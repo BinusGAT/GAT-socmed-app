@@ -5,6 +5,7 @@ import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import { DeleteConfirmModal, LinkModal } from './Modals';
 import DiscardChangesModal from './DiscardChangesModal';
+import EmptyState from './EmptyState';
 import { useUnsavedChanges } from '../utils/useUnsavedChanges';
 import { 
     normalizePicName, 
@@ -716,6 +717,14 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                 <p className="text-[12px] text-on-surface-variant/80 max-w-xs">Select a meeting memo from the directory list sidebar or create a new memo to view recap contents.</p>
                             </div>
                         </div>
+                    ) : selectedMeetingId !== 'NEW' && !(meetingsData || []).some((memo) => memo.id === selectedMeetingId) ? (
+                        <EmptyState
+                            icon="link_off"
+                            title="Meeting memo unavailable"
+                            description={`The memo ${selectedMeetingId} may have been removed or the link may be outdated.`}
+                            actionLabel="Back to memo directory"
+                            onAction={() => setSelectedMeetingId(null)}
+                        />
                     ) : !isEditing ? (
                         /* VIEW MODE */
                         <div className="space-y-6">
