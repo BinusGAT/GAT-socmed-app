@@ -292,7 +292,7 @@ function DashboardAppContent() {
 
                 {/* Active Tab View */}
                 <div className="flex-1 p-3 sm:p-6 relative" aria-busy={isLoading ? 'true' : 'false'}>
-                    {isInitialLoading ? <DashboardSkeleton /> : renderActiveTab()}
+                    {isInitialLoading && currentView !== 'my-work' ? <DashboardSkeleton /> : renderActiveTab()}
                 </div>
 
                 {/* Footer copyright */}

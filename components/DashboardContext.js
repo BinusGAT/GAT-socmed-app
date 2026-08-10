@@ -106,8 +106,7 @@ export function DashboardProvider({ children }) {
     };
 
     const setCurrentView = (nextView) => {
-        if (nextView === currentView) return;
-        setCurrentViewState(nextView);
+        if (nextView !== currentView) setCurrentViewState(nextView);
         if (typeof window === 'undefined' || !isUnlocked) return;
         const url = new URL(window.location.href);
         if (nextView === 'dashboard') url.searchParams.delete('view');
@@ -115,6 +114,7 @@ export function DashboardProvider({ children }) {
         if (nextView !== 'tasklist') url.searchParams.delete('task');
         if (nextView !== 'meeting') url.searchParams.delete('meeting');
         if (nextView !== 'dashboard') url.searchParams.delete('post');
+        url.hash = '';
         window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
     };
 

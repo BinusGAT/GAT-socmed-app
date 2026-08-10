@@ -21,7 +21,7 @@ const seededData = {
   ] }, gaSummary: { data: [] }, gaItems: { data: [] }
 };
 
-async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = false, actionLog = null, role = 'Admin' } = {}) {
+async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = false, actionLog = null, role = 'Admin', dashboardData = seededData } = {}) {
   await page.route('**/api/sheets', async (route) => {
     const request = route.request();
     if (request.method() !== 'POST') return route.continue();
@@ -35,7 +35,7 @@ async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = fa
     }
     const body = action === 'validate_mode'
       ? { success: true, valid: true, role, expiresAt: Date.now() + 3_600_000, user: { id: 'e2e-admin', name: role === 'Creator' ? 'Alya' : `Release K ${role}` } }
-      : action === 'read_all' ? seededData : { success: true };
+      : action === 'read_all' ? dashboardData : { success: true };
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
 
@@ -232,12 +232,55 @@ test('phone My Work uses compact assignment cards and the correct page title', a
   expect(measurements[1].width).toBeLessThan(measurements[0].width * 0.6);
 });
 
+test('phone My Work keeps a very long assignment title readable', async ({ page }) => {
+  test.skip((page.viewportSize()?.width || 0) >= 640, 'Phone-specific My Work layout is hidden on larger screens.');
+  const longTitle = 'Coordinate the complete semester campaign launch across every student community channel';
+  const dashboardData = { ...seededData, schedule: { data: [{ ...seededData.schedule.data[0], 'Content Title': longTitle }] } };
+  await openAuthenticatedDashboard(page, { dashboardData });
+  await page.setViewportSize({ width: 320, height: 720 });
+  await openAuthenticatedView(page, { mobileName: /My Work/ });
+  const assignment = page.getByRole('button', { name: `Open task ${longTitle}` });
+  await expect(assignment).toBeVisible();
+  const box = await assignment.boundingBox();
+  expect(box.height).toBeLessThan(170);
+  const dimensions = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }));
+  expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+});
+
+test('My Work shows assignment-shaped placeholders while loading', async ({ page }) => {
+  test.skip((page.viewportSize()?.width || 0) >= 640, 'Phone-specific My Work loading state is tested on phones.');
+  await openAuthenticatedDashboard(page, { readDelayMs: 800 });
+  await openAuthenticatedView(page, { mobileName: /My Work/ });
+  const loadingState = page.getByRole('status', { name: 'Loading assigned tasks' });
+  await expect(loadingState).toBeVisible();
+  await expect(loadingState.locator('[aria-hidden="true"]')).toHaveCount(3);
+  await expect(loadingState).toBeHidden();
+});
+
+test('My Work provides a useful empty state', async ({ page }) => {
+  const dashboardData = { ...seededData, schedule: { data: [] } };
+  await openAuthenticatedDashboard(page, { dashboardData });
+  await openAuthenticatedView(page, { mobileName: /My Work/ });
+  await expect(page.getByRole('status').filter({ hasText: 'Your queue is clear' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open Planner' }).click();
+  await expect(page).toHaveURL(/view=calendar/);
+});
+
 test('keeps the authenticated view in the URL across refresh', async ({ page }) => {
   await openAuthenticatedDashboard(page);
   await openAuthenticatedView(page, { mobileName: /My Work/ });
   await expect(page).toHaveURL(/\?view=my-work$/);
   await page.reload();
   await expect(page.getByRole('heading', { name: 'My Work' })).toBeVisible();
+});
+
+test('Home navigation clears stale footer fragments', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  await page.evaluate(() => { window.location.hash = 'terms'; });
+  await expect(page).toHaveURL(/#terms$/);
+  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
+  await page.getByRole('navigation', { name: navigationName, exact: true }).getByRole('button', { name: /Home|Dashboard/ }).click();
+  await expect(page).not.toHaveURL(/#terms$/);
 });
 
 test('keeps task editor values visible when required fields are missing', async ({ page }) => {

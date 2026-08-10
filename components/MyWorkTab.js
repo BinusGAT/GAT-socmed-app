@@ -17,7 +17,7 @@ function getDueState(dateValue, completed) {
 }
 
 export default function MyWorkTab() {
-    const { scheduleData, userId, userName, setCurrentView, setSelectedTaskId } = useDashboard();
+    const { scheduleData, userId, userName, isInitialLoading, setCurrentView, setSelectedTaskId } = useDashboard();
 
     const openTask = (taskId) => {
         setSelectedTaskId(taskId);
@@ -51,8 +51,22 @@ export default function MyWorkTab() {
             </header>
 
             <div className="sm:overflow-hidden sm:rounded-xl sm:border sm:border-outline-variant/25 sm:bg-surface-container-low">
-                {tasks.length === 0 ? (
-                    <EmptyState icon="task_alt" title="No tasks assigned" description="New assignments will appear here automatically." />
+                {isInitialLoading ? (
+                    <div className="space-y-2 sm:space-y-0" role="status" aria-label="Loading assigned tasks">
+                        <span className="sr-only">Loading assigned tasks</span>
+                        {[0, 1, 2].map((item) => (
+                            <div key={item} aria-hidden="true" className="grid min-h-24 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-outline-variant/20 bg-surface-container px-4 py-3.5 sm:rounded-none sm:border-x-0 sm:border-t-0 sm:bg-transparent sm:px-5 sm:py-4">
+                                <div className="min-w-0 space-y-2.5">
+                                    <div className="h-4 w-3/4 animate-pulse rounded bg-surface-container-highest motion-reduce:animate-none" />
+                                    <div className="h-3 w-2/5 animate-pulse rounded bg-surface-container-high motion-reduce:animate-none" />
+                                </div>
+                                <div className="row-span-2 h-5 w-5 animate-pulse rounded bg-surface-container-high motion-reduce:animate-none" />
+                                <div className="h-6 w-20 animate-pulse rounded-md bg-surface-container-high motion-reduce:animate-none" />
+                            </div>
+                        ))}
+                    </div>
+                ) : tasks.length === 0 ? (
+                    <EmptyState icon="assignment" title="Your queue is clear" description="You have no assigned tasks right now. Check the Planner for upcoming work across the team." actionLabel="Open Planner" onAction={() => setCurrentView('calendar')} />
                 ) : (
                     <div className="space-y-2 sm:divide-y sm:divide-outline-variant/15 sm:space-y-0">
                         {tasks.map((task) => {
