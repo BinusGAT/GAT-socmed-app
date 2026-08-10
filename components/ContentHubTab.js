@@ -8,6 +8,7 @@ import { useUnsavedChanges } from '../utils/useUnsavedChanges';
 import { DeleteConfirmModal } from './Modals';
 import UndoDeleteToast from './UndoDeleteToast';
 import { useDeferredDelete } from '../utils/useDeferredDelete';
+import { getVisiblePostLibraryCategories } from '../utils/postLibraryCategories';
 import {
     normalizePicName,
     parseDate,
@@ -27,6 +28,7 @@ export default function ContentHubTab() {
         showAlert,
         memberListData,
         categoriesData,
+        appSettingsData,
         userId
     } = useDashboard();
 
@@ -50,6 +52,11 @@ export default function ContentHubTab() {
     const [pendingDraftTitle, setPendingDraftTitle] = useState(null);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const { pendingDeletion, scheduleDelete, undoDelete } = useDeferredDelete();
+    const visibleCategories = getVisiblePostLibraryCategories(
+        categoriesData,
+        appSettingsData?.post_library_hidden_categories
+    );
+    const visibleCategoryNames = new Set(visibleCategories.map((category) => category.name));
 
     const currentFormState = { title: formTitle, category: formCategory, status: formStatus, hook: formHook, script: formScript, hashtags: formHashtags, caption: formCaption, references: formReferences };
     const isFormDirty = Boolean(selectedDraftTitle && initialFormState && JSON.stringify(currentFormState) !== JSON.stringify(initialFormState));
@@ -61,6 +68,12 @@ export default function ContentHubTab() {
         localStorage.setItem('GAT_content_filter_category', categoryFilter);
         localStorage.setItem('GAT_content_filter_pic', picFilter);
     }, [searchQuery, categoryFilter, picFilter]);
+
+    useEffect(() => {
+        if (categoryFilter && !visibleCategoryNames.has(categoryFilter)) {
+            setCategoryFilter('');
+        }
+    }, [categoryFilter, appSettingsData?.post_library_hidden_categories, categoriesData]);
 
     // Load active draft fields when selection changes
     useEffect(() => {
@@ -129,7 +142,9 @@ export default function ContentHubTab() {
 
     // Filtered drafts list
     const getFilteredDrafts = () => {
-        const drafts = (draftsData || []).map((d, index) => ({ d, index }));
+        const drafts = (draftsData || [])
+            .map((d, index) => ({ d, index }))
+            .filter(({ d }) => visibleCategoryNames.has(d.category));
         let list = drafts;
 
         // Search Filter
@@ -180,7 +195,11 @@ export default function ContentHubTab() {
             return;
         }
 
-        const cat = categoryFilter || 'Story Telling';
+        const cat = categoryFilter || visibleCategories[0]?.name;
+        if (!cat) {
+            showAlert('Show at least one Post Library category in Settings before creating a draft.', 'error');
+            return;
+        }
         const newDraft = {
             title: `New ${cat} Script ${draftsData.length + 1}`,
             category: cat,
@@ -339,7 +358,7 @@ export default function ContentHubTab() {
                 <div className="flex items-center gap-3">
                     <span className="text-xs font-semibold text-on-surface uppercase tracking-wider">Posts Library</span>
                     <span className="px-2.5 py-0.5 bg-surface-container-highest/50 border border-outline-variant/30 text-on-surface-variant rounded-md font-mono text-[11px]">
-                        {(draftsData || []).length} Drafts
+                        {filteredDrafts.length} visible of {(draftsData || []).length} drafts
                     </span>
                 </div>
                 {isUnlocked && userRole !== 'Creator' && (
@@ -377,31 +396,25 @@ export default function ContentHubTab() {
                     </div>
 
                     {/* Category quick selectors */}
-                    <div className="flex gap-1.5 border-b border-outline-variant/15 pb-2.5">
+                    <div className="flex flex-wrap gap-1.5 border-b border-outline-variant/15 pb-2.5" aria-label="Filter drafts by category">
                         <button
                             type="button"
-                            className={`flex-1 font-bold py-1.5 rounded text-[10px] uppercase transition-colors cursor-pointer text-center ${categoryFilter === '' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
+                            className={`min-w-14 flex-1 font-bold py-1.5 px-2 rounded text-[11px] uppercase transition-colors cursor-pointer text-center ${categoryFilter === '' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
                                 }`}
                             onClick={() => setCategoryFilter('')}
                         >
                             All
                         </button>
-                        <button
-                            type="button"
-                            className={`flex-1 font-bold py-1.5 rounded text-[10px] uppercase transition-colors cursor-pointer text-center ${categoryFilter === 'Story Telling' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
-                                }`}
-                            onClick={() => setCategoryFilter('Story Telling')}
-                        >
-                            Story Telling
-                        </button>
-                        <button
-                            type="button"
-                            className={`flex-1 font-bold py-1.5 rounded text-[10px] uppercase transition-colors cursor-pointer text-center ${categoryFilter === 'Motion' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
-                                }`}
-                            onClick={() => setCategoryFilter('Motion')}
-                        >
-                            Motion
-                        </button>
+                        {visibleCategories.map((category) => (
+                            <button
+                                key={category.name}
+                                type="button"
+                                className={`min-w-fit flex-1 font-bold py-1.5 px-2 rounded text-[11px] uppercase transition-colors cursor-pointer text-center ${categoryFilter === category.name ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'}`}
+                                onClick={() => setCategoryFilter(category.name)}
+                            >
+                                {category.name}
+                            </button>
+                        ))}
                     </div>
 
                     {/* Search query input */}
@@ -555,7 +568,7 @@ export default function ContentHubTab() {
                                         disabled={true}
                                         required
                                     >
-                                        {categoriesData.map(c => (
+                                        {visibleCategories.map(c => (
                                             <option key={c.name} value={c.name}>{c.name}</option>
                                         ))}
                                     </select>

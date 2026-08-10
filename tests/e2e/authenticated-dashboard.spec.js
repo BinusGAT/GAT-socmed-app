@@ -12,8 +12,13 @@ const seededData = {
   ] },
   memberList: { data: [] }, internList: { data: [] }, lecturerList: { data: [] },
   scripts: { data: [{ Title: 'Orientation storyboard', Category: 'Story Telling', Status: 'Idea', Script: '', Hashtags: '#orientation' }] }, meetings: { data: [{ ID: 'MM-001', Date: '2026-08-10', Attendees: 'Alya', Recap: 'Weekly content planning decisions', VideoRecap: '' }] }, notifications: { data: [] }, auditLog: { data: [] },
-  appSettings: { data: [{ key: 'app_name', value: 'GAT' }, { key: 'app_full_name', value: 'GAT Content Suite' }] },
-  platforms: { data: [] }, categories: { data: [] }, gaSummary: { data: [] }, gaItems: { data: [] }
+  appSettings: { data: [{ key: 'app_name', value: 'GAT' }, { key: 'app_full_name', value: 'GAT Content Suite' }, { key: 'post_library_hidden_categories', value: '[]' }] },
+  platforms: { data: [] }, categories: { data: [
+    { name: 'Article Reels', color_class: 'badge-category-article' },
+    { name: 'Story Telling', color_class: 'badge-category-story' },
+    { name: 'News', color_class: 'badge-category-news' },
+    { name: 'Motion', color_class: 'badge-category-motion' }
+  ] }, gaSummary: { data: [] }, gaItems: { data: [] }
 };
 
 async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = false, actionLog = null } = {}) {
@@ -39,6 +44,13 @@ async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = fa
   await page.getByLabel('Password (NIM) *').fill('test-only-password');
   await page.getByRole('button', { name: 'Login' }).click();
   await expect(page.locator('main#main-content')).toBeVisible();
+}
+
+async function openSettings(page) {
+  if ((page.viewportSize()?.width || 0) < 1024) {
+    await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+  }
+  await page.getByRole('button', { name: /Settings/ }).click();
 }
 
 test('uses a structural skeleton without blocking the authenticated shell', async ({ page }) => {
@@ -214,6 +226,7 @@ test('uses browser history when changing authenticated views', async ({ page }) 
 test('deep-links to a post editor and restores it after refresh', async ({ page }) => {
   await openAuthenticatedDashboard(page);
   await page.goto('/?post=POST-002');
+  await page.reload();
   await expect(page.getByText('Edit Post Metrics')).toBeVisible();
   await page.reload();
   await expect(page.getByText('Edit Post Metrics')).toBeVisible();
@@ -249,6 +262,33 @@ test('persists content-library search across refresh', async ({ page }) => {
   await page.getByPlaceholder('Search backlog drafts...').fill('Orientation');
   await page.reload();
   await expect(page.getByPlaceholder('Search backlog drafts...')).toHaveValue('Orientation');
+});
+
+test('lets an admin hide a category from the Post Library without deleting drafts', async ({ page }) => {
+  const actionLog = [];
+  await openAuthenticatedDashboard(page, { actionLog });
+  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
+  const navigation = page.getByRole('navigation', { name: navigationName, exact: true });
+  await openSettings(page);
+  await page.getByRole('button', { name: 'categories', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Show Story Telling in Post Library' }).uncheck();
+  await page.getByRole('button', { name: 'Save visibility' }).click();
+  expect(actionLog).toContain('save_app_settings');
+  await navigation.getByRole('button', { name: /Library|Posts library/ }).click();
+  await expect(page.getByRole('button', { name: 'Story Telling', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Orientation storyboard/ })).toHaveCount(0);
+});
+
+test('keeps at least one Post Library category visible', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  await openSettings(page);
+  await page.getByRole('button', { name: 'categories', exact: true }).click();
+  const checkboxes = page.getByRole('checkbox', { name: /in Post Library/ });
+  const count = await checkboxes.count();
+  for (let index = 0; index < count - 1; index += 1) await checkboxes.nth(index).uncheck();
+  await checkboxes.last().click();
+  await expect(page.getByText('At least one category must remain visible in the Post Library.')).toBeVisible();
+  await expect.poll(async () => checkboxes.evaluateAll((items) => items.filter((item) => item.checked).length)).toBe(1);
 });
 
 test('undoes a scheduled task deletion before the API call', async ({ page }) => {

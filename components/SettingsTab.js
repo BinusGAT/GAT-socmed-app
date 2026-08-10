@@ -6,6 +6,7 @@ import LockScreen from './LockScreen';
 import { DeleteConfirmModal } from './Modals';
 import AuditLogTab from './AuditLogTab';
 import SessionsTab from './SessionsTab';
+import { parseHiddenPostLibraryCategories, POST_LIBRARY_HIDDEN_CATEGORIES_KEY } from '../utils/postLibraryCategories';
 
 export default function SettingsTab() {
     const {
@@ -14,7 +15,6 @@ export default function SettingsTab() {
         lecturerListData,
         platformsData,
         categoriesData,
-        saveAppSetting,
         saveAppSettingsBatch,
         savePlatform,
         deletePlatform,
@@ -67,6 +67,12 @@ export default function SettingsTab() {
 
     const [categoryName, setCategoryName] = useState('');
     const [categoryColor, setCategoryColor] = useState('');
+    const [hiddenLibraryCategories, setHiddenLibraryCategories] = useState([]);
+    const [categoryVisibilityError, setCategoryVisibilityError] = useState('');
+
+    useEffect(() => {
+        setHiddenLibraryCategories(parseHiddenPostLibraryCategories(appSettingsData?.[POST_LIBRARY_HIDDEN_CATEGORIES_KEY]));
+    }, [appSettingsData]);
 
     // Deletion states
     const [deleteTarget, setDeleteTarget] = useState(null); // { type, key }
@@ -179,6 +185,27 @@ export default function SettingsTab() {
             setIsDeleteOpen(false);
             setDeleteTarget(null);
         }
+    };
+
+    const toggleLibraryCategory = (categoryName) => {
+        setCategoryVisibilityError('');
+        setHiddenLibraryCategories((current) => {
+            if (current.includes(categoryName)) {
+                return current.filter((name) => name !== categoryName);
+            }
+            if (categoriesData.length - current.length <= 1) {
+                setCategoryVisibilityError('At least one category must remain visible in the Post Library.');
+                return current;
+            }
+            return [...current, categoryName];
+        });
+    };
+
+    const saveLibraryCategoryVisibility = async () => {
+        setCategoryVisibilityError('');
+        await saveAppSettingsBatch({
+            [POST_LIBRARY_HIDDEN_CATEGORIES_KEY]: JSON.stringify(hiddenLibraryCategories)
+        });
     };
 
     return (
@@ -362,11 +389,16 @@ export default function SettingsTab() {
 
             {/* 4. CATEGORIES TAB */}
             {userRole === 'Admin' && activeSubTab === 'categories' && (
-                <div className="glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h4 className="font-bold text-body-lg text-on-surface flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary">category</span> Content Categories
-                        </h4>
+                <section className="glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4" aria-labelledby="content-categories-heading">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                        <div className="space-y-1">
+                            <h4 id="content-categories-heading" className="font-bold text-body-lg text-on-surface flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary">category</span> Content Categories
+                            </h4>
+                            <p className="text-body-sm text-on-surface-variant max-w-2xl">
+                                Control which categories appear in the Post Library. Hiding a category does not delete its drafts.
+                            </p>
+                        </div>
                         <button
                             type="button"
                             onClick={() => openAddModal('category')}
@@ -383,6 +415,7 @@ export default function SettingsTab() {
                                     <th className="px-5 py-4">Category Name</th>
                                     <th className="px-5 py-4">Preview Badge</th>
                                     <th className="px-5 py-4">Color</th>
+                                    <th className="px-5 py-4 text-center">Post Library</th>
                                     <th className="px-5 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -396,6 +429,15 @@ export default function SettingsTab() {
                                             </span>
                                         </td>
                                         <td className="px-5 py-4 text-on-surface-variant font-mono text-[11px]">{cat.color_class}</td>
+                                        <td className="px-5 py-4 text-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={!hiddenLibraryCategories.includes(cat.name)}
+                                                onChange={() => toggleLibraryCategory(cat.name)}
+                                                className="h-5 w-5 accent-primary cursor-pointer"
+                                                aria-label={`Show ${cat.name} in Post Library`}
+                                            />
+                                        </td>
                                         <td className="px-5 py-4 text-right flex justify-end gap-2">
                                             <button
                                                 type="button"
@@ -419,7 +461,16 @@ export default function SettingsTab() {
                             </tbody>
                         </table>
                     </div>
-                </div>
+                    {categoryVisibilityError && <p role="alert" className="text-body-sm text-error">{categoryVisibilityError}</p>}
+                    <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant/15 pt-4">
+                        <button type="button" onClick={saveLibraryCategoryVisibility} className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-4 rounded-lg text-body-sm transition-opacity cursor-pointer">
+                            Save visibility
+                        </button>
+                        <button type="button" onClick={() => { setHiddenLibraryCategories([]); setCategoryVisibilityError(''); }} className="text-on-surface-variant hover:text-on-surface font-semibold py-2 px-3 rounded-lg text-body-sm transition-colors cursor-pointer">
+                            Show all categories
+                        </button>
+                    </div>
+                </section>
             )}
 
             {userRole === 'Admin' && activeSubTab === 'audit' && <AuditLogTab />}
