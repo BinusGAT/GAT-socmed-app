@@ -21,7 +21,7 @@ const seededData = {
   ] }, gaSummary: { data: [] }, gaItems: { data: [] }
 };
 
-async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = false, actionLog = null, role = 'Admin', dashboardData = seededData } = {}) {
+async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = false, actionLog = null, role = 'Admin', dashboardData = seededData, initialPath = '/' } = {}) {
   await page.route('**/api/sheets', async (route) => {
     const request = route.request();
     if (request.method() !== 'POST') return route.continue();
@@ -39,7 +39,7 @@ async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = fa
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
 
-  await page.goto('/');
+  await page.goto(initialPath);
   await page.getByRole('textbox', { name: 'Email Address *' }).fill('release-a@example.test');
   await page.getByLabel('Password (NIM) *').fill('test-only-password');
   await page.getByRole('button', { name: 'Login' }).click();
@@ -281,6 +281,30 @@ test('Home navigation clears stale footer fragments', async ({ page }) => {
   const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
   await page.getByRole('navigation', { name: navigationName, exact: true }).getByRole('button', { name: /Home|Dashboard/ }).click();
   await expect(page).not.toHaveURL(/#terms$/);
+});
+
+test('clears unknown URL fragments on initial load', async ({ page }) => {
+  await openAuthenticatedDashboard(page, { initialPath: '/#outdated-section' });
+  await expect(page).not.toHaveURL(/#outdated-section$/);
+});
+
+test('invalid authenticated views provide a recovery path', async ({ page }) => {
+  await openAuthenticatedDashboard(page, { initialPath: '/?view=missing-workspace' });
+  await expect(page.getByRole('heading', { name: 'This workspace view does not exist' })).toBeVisible();
+  await page.getByRole('button', { name: 'Return home' }).click();
+  await expect(page).not.toHaveURL(/view=missing-workspace/);
+  await expect(page.getByRole('heading', { name: 'What needs attention' })).toBeVisible();
+});
+
+test('phone moves help and legal links into More instead of the page footer', async ({ page }) => {
+  test.skip((page.viewportSize()?.width || 0) >= 640, 'Phone-specific footer treatment is hidden on larger screens.');
+  await openAuthenticatedDashboard(page);
+  await expect(page.locator('footer')).toBeHidden();
+  await page.getByRole('navigation', { name: 'Mobile primary navigation', exact: true }).getByRole('button', { name: 'More', exact: true }).click();
+  const menu = page.getByRole('dialog', { name: 'More tools' });
+  await expect(menu.getByRole('button', { name: 'Operations Help' })).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'Privacy Policy' })).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'Terms of Service' })).toBeVisible();
 });
 
 test('keeps task editor values visible when required fields are missing', async ({ page }) => {

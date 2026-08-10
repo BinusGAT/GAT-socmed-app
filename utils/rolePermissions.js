@@ -4,6 +4,12 @@ export const ROLE_VIEWS = Object.freeze({
   Viewer: ['dashboard', 'analytics', 'web-analytics'],
 });
 
+const KNOWN_VIEWS = new Set(Object.values(ROLE_VIEWS).flat());
+
+export function isKnownView(view) {
+  return KNOWN_VIEWS.has(view);
+}
+
 export function canAccessView(role, view) {
   return (ROLE_VIEWS[role] || []).includes(view);
 }

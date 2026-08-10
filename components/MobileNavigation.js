@@ -22,7 +22,7 @@ function canShowItem(item, userRole, isUnlocked) {
     return canAccessView(userRole, item.id) && (!item.restricted || isUnlocked);
 }
 
-export default function MobileNavigation({ currentView, userRole, isUnlocked, onNavigate }) {
+export default function MobileNavigation({ currentView, userRole, isUnlocked, onNavigate, onOpenHelp }) {
     const [isMoreOpen, setIsMoreOpen] = useState(false);
     const moreButtonRef = useRef(null);
     const sheetRef = useRef(null);
@@ -38,7 +38,7 @@ export default function MobileNavigation({ currentView, userRole, isUnlocked, on
         if (!isMoreOpen) return;
         const previousOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
-        sheetRef.current?.querySelector('button')?.focus();
+        sheetRef.current?.querySelector('button, a[href]')?.focus();
 
         const handleKeyDown = (event) => {
             if (event.key === 'Escape') {
@@ -48,7 +48,7 @@ export default function MobileNavigation({ currentView, userRole, isUnlocked, on
                 return;
             }
             if (event.key !== 'Tab') return;
-            const focusable = [...(sheetRef.current?.querySelectorAll('button') || [])];
+            const focusable = [...(sheetRef.current?.querySelectorAll('button, a[href]') || [])];
             if (!focusable.length) return;
             const first = focusable[0];
             const last = focusable[focusable.length - 1];
@@ -102,6 +102,14 @@ export default function MobileNavigation({ currentView, userRole, isUnlocked, on
                                     </button>
                                 );
                             })}
+                        </div>
+                        <div className="mt-4 border-t border-outline-variant/20 pt-4 sm:hidden">
+                            <p className="mb-2 px-3 text-xs font-semibold text-on-surface-variant">Help and legal</p>
+                            <div className="flex flex-wrap gap-x-4 gap-y-2 px-3 text-xs font-medium">
+                                <button type="button" className="text-primary hover:underline" onClick={() => { setIsMoreOpen(false); onOpenHelp?.(); }}>Operations Help</button>
+                                <a href="#privacy" className="text-on-surface-variant hover:text-on-surface" onClick={() => setIsMoreOpen(false)}>Privacy Policy</a>
+                                <a href="#terms" className="text-on-surface-variant hover:text-on-surface" onClick={() => setIsMoreOpen(false)}>Terms of Service</a>
+                            </div>
                         </div>
                     </section>
                 </div>

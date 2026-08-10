@@ -24,7 +24,7 @@ import { formatDisplayDate } from '../../utils/helpers';
 import LockScreen from '../../components/LockScreen';
 import { BackgroundActivity, DashboardSkeleton } from '../../components/LoadingStates';
 import MobileNavigation from '../../components/MobileNavigation';
-import { canAccessView, getDefaultView } from '../../utils/rolePermissions';
+import { canAccessView, getDefaultView, isKnownView } from '../../utils/rolePermissions';
 
 function DashboardAppContent() {
     const {
@@ -49,7 +49,7 @@ function DashboardAppContent() {
     const [isExporting, setIsExporting] = useState(false);
 
     useEffect(() => {
-        if (!userRole || canAccessView(userRole, currentView)) return;
+        if (!userRole || !isKnownView(currentView) || canAccessView(userRole, currentView)) return;
         setCurrentView(getDefaultView(userRole));
     }, [currentView, setCurrentView, userRole]);
 
@@ -175,6 +175,17 @@ function DashboardAppContent() {
     // Render active panel
     const renderActiveTab = () => {
         let view = currentView;
+        if (!isKnownView(view)) {
+            return (
+                <section className="mx-auto flex min-h-[55vh] max-w-xl flex-col items-start justify-center px-3 py-10" role="alert" aria-labelledby="invalid-view-title">
+                    <span className="material-symbols-outlined mb-5 text-4xl text-on-surface-variant" aria-hidden="true">wrong_location</span>
+                    <p className="text-xs font-semibold text-primary">Navigation error</p>
+                    <h2 id="invalid-view-title" className="mt-2 text-headline-lg font-bold tracking-tight text-on-surface">This workspace view does not exist</h2>
+                    <p className="mt-3 max-w-md text-body-md leading-relaxed text-on-surface-variant">The link may be outdated or incomplete. Return home to continue working without losing your session.</p>
+                    <button type="button" onClick={() => setCurrentView(getDefaultView(userRole))} className="mt-6 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Return home</button>
+                </section>
+            );
+        }
         if (!canAccessView(userRole, view)) {
             view = getDefaultView(userRole);
         }
@@ -296,7 +307,7 @@ function DashboardAppContent() {
                 </div>
 
                 {/* Footer copyright */}
-                <footer className="w-full py-5 px-6 border-t border-outline-variant/10 bg-surface-container-lowest flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-on-surface-variant">
+                <footer className="hidden w-full flex-col items-center justify-between gap-3 border-t border-outline-variant/10 bg-surface-container-lowest px-6 py-5 text-xs text-on-surface-variant sm:flex sm:flex-row">
                     <div className="flex items-center gap-2">
                         <span>&copy; {new Date().getFullYear()} {appSettingsData?.app_full_name || 'Content suite'}. All rights reserved.</span>
                         <span className="px-1.5 py-0.5 rounded bg-surface-container-high text-[9px] font-bold tracking-wider text-on-surface-variant uppercase">{appSettingsData?.app_version || 'v0.1.0-alpha'}</span>
@@ -311,7 +322,7 @@ function DashboardAppContent() {
                 </footer>
             </main>
 
-            <MobileNavigation currentView={currentView} userRole={userRole} isUnlocked={isUnlocked} onNavigate={handleMobileNavClick} />
+            <MobileNavigation currentView={currentView} userRole={userRole} isUnlocked={isUnlocked} onNavigate={handleMobileNavClick} onOpenHelp={() => setHelpOpen(true)} />
 
             {/* Modals Overlays */}
             <UnlockModal isOpen={unlockOpen} onClose={() => setUnlockOpen(false)} />

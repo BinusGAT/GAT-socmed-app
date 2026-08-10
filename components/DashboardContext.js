@@ -120,6 +120,13 @@ export function DashboardProvider({ children }) {
 
     // Load initial states
     useEffect(() => {
+        const allowedFragments = new Set(['#main-content', '#help', '#privacy', '#terms']);
+        if (window.location.hash && !allowedFragments.has(window.location.hash)) {
+            const url = new URL(window.location.href);
+            url.hash = '';
+            window.history.replaceState({}, '', `${url.pathname}${url.search}`);
+        }
+
         // Dark Mode
         const localDarkSetting = localStorage.getItem('darkMode');
         const savedDarkMode = localDarkSetting === null ? true : localDarkSetting === 'true';
