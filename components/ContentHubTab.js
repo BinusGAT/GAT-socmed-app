@@ -310,39 +310,6 @@ export default function ContentHubTab() {
             });
     };
 
-    // Render reference links helper
-    const renderReferencesList = (refStr) => {
-        if (!refStr) return null;
-        const links = refStr.split(',').map(link => link.trim()).filter(Boolean);
-        if (links.length === 0) return null;
-
-        return (
-            <div className="space-y-1">
-                <span className="text-[10px] font-bold text-on-surface-variant/75 uppercase tracking-wider">Resource Links</span>
-                <div className="flex flex-col gap-1">
-                    {links.map((link, i) => {
-                        let shortUrl = link;
-                        try {
-                            const urlObj = new URL(link);
-                            shortUrl = urlObj.hostname + (urlObj.pathname.length > 20 ? urlObj.pathname.slice(0, 20) + '...' : urlObj.pathname);
-                        } catch (e) { }
-                        return (
-                            <a
-                                key={i}
-                                href={link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[12px] text-primary hover:underline inline-flex items-center gap-1.5 font-medium"
-                            >
-                                <span className="material-symbols-outlined text-[12px]">link</span> {shortUrl}
-                            </a>
-                        );
-                    })}
-                </div>
-            </div>
-        );
-    };
-
     const schedule = getResolvedSchedule(formTitle);
 
     if (!isUnlocked) {
@@ -634,39 +601,6 @@ export default function ContentHubTab() {
                                         disabled={!isUnlocked}
                                         required
                                     />
-                                </div>
-                            </div>
-
-                            {/* Live Preview Panel Card */}
-                            <div className="bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 space-y-4">
-                                <h5 className="text-[10px] font-bold text-on-surface-variant/75 uppercase tracking-wider flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-[16px] text-primary">analytics</span> Live Preview Panel
-                                </h5>
-
-                                <div className="space-y-3 text-body-sm">
-                                    {formHook && (
-                                        <div>
-                                            <p className="text-[9px] font-bold text-error uppercase tracking-wider mb-0.5">🪝 Visual Hook</p>
-                                            <p className="font-semibold text-on-surface italic">"{formHook}"</p>
-                                        </div>
-                                    )}
-                                    {formScript && (
-                                        <div>
-                                            <p className="text-[9px] font-bold text-primary uppercase tracking-wider mb-0.5">📝 Voiceover Script</p>
-                                            <div className="bg-surface-container-lowest border-l-2 border-primary rounded p-3 text-[12px] font-mono leading-relaxed whitespace-pre-wrap text-on-surface">
-                                                {formScript}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {(formCaption || formHashtags) && (
-                                        <div>
-                                            <p className="text-[9px] font-bold text-primary uppercase tracking-wider mb-0.5">📱 Caption & Tags</p>
-                                            <p className="text-on-surface text-[12px] leading-relaxed">
-                                                {formCaption} <span className="text-primary font-semibold">{formHashtags}</span>
-                                            </p>
-                                        </div>
-                                    )}
-                                    {renderReferencesList(formReferences)}
                                 </div>
                             </div>
 

@@ -23,6 +23,7 @@ import MyWorkTab from '../../components/MyWorkTab';
 import { formatDisplayDate } from '../../utils/helpers';
 import LockScreen from '../../components/LockScreen';
 import { BackgroundActivity, DashboardSkeleton } from '../../components/LoadingStates';
+import MobileNavigation from '../../components/MobileNavigation';
 
 function DashboardAppContent() {
     const {
@@ -44,7 +45,6 @@ function DashboardAppContent() {
     } = useDashboard();
 
     // Layout states
-    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
 
     // Sync active view mode class and lock status to body element for CSS alignment
@@ -83,10 +83,6 @@ function DashboardAppContent() {
     const [datePickerOpen, setDatePickerOpen] = useState(false);
     const [datePickerCallback, setDatePickerCallback] = useState(null);
     const [datePickerInitialDate, setDatePickerInitialDate] = useState('');
-
-    const toggleSidebar = () => {
-        setSidebarOpen(!sidebarOpen);
-    };
 
     const openDatePicker = (callback, initialDate = '') => {
         setDatePickerCallback(() => callback);
@@ -200,25 +196,6 @@ function DashboardAppContent() {
         }
     };
 
-    // Define bottom nav items for mobile layout
-    const mobileNavItems = [
-        { id: 'dashboard', label: 'Home', icon: 'dashboard' },
-        { id: 'my-work', label: 'My Work', icon: 'work_history' },
-        { id: 'calendar', label: 'Planner', icon: 'calendar_month' },
-        { id: 'tasklist', label: 'Tasks', icon: 'assignment', restricted: true },
-        { id: 'content', label: 'Library', icon: 'folder_open', restricted: true },
-        { id: 'meeting', label: 'Memos', icon: 'description', restricted: true },
-        { id: 'analytics', label: 'Data', icon: 'analytics' },
-        { id: 'web-analytics', label: 'Web', icon: 'language', restricted: true }
-    ];
-
-    const visibleMobileItems = mobileNavItems.filter(item => {
-        if (userRole === 'Viewer') {
-            return item.id === 'dashboard' || item.id === 'analytics' || item.id === 'web-analytics';
-        }
-        return !item.restricted || isUnlocked;
-    });
-
     const handleMobileNavClick = (id) => {
         if (id !== 'meeting') {
             setSelectedMeetingId(null);
@@ -267,15 +244,11 @@ function DashboardAppContent() {
                 Skip to main content
             </a>
             {/* Sidebar navigation */}
-            <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
-            {sidebarOpen && (
-                <div className="lg:hidden fixed inset-0 bg-background/60 backdrop-blur-xs z-40 transition-opacity" onClick={toggleSidebar}></div>
-            )}
+            <Sidebar />
 
             {/* Main Content Area */}
             <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 flex flex-col min-h-screen lg:pl-[280px] pt-16 pb-20 lg:pb-0">
                 <Topbar
-                    toggleSidebar={toggleSidebar}
                     openUnlockModal={() => setUnlockOpen(true)}
                     openDateRangeModal={() => setDateRangeOpen(true)}
                     onExport={handleExportAll}
@@ -312,7 +285,7 @@ function DashboardAppContent() {
                 )}
 
                 {/* Active Tab View */}
-                <div className="flex-1 p-6 relative" aria-busy={isLoading ? 'true' : 'false'}>
+                <div className="flex-1 p-3 sm:p-6 relative" aria-busy={isLoading ? 'true' : 'false'}>
                     {isInitialLoading ? <DashboardSkeleton /> : renderActiveTab()}
                 </div>
 
@@ -332,27 +305,7 @@ function DashboardAppContent() {
                 </footer>
             </main>
 
-            {/* Mobile Bottom Navigation Bar */}
-            <nav aria-label="Mobile primary navigation" className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-md border-t border-outline-variant/20 flex items-center justify-around gap-1 px-2 z-[90] overflow-x-auto overscroll-x-contain">
-                {visibleMobileItems.map((item) => {
-                    const isActive = currentView === item.id;
-                    return (
-                        <button
-                            type="button"
-                            key={item.id}
-                            onClick={() => handleMobileNavClick(item.id)}
-                            aria-current={isActive ? 'page' : undefined}
-                            className={`flex flex-col items-center gap-1 cursor-pointer transition-all micro-interaction ${isActive ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
-                                }`}
-                        >
-                            <span className="material-symbols-outlined text-[24px]" style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}>
-                                {item.icon}
-                            </span>
-                            <span className="text-[10px] font-semibold uppercase tracking-tighter">{item.label}</span>
-                        </button>
-                    );
-                })}
-            </nav>
+            <MobileNavigation currentView={currentView} userRole={userRole} isUnlocked={isUnlocked} onNavigate={handleMobileNavClick} />
 
             {/* Modals Overlays */}
             <UnlockModal isOpen={unlockOpen} onClose={() => setUnlockOpen(false)} />

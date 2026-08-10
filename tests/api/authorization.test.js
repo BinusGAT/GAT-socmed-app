@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getAllowedRoles,
   getExpectedRequestOrigin,
+  getRequestServingOrigin,
   getVisibleAuditRows,
   isTrustedRequestOrigin,
   isRoleAllowed,
@@ -53,12 +54,40 @@ describe('API authorization policy', () => {
   });
 
   it('uses the configured application origin instead of forged proxy headers', () => {
-    expect(getExpectedRequestOrigin('https://internal.invalid', 'https://dashboard.example.test/path'))
+    expect(getExpectedRequestOrigin('https://internal.invalid', 'https://dashboard.example.test/path', 'production'))
       .toBe('https://dashboard.example.test');
     expect(isTrustedRequestOrigin('https://attacker.example', getExpectedRequestOrigin(
       'https://internal.invalid',
       'https://dashboard.example.test',
+      'production',
     ))).toBe(false);
+  });
+
+  it('accepts the actual serving origin for LAN development', () => {
+    const servingOrigin = getRequestServingOrigin(
+      'http://localhost:3000',
+      '10.24.2.32:3000',
+      'http',
+      'development',
+    );
+    const expectedOrigin = getExpectedRequestOrigin(
+      servingOrigin,
+      'http://localhost:3000',
+      'development',
+    );
+
+    expect(expectedOrigin).toBe('http://10.24.2.32:3000');
+    expect(isTrustedRequestOrigin('http://10.24.2.32:3000', expectedOrigin)).toBe(true);
+    expect(isTrustedRequestOrigin('https://attacker.example', expectedOrigin)).toBe(false);
+  });
+
+  it('does not trust a Host override when resolving a production origin', () => {
+    expect(getRequestServingOrigin(
+      'https://dashboard.example.test',
+      'attacker.example',
+      'https',
+      'production',
+    )).toBe('https://dashboard.example.test');
   });
 
   it('only exposes audit records to administrators', () => {

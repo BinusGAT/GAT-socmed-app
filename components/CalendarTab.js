@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
-import { 
+import {
     normalizePicName, 
     getTaskCalculatedStatus,
     getLocalDateInputValue,
@@ -14,6 +14,13 @@ import {
     formatDate,
     getPicBadgeClasses
 } from '../utils/helpers';
+
+const getDateInputValue = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
 export default function CalendarTab({ onOpenExport }) {
     const {
@@ -146,6 +153,14 @@ export default function CalendarTab({ onOpenExport }) {
         setCurrentMonth(new Date());
     };
 
+    const shiftSelectedWeek = (offset) => {
+        const baseDate = selectedDate ? new Date(`${selectedDate}T00:00:00`) : new Date();
+        baseDate.setDate(baseDate.getDate() + (offset * 7));
+        const nextDate = getDateInputValue(baseDate);
+        setSelectedDate(nextDate);
+        setCurrentMonth(new Date(baseDate.getFullYear(), baseDate.getMonth(), 1));
+    };
+
     const formatMonthLabel = (date) => {
         const months = [
             'January', 'February', 'March', 'April', 'May', 'June', 
@@ -174,6 +189,19 @@ export default function CalendarTab({ onOpenExport }) {
 
     // Tasks for the selected date
     const selectedDateTasks = tasksByDateMap[selectedDate] || [];
+    const selectedDateObject = selectedDate ? new Date(`${selectedDate}T00:00:00`) : new Date();
+    const mobileWeekStart = new Date(selectedDateObject);
+    mobileWeekStart.setDate(selectedDateObject.getDate() - selectedDateObject.getDay());
+    const mobileWeekDays = Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(mobileWeekStart);
+        date.setDate(mobileWeekStart.getDate() + index);
+        const dateString = getDateInputValue(date);
+        return {
+            date,
+            dateString,
+            tasks: tasksByDateMap[dateString] || [],
+        };
+    });
 
     // Edit/Delete handlers
     const startEditTask = (task) => {
@@ -253,8 +281,49 @@ export default function CalendarTab({ onOpenExport }) {
             {/* Calendar & Form Editor Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-gutter items-start">
                 
+                {/* Mobile agenda navigator */}
+                <section className="sm:hidden rounded-xl border border-outline-variant/30 bg-surface-container p-3 shadow-sm" aria-labelledby="mobile-planner-period">
+                    <div className="flex items-center justify-between gap-2">
+                        <button type="button" onClick={() => shiftSelectedWeek(-1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-outline-variant/30 bg-surface-container-high text-on-surface" aria-label="Previous week">
+                            <span className="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+                        </button>
+                        <div className="min-w-0 text-center">
+                            <h3 id="mobile-planner-period" className="truncate text-base font-bold text-on-surface">{formatMonthLabel(selectedDateObject)}</h3>
+                            <p className="text-xs text-on-surface-variant">{getTasksCountForMonth()} tasks this month</p>
+                        </div>
+                        <button type="button" onClick={() => shiftSelectedWeek(1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-outline-variant/30 bg-surface-container-high text-on-surface" aria-label="Next week">
+                            <span className="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+                        </button>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-7 gap-1" aria-label="Choose a planning date">
+                        {mobileWeekDays.map(({ date, dateString, tasks }) => {
+                            const isSelected = dateString === selectedDate;
+                            const isToday = dateString === getLocalDateInputValue();
+                            return (
+                                <button
+                                    key={dateString}
+                                    type="button"
+                                    onClick={() => { setSelectedDate(dateString); setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1)); }}
+                                    aria-pressed={isSelected}
+                                    aria-label={`${date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}${tasks.length ? `, ${tasks.length} scheduled` : ''}`}
+                                    className={`flex min-w-0 flex-col items-center gap-1 rounded-lg py-2 transition-colors ${isSelected ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'}`}
+                                >
+                                    <span className={`text-xs font-semibold ${isSelected ? 'text-on-primary' : 'text-on-surface-variant'}`}>{date.toLocaleDateString('en-US', { weekday: 'narrow' })}</span>
+                                    <span className="text-base font-bold font-tabular">{date.getDate()}</span>
+                                    <span className={`h-1.5 min-w-1.5 rounded-full ${tasks.length ? (isSelected ? 'bg-on-primary' : 'bg-primary') : isToday ? 'border border-primary' : 'bg-transparent'}`} aria-hidden="true" />
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <button type="button" onClick={goToToday} className="mt-3 w-full rounded-lg bg-surface-container-high py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-highest">
+                        Jump to today
+                    </button>
+                </section>
+
                 {/* Main Month Grid (Left/Center 3 columns) */}
-                <div className="lg:col-span-3 rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm bg-surface-container calendar-shell">
+                <div className="hidden sm:block lg:col-span-3 rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm bg-surface-container calendar-shell">
                     
                     {/* Month Toolbar */}
                     <div className="px-5 py-3.5 border-b border-outline-variant/20 flex flex-col sm:flex-row gap-3 items-center justify-between bg-surface-container-low">
@@ -416,10 +485,10 @@ export default function CalendarTab({ onOpenExport }) {
                 </div>
 
                 {/* Day Editor Sidebar (Right 1 column) */}
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                     
                     {/* Selection Summary Header */}
-                    <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-3">
+                    <div className="hidden sm:block bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-3">
                         <div>
                             <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold">Selected Date</span>
                             <div className="text-body-lg font-bold text-on-surface flex items-center gap-2 mt-1">
@@ -434,9 +503,13 @@ export default function CalendarTab({ onOpenExport }) {
 
                     {/* Selected Date Tasks List */}
                     <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
-                        <h5 className="text-body-sm font-bold text-on-surface uppercase tracking-wider pb-2 border-b border-outline-variant/20">
-                            Scheduled pipeline
-                        </h5>
+                        <div className="flex items-end justify-between gap-3 border-b border-outline-variant/20 pb-2">
+                            <div>
+                                <h5 className="text-body-sm font-bold text-on-surface uppercase tracking-wider">Scheduled pipeline</h5>
+                                <p className="mt-0.5 text-xs font-semibold text-primary sm:hidden">{formatDisplayDateString(selectedDate)}</p>
+                            </div>
+                            <span className="text-xs font-semibold text-on-surface-variant">{selectedDateTasks.length} {selectedDateTasks.length === 1 ? 'item' : 'items'}</span>
+                        </div>
 
                         <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
                             {selectedDateTasks.length === 0 ? (
@@ -482,7 +555,7 @@ export default function CalendarTab({ onOpenExport }) {
                                                         </>
                                                     )}
                                                 </div>
-                                                <p className="text-[12px] text-on-surface-variant/90 font-medium truncate" title={task.contentTitle || 'Untitled'}>
+                                                <p className="text-[12px] text-on-surface-variant/90 font-medium line-clamp-2 sm:line-clamp-1" title={task.contentTitle || 'Untitled'}>
                                                     {task.isMeeting ? 'Meeting Agenda & Recap Details' : (task.contentTitle || 'Untitled')}
                                                 </p>
                                                 {!task.isMeeting && (
@@ -551,7 +624,7 @@ export default function CalendarTab({ onOpenExport }) {
                             </h5>
 
                             <form onSubmit={handleFormSubmit} className="space-y-4" autoComplete="off">
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <label className="text-body-sm font-semibold text-on-surface-variant">PIC</label>
                                          <select 

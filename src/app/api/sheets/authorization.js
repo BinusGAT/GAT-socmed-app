@@ -46,10 +46,40 @@ export function isTrustedRequestOrigin(origin, expectedOrigin) {
   }
 }
 
-export function getExpectedRequestOrigin(fallbackOrigin, configuredOrigin = process.env.APP_ORIGIN) {
-  const candidate = configuredOrigin || fallbackOrigin;
+export function getExpectedRequestOrigin(
+  fallbackOrigin,
+  configuredOrigin = process.env.APP_ORIGIN,
+  environment = process.env.NODE_ENV,
+) {
+  // A development server can legitimately be opened through localhost or a
+  // LAN address. Validate against the origin that served the request in that
+  // environment; production remains pinned to APP_ORIGIN when configured.
+  const candidate = environment === 'development'
+    ? fallbackOrigin
+    : configuredOrigin || fallbackOrigin;
   try {
     return new URL(candidate).origin;
+  } catch {
+    return fallbackOrigin;
+  }
+}
+
+export function getRequestServingOrigin(
+  fallbackOrigin,
+  hostHeader,
+  forwardedProtocol,
+  environment = process.env.NODE_ENV,
+) {
+  if (environment !== 'development' || !hostHeader) return fallbackOrigin;
+
+  try {
+    const fallbackUrl = new URL(fallbackOrigin);
+    const protocol = String(forwardedProtocol || fallbackUrl.protocol)
+      .split(',')[0]
+      .trim()
+      .replace(/:$/, '');
+    if (!['http', 'https'].includes(protocol)) return fallbackOrigin;
+    return new URL(`${protocol}://${hostHeader}`).origin;
   } catch {
     return fallbackOrigin;
   }

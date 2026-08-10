@@ -6,7 +6,6 @@ import { useDashboard } from './DashboardContext';
 import { parseDate } from '../utils/helpers';
 
 export default function Topbar({
-    toggleSidebar,
     openUnlockModal,
     openDateRangeModal,
     onExport,
@@ -164,16 +163,8 @@ export default function Topbar({
 
     return (
         <header className="fixed top-0 right-0 left-0 lg:left-[280px] h-16 bg-surface-container-lowest border-b border-outline-variant/30 dark:bg-[#0c0d10] dark:border-[#22232a] z-40 flex items-center justify-between px-container-padding">
-            {/* Header Left (Menu Toggle and Title) */}
+            {/* Header Left */}
             <div className="flex items-center gap-4">
-                <button
-                    onClick={toggleSidebar}
-                    id="sidebarToggle"
-                    className="block lg:hidden text-on-surface-variant hover:text-on-surface p-1.5 rounded-lg hover:bg-surface-container/60 transition-colors micro-interaction cursor-pointer"
-                    aria-label="Toggle sidebar"
-                >
-                    <span className="material-symbols-outlined text-[24px]">menu</span>
-                </button>
                 <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
                     {getPageTitle()}
                 </h2>

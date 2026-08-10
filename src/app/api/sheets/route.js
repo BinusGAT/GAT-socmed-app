@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getSessionDurationMs } from '../../../../utils/sessionPolicy';
 import { dbExecute, dbBatch, gatAppExecute } from '../../../../utils/db';
-import { getAllowedRoles, getExpectedRequestOrigin, getVisibleAuditRows, isTrustedRequestOrigin } from './authorization';
+import { getAllowedRoles, getExpectedRequestOrigin, getRequestServingOrigin, getVisibleAuditRows, isTrustedRequestOrigin } from './authorization';
 import { getIndonesianMonth, getIsoDateString, parseMetricToNumber } from './domain';
 import { validateAuth, writeAudit } from './sessions';
 import {
@@ -116,7 +116,12 @@ export async function POST(request) {
   const startTime = Date.now();
   console.log(`\n--- [API request start] ---`);
   try {
-    const expectedOrigin = getExpectedRequestOrigin(request.nextUrl.origin);
+    const servingOrigin = getRequestServingOrigin(
+      request.nextUrl.origin,
+      request.headers.get('host'),
+      request.headers.get('x-forwarded-proto'),
+    );
+    const expectedOrigin = getExpectedRequestOrigin(servingOrigin);
     if (!isTrustedRequestOrigin(request.headers.get('origin'), expectedOrigin)) {
       return NextResponse.json(
         { success: false, error: 'Forbidden: cross-origin request rejected' },

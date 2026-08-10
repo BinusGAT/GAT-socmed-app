@@ -3,7 +3,7 @@
 import React from 'react';
 import { useDashboard } from './DashboardContext';
 
-export default function Sidebar({ isOpen, toggleSidebar }) {
+export default function Sidebar() {
     const {
         currentView,
         setCurrentView,
@@ -39,9 +39,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             setSelectedMeetingId(null);
         }
         setCurrentView(id);
-        if (window.innerWidth <= 1024) {
-            toggleSidebar();
-        }
     };
 
     const handleNewPostClick = () => {
@@ -51,9 +48,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
         }
         setCurrentView('dashboard');
         setIsNewPostDrawerOpen(true);
-        if (window.innerWidth <= 1024) {
-            toggleSidebar();
-        }
     };
 
     const handleLogoutClick = () => {
@@ -64,8 +58,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
     };
 
     return (
-        <aside className={`fixed left-0 top-0 h-full w-[280px] bg-surface-container-lowest border-r border-outline-variant/30 dark:bg-[#0c0d10] dark:border-[#22232a] flex flex-col justify-between py-stack-lg z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-            }`}>
+        <aside className="fixed left-0 top-0 hidden h-full w-[280px] flex-col justify-between border-r border-outline-variant/30 bg-surface-container-lowest py-stack-lg dark:border-[#22232a] dark:bg-[#0c0d10] lg:flex">
             <div>
                 {/* Brand */}
                 <div className="px-container-padding mb-stack-lg flex items-center justify-between">
@@ -78,10 +71,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                             <p className="text-[9px] text-primary tracking-widest uppercase font-bold font-mono">{appSettingsData?.app_subtitle || 'Workspace'}</p>
                         </div>
                     </div>
-                    {/* Close button on mobile */}
-                    <button className="lg:hidden text-on-surface-variant hover:text-on-surface p-1.5 rounded-lg hover:bg-surface-container micro-interaction cursor-pointer" onClick={toggleSidebar} aria-label="Close sidebar">
-                        <span className="material-symbols-outlined text-[22px]">close</span>
-                    </button>
                 </div>
 
                 {/* + New Post Button */}

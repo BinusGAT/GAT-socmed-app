@@ -48,9 +48,25 @@ async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = fa
 
 async function openSettings(page) {
   if ((page.viewportSize()?.width || 0) < 1024) {
-    await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    await page.getByRole('navigation', { name: 'Mobile primary navigation', exact: true }).getByRole('button', { name: 'More', exact: true }).click();
+    await page.getByRole('dialog', { name: 'More tools' }).getByRole('button', { name: /Settings/ }).click();
+    return;
   }
   await page.getByRole('button', { name: /Settings/ }).click();
+}
+
+async function openAuthenticatedView(page, { mobileName, desktopName = mobileName, secondary = false }) {
+  if ((page.viewportSize()?.width || 0) < 1024) {
+    const navigation = page.getByRole('navigation', { name: 'Mobile primary navigation', exact: true });
+    if (secondary) {
+      await navigation.getByRole('button', { name: 'More', exact: true }).click();
+      await page.getByRole('dialog', { name: 'More tools' }).getByRole('button', { name: mobileName }).click();
+    } else {
+      await navigation.getByRole('button', { name: mobileName }).click();
+    }
+    return;
+  }
+  await page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: desktopName }).click();
 }
 
 test('uses a structural skeleton without blocking the authenticated shell', async ({ page }) => {
@@ -73,7 +89,7 @@ test('content table sorting is keyboard accessible and exposes its direction', a
   await openAuthenticatedDashboard(page);
   const isCompact = (page.viewportSize()?.width || 0) < 1024;
   if (isCompact) {
-    await page.getByRole('button', { name: /Tasks/ }).last().click();
+    await openAuthenticatedView(page, { mobileName: /Tasks/, desktopName: /Task List/, secondary: true });
   }
   const dateHeader = page.getByRole('columnheader', { name: /date/i }).first();
   await expect(dateHeader).toHaveAttribute('aria-sort', 'ascending');
@@ -93,14 +109,45 @@ test('authenticated dashboard does not overflow the page at mobile width', async
   expect(dimensions.contentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
 });
 
+test('mobile navigation keeps five stable destinations without horizontal scrolling', async ({ page }) => {
+  test.skip((page.viewportSize()?.width || 0) >= 1024, 'Mobile navigation is hidden on desktop.');
+  await openAuthenticatedDashboard(page);
+  const navigation = page.getByRole('navigation', { name: 'Mobile primary navigation', exact: true });
+  await expect(navigation.getByRole('button')).toHaveCount(5);
+  await expect(page.getByRole('button', { name: 'Toggle sidebar' })).toHaveCount(0);
+  const dimensions = await navigation.evaluate((element) => ({ clientWidth: element.clientWidth, scrollWidth: element.scrollWidth }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+});
+
+test('mobile More menu exposes secondary destinations and restores focus', async ({ page }) => {
+  test.skip((page.viewportSize()?.width || 0) >= 1024, 'Mobile navigation is hidden on desktop.');
+  await openAuthenticatedDashboard(page);
+  const moreButton = page.getByRole('navigation', { name: 'Mobile primary navigation', exact: true }).getByRole('button', { name: 'More', exact: true });
+  await moreButton.click();
+  const menu = page.getByRole('dialog', { name: 'More tools' });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('button', { name: /Tasks/ })).toBeVisible();
+  await expect(menu.getByRole('button', { name: /Settings/ })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  await expect(moreButton).toBeFocused();
+});
+
+test('mobile planner uses an agenda strip instead of a compressed month grid', async ({ page }) => {
+  test.skip((page.viewportSize()?.width || 0) >= 640, 'Phone-specific planner layout is hidden on larger screens.');
+  await openAuthenticatedDashboard(page);
+  await openAuthenticatedView(page, { mobileName: /Planner/, desktopName: /Calendar/ });
+  await expect(page.locator('.calendar-shell')).toBeHidden();
+  const dateStrip = page.locator('[aria-label="Choose a planning date"]');
+  await expect(dateStrip.getByRole('button')).toHaveCount(7);
+  await dateStrip.getByRole('button', { name: /Tuesday, August 11/ }).click();
+  await expect(page.getByText('Campus highlights')).toBeVisible();
+  await expect(page.getByText('11/08/2026', { exact: true }).last()).toBeVisible();
+});
+
 test('opens the selected My Work assignment in the task editor', async ({ page }) => {
   await openAuthenticatedDashboard(page);
-  const navigationName = (page.viewportSize()?.width || 0) < 1024
-    ? 'Mobile primary navigation'
-    : 'Primary navigation';
-  await page.getByRole('navigation', { name: navigationName, exact: true })
-    .getByRole('button', { name: /My Work/ })
-    .click();
+  await openAuthenticatedView(page, { mobileName: /My Work/ });
   await page.getByRole('button', { name: 'Open task Campus highlights' }).click();
   await expect(page.getByRole('heading', { name: 'Update Scheduled Task (TASK-001)' })).toBeVisible();
   await expect(page).toHaveURL(/view=tasklist&task=TASK-001/);
@@ -108,12 +155,7 @@ test('opens the selected My Work assignment in the task editor', async ({ page }
 
 test('keeps the authenticated view in the URL across refresh', async ({ page }) => {
   await openAuthenticatedDashboard(page);
-  const navigationName = (page.viewportSize()?.width || 0) < 1024
-    ? 'Mobile primary navigation'
-    : 'Primary navigation';
-  await page.getByRole('navigation', { name: navigationName, exact: true })
-    .getByRole('button', { name: /My Work/ })
-    .click();
+  await openAuthenticatedView(page, { mobileName: /My Work/ });
   await expect(page).toHaveURL(/\?view=my-work$/);
   await page.reload();
   await expect(page.getByRole('heading', { name: 'My Work' })).toBeVisible();
@@ -121,12 +163,7 @@ test('keeps the authenticated view in the URL across refresh', async ({ page }) 
 
 test('keeps task editor values visible when required fields are missing', async ({ page }) => {
   await openAuthenticatedDashboard(page);
-  const navigationName = (page.viewportSize()?.width || 0) < 1024
-    ? 'Mobile primary navigation'
-    : 'Primary navigation';
-  await page.getByRole('navigation', { name: navigationName, exact: true })
-    .getByRole('button', { name: /Tasks|Task List/ })
-    .click();
+  await openAuthenticatedView(page, { mobileName: /Tasks/, desktopName: /Task List/, secondary: true });
   await page.getByRole('button', { name: /Add Scheduled Task/ }).click();
   await page.getByPlaceholder('Enter title (optional)').fill('Orientation recap');
   await page.getByRole('button', { name: 'Save Task' }).click();
@@ -136,12 +173,7 @@ test('keeps task editor values visible when required fields are missing', async 
 
 test('persists task search filters across refresh', async ({ page }) => {
   await openAuthenticatedDashboard(page);
-  const navigationName = (page.viewportSize()?.width || 0) < 1024
-    ? 'Mobile primary navigation'
-    : 'Primary navigation';
-  await page.getByRole('navigation', { name: navigationName, exact: true })
-    .getByRole('button', { name: /Tasks|Task List/ })
-    .click();
+  await openAuthenticatedView(page, { mobileName: /Tasks/, desktopName: /Task List/, secondary: true });
   await page.getByPlaceholder('Search tasks...').fill('Campus');
   await page.reload();
   await expect(page.getByPlaceholder('Search tasks...')).toHaveValue('Campus');
@@ -149,12 +181,7 @@ test('persists task search filters across refresh', async ({ page }) => {
 
 test('protects an unsaved task draft when closing the editor', async ({ page }) => {
   await openAuthenticatedDashboard(page);
-  const navigationName = (page.viewportSize()?.width || 0) < 1024
-    ? 'Mobile primary navigation'
-    : 'Primary navigation';
-  await page.getByRole('navigation', { name: navigationName, exact: true })
-    .getByRole('button', { name: /Tasks|Task List/ })
-    .click();
+  await openAuthenticatedView(page, { mobileName: /Tasks/, desktopName: /Task List/, secondary: true });
   await page.getByRole('button', { name: /Add Scheduled Task/ }).click();
   await page.getByPlaceholder('Enter title (optional)').fill('Recovered orientation draft');
   await page.getByRole('button', { name: 'Close task editor' }).click();
@@ -182,11 +209,9 @@ test('offers retry guidance when live synchronization fails', async ({ page }) =
 
 test('protects unsaved storyboard writing before closing', async ({ page }) => {
   await openAuthenticatedDashboard(page);
-  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
-  await page.getByRole('navigation', { name: navigationName, exact: true })
-    .getByRole('button', { name: /Library|Posts library/ })
-    .click();
+  await openAuthenticatedView(page, { mobileName: /Library/, desktopName: /Posts library/ });
   await page.getByRole('button', { name: /Orientation storyboard/ }).click();
+  await expect(page.getByText('Live Preview Panel')).toHaveCount(0);
   await page.getByPlaceholder('Write video dialogue, voiceover cues, or visual notes here...').fill('Keep this unsaved storyboard copy.');
   await page.getByPlaceholder('Write video dialogue, voiceover cues, or visual notes here...')
     .locator('xpath=ancestor::form')
@@ -199,10 +224,7 @@ test('protects unsaved storyboard writing before closing', async ({ page }) => {
 
 test('protects an unsaved new meeting memo before closing', async ({ page }) => {
   await openAuthenticatedDashboard(page);
-  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
-  await page.getByRole('navigation', { name: navigationName, exact: true })
-    .getByRole('button', { name: /Memos|Meeting Memo/ })
-    .click();
+  await openAuthenticatedView(page, { mobileName: /Meeting memos/, desktopName: /Meeting Memo/, secondary: true });
   await page.getByRole('button', { name: 'Create Memo' }).click();
   const editor = page.locator('#meetingFormRecap');
   await editor.fill('Decisions and follow-up actions');
@@ -227,17 +249,15 @@ test('deep-links to a post editor and restores it after refresh', async ({ page 
   await openAuthenticatedDashboard(page);
   await page.goto('/?post=POST-002');
   await page.reload();
-  await expect(page.getByText('Edit Post Metrics')).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Loading dashboard' })).toBeHidden({ timeout: 10_000 });
+  await expect(page.getByText('Edit Post Metrics')).toBeVisible({ timeout: 10_000 });
   await page.reload();
   await expect(page.getByText('Edit Post Metrics')).toBeVisible();
 });
 
 test('deep-links to a meeting memo and restores it after refresh', async ({ page }) => {
   await openAuthenticatedDashboard(page);
-  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
-  await page.getByRole('navigation', { name: navigationName, exact: true })
-    .getByRole('button', { name: /Memos|Meeting Memo/ })
-    .click();
+  await openAuthenticatedView(page, { mobileName: /Meeting memos/, desktopName: /Meeting Memo/, secondary: true });
   await page.getByRole('button', { name: /Weekly content planning decisions/ }).click();
   await expect(page).toHaveURL(/view=meeting&meeting=MM-001/);
   await page.reload();
@@ -248,17 +268,15 @@ test('shows a recovery state for an unavailable meeting link', async ({ page }) 
   await openAuthenticatedDashboard(page);
   await page.goto('/?view=meeting&meeting=MM-MISSING');
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Meeting memo unavailable' })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Loading dashboard' })).toBeHidden({ timeout: 10_000 });
+  await expect(page.getByRole('heading', { name: 'Meeting memo unavailable' })).toBeVisible({ timeout: 10_000 });
   await page.getByRole('button', { name: 'Back to memo directory' }).click();
   await expect(page).not.toHaveURL(/meeting=/);
 });
 
 test('persists content-library search across refresh', async ({ page }) => {
   await openAuthenticatedDashboard(page);
-  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
-  await page.getByRole('navigation', { name: navigationName, exact: true })
-    .getByRole('button', { name: /Library|Posts library/ })
-    .click();
+  await openAuthenticatedView(page, { mobileName: /Library/, desktopName: /Posts library/ });
   await page.getByPlaceholder('Search backlog drafts...').fill('Orientation');
   await page.reload();
   await expect(page.getByPlaceholder('Search backlog drafts...')).toHaveValue('Orientation');
@@ -294,10 +312,7 @@ test('keeps at least one Post Library category visible', async ({ page }) => {
 test('undoes a scheduled task deletion before the API call', async ({ page }) => {
   const actionLog = [];
   await openAuthenticatedDashboard(page, { actionLog });
-  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
-  await page.getByRole('navigation', { name: navigationName, exact: true })
-    .getByRole('button', { name: /Tasks|Task List/ })
-    .click();
+  await openAuthenticatedView(page, { mobileName: /Tasks/, desktopName: /Task List/, secondary: true });
   await page.getByTitle('Delete schedule entry').click();
   await page.getByRole('alertdialog', { name: 'Delete scheduled task?' }).getByRole('button', { name: 'Delete' }).click();
   await expect(page.getByText(/Campus highlights.*will be deleted shortly/)).toBeVisible();
@@ -309,10 +324,7 @@ test('undoes a scheduled task deletion before the API call', async ({ page }) =>
 test('permanently deletes once after the undo window expires', async ({ page }) => {
   const actionLog = [];
   await openAuthenticatedDashboard(page, { actionLog });
-  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
-  await page.getByRole('navigation', { name: navigationName, exact: true })
-    .getByRole('button', { name: /Tasks|Task List/ })
-    .click();
+  await openAuthenticatedView(page, { mobileName: /Tasks/, desktopName: /Task List/, secondary: true });
   await page.getByTitle('Delete schedule entry').click();
   await page.getByRole('alertdialog', { name: 'Delete scheduled task?' }).getByRole('button', { name: 'Delete' }).click();
   await expect.poll(() => actionLog.filter((action) => action === 'delete_schedule').length, { timeout: 8000 }).toBe(1);
@@ -321,10 +333,7 @@ test('permanently deletes once after the undo window expires', async ({ page }) 
 test('uses the accessible undo flow for storyboard deletion', async ({ page }) => {
   const actionLog = [];
   await openAuthenticatedDashboard(page, { actionLog });
-  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
-  await page.getByRole('navigation', { name: navigationName, exact: true })
-    .getByRole('button', { name: /Library|Posts library/ })
-    .click();
+  await openAuthenticatedView(page, { mobileName: /Library/, desktopName: /Posts library/ });
   await page.getByRole('button', { name: /Orientation storyboard/ }).click();
   await page.getByRole('button', { name: /Delete/ }).click();
   await page.getByRole('alertdialog', { name: 'Delete storyboard draft?' }).getByRole('button', { name: 'Delete' }).click();
