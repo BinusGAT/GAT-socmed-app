@@ -10,6 +10,7 @@ import EmptyState from './EmptyState';
 import DiscardChangesModal from './DiscardChangesModal';
 import UndoDeleteToast from './UndoDeleteToast';
 import { useDeferredDelete } from '../utils/useDeferredDelete';
+import { isTaskAssignedToUser } from '../utils/rolePermissions';
 import { 
     normalizePicName, 
     getTaskCalculatedStatus,
@@ -29,6 +30,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
         isMutating,
         userRole,
         userId,
+        userName,
         saveCalendarTask,
         deleteCalendarTask,
         memberListData,
@@ -85,7 +87,8 @@ export default function TaskListTab({ onOpenDatePicker }) {
                 contentTitle: task['Content Title'] || '',
                 category: task.Category,
                 status: isUploaded,
-                calculatedStatus: calculatedStatus
+                calculatedStatus: calculatedStatus,
+                assignedUserId: task.AssignedUserId || ''
             });
         });
         return list;
@@ -161,6 +164,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
 
     const openEditModal = (task) => {
         if (!isUnlocked || userRole === 'Viewer') return;
+        if (userRole === 'Creator' && !isTaskAssignedToUser(task, userId, userName)) return;
         setModalTaskId(task.id);
         const nextState = {
             title: task.contentTitle,
@@ -297,7 +301,9 @@ export default function TaskListTab({ onOpenDatePicker }) {
         }
     };
 
-    const actionsDisabled = !isUnlocked || userRole === 'Viewer' || userRole === 'Creator';
+    const showActions = isUnlocked && userRole !== 'Viewer';
+    const canCreateTask = isUnlocked && userRole === 'Admin';
+    const canEditTask = (task) => userRole === 'Admin' || (userRole === 'Creator' && isTaskAssignedToUser(task, userId, userName));
 
     if (!isUnlocked) {
         return <LockScreen sectionName="Task List" />;
@@ -317,7 +323,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-                    {!actionsDisabled && (
+                    {canCreateTask && (
                         <button 
                             type="button" 
                             className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1.5 px-3.5 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs" 
@@ -397,25 +403,25 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                 <SortableTableHeader column="pic" activeColumn={sortField} direction={sortAsc ? 'asc' : 'desc'} onSort={handleSort} className="px-5 py-1.5">PIC</SortableTableHeader>
                                 <SortableTableHeader column="category" activeColumn={sortField} direction={sortAsc ? 'asc' : 'desc'} onSort={handleSort} className="px-5 py-1.5">Category</SortableTableHeader>
                                 <SortableTableHeader column="calculatedStatus" activeColumn={sortField} direction={sortAsc ? 'asc' : 'desc'} onSort={handleSort} className="px-5 py-1.5">Timeline status</SortableTableHeader>
-                                {!actionsDisabled && <th className="px-5 py-4 text-center">Actions</th>}
+                                {showActions && <th className="px-5 py-4 text-center">Actions</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-outline-variant/15">
                             {processedTasks.length === 0 ? (
                                 <tr>
-                                    <td colSpan={actionsDisabled ? 5 : 6} className="p-12 text-center text-on-surface-variant/60">
+                                    <td colSpan={showActions ? 6 : 5} className="p-12 text-center text-on-surface-variant/60">
                                         <div className="flex flex-col items-center justify-center space-y-2">
                                             <span className="material-symbols-outlined text-[42px] text-on-surface-variant/35">info</span>
                                             <EmptyState
                                                 icon={scheduleData.length ? 'filter_alt_off' : 'event_busy'}
                                                 title={scheduleData.length ? 'No tasks match these filters' : 'No scheduled tasks yet'}
                                                 description={scheduleData.length ? 'Clear the current filters to see the full task directory.' : 'Add the first scheduled task to start planning content.'}
-                                                actionLabel={scheduleData.length ? 'Clear filters' : (!actionsDisabled ? 'Add scheduled task' : undefined)}
+                                                actionLabel={scheduleData.length ? 'Clear filters' : (canCreateTask ? 'Add scheduled task' : undefined)}
                                                 onAction={scheduleData.length ? () => {
                                                     setTasklistSearch('');
                                                     setTasklistFilterPic('');
                                                     setTasklistFilterStatus('');
-                                                } : (!actionsDisabled ? openAddModal : undefined)}
+                                                } : (canCreateTask ? openAddModal : undefined)}
                                             />
                                         </div>
                                     </td>
@@ -461,16 +467,16 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                                     )}
                                                 </div>
                                             </td>
-                                            {!actionsDisabled && (
+                                            {showActions && (
                                                 <td className="px-5 py-3.5 text-center">
                                                     <div className="flex gap-2 justify-center">
-                                                        <button 
+                                                        {canEditTask(task) && <button
                                                             className="w-7 h-7 flex items-center justify-center bg-surface-container border border-outline-variant/30 rounded text-on-surface-variant hover:text-primary hover:border-primary cursor-pointer transition-colors"
                                                             onClick={() => openEditModal(task)}
                                                             title="Edit schedule details"
                                                         >
                                                             <span className="material-symbols-outlined text-[15px]">edit</span>
-                                                        </button>
+                                                        </button>}
                                                         {userRole === 'Admin' && (
                                                             <button 
                                                                 className="w-7 h-7 flex items-center justify-center bg-surface-container border border-outline-variant/30 rounded text-on-surface-variant hover:text-error hover:border-error cursor-pointer transition-colors"

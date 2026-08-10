@@ -24,6 +24,7 @@ import { formatDisplayDate } from '../../utils/helpers';
 import LockScreen from '../../components/LockScreen';
 import { BackgroundActivity, DashboardSkeleton } from '../../components/LoadingStates';
 import MobileNavigation from '../../components/MobileNavigation';
+import { canAccessView, getDefaultView } from '../../utils/rolePermissions';
 
 function DashboardAppContent() {
     const {
@@ -46,6 +47,11 @@ function DashboardAppContent() {
 
     // Layout states
     const [isExporting, setIsExporting] = useState(false);
+
+    useEffect(() => {
+        if (!userRole || canAccessView(userRole, currentView)) return;
+        setCurrentView(getDefaultView(userRole));
+    }, [currentView, setCurrentView, userRole]);
 
     // Sync active view mode class and lock status to body element for CSS alignment
     useEffect(() => {
@@ -169,8 +175,8 @@ function DashboardAppContent() {
     // Render active panel
     const renderActiveTab = () => {
         let view = currentView;
-        if (userRole === 'Viewer' && !['dashboard', 'analytics', 'web-analytics', 'my-work'].includes(view)) {
-            view = 'dashboard';
+        if (!canAccessView(userRole, view)) {
+            view = getDefaultView(userRole);
         }
         switch (view) {
             case 'dashboard':

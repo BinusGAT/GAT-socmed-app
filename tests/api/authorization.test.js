@@ -17,25 +17,27 @@ import {
 import { hashSessionToken, publicErrorResponse } from '../../src/app/api/sheets/security';
 
 describe('API authorization policy', () => {
-  it('allows every authenticated role to read and manage its own sessions', () => {
-    for (const action of ['read_all', 'list_sessions', 'revoke_session', 'logout']) {
+  it('allows every authenticated role to read workspace data and end its session', () => {
+    for (const action of ['read_all', 'logout']) {
       expect(getAllowedRoles(action)).toEqual([
         ROLES.ADMIN,
         ROLES.CREATOR,
         ROLES.VIEWER,
       ]);
     }
+    expect(getAllowedRoles('list_sessions')).toEqual([ROLES.ADMIN]);
+    expect(getAllowedRoles('revoke_session')).toEqual([ROLES.ADMIN]);
   });
 
   it('allows creators to manage content workflows', () => {
-    for (const action of ['save_script', 'save_schedule', 'save_meeting']) {
+    for (const action of ['save_script', 'save_schedule', 'save_ga_summary', 'save_ga_item']) {
       expect(isRoleAllowed(action, ROLES.CREATOR)).toBe(true);
       expect(isRoleAllowed(action, ROLES.VIEWER)).toBe(false);
     }
   });
 
   it('reserves administrative mutations for admins', () => {
-    for (const action of ['create', 'update', 'delete', 'save_member']) {
+    for (const action of ['create', 'update', 'delete', 'save_member', 'delete_schedule', 'delete_script', 'save_meeting', 'delete_meeting', 'delete_ga_item']) {
       expect(getAllowedRoles(action)).toEqual([ROLES.ADMIN]);
       expect(isRoleAllowed(action, ROLES.ADMIN)).toBe(true);
       expect(isRoleAllowed(action, ROLES.CREATOR)).toBe(false);

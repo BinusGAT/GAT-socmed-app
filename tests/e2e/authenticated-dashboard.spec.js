@@ -21,7 +21,7 @@ const seededData = {
   ] }, gaSummary: { data: [] }, gaItems: { data: [] }
 };
 
-async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = false, actionLog = null } = {}) {
+async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = false, actionLog = null, role = 'Admin' } = {}) {
   await page.route('**/api/sheets', async (route) => {
     const request = route.request();
     if (request.method() !== 'POST') return route.continue();
@@ -34,7 +34,7 @@ async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = fa
       return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ success: false, error: 'Database unavailable' }) });
     }
     const body = action === 'validate_mode'
-      ? { success: true, valid: true, role: 'Admin', expiresAt: Date.now() + 3_600_000, user: { id: 'e2e-admin', name: 'Release A Admin' } }
+      ? { success: true, valid: true, role, expiresAt: Date.now() + 3_600_000, user: { id: 'e2e-admin', name: role === 'Creator' ? 'Alya' : `Release K ${role}` } }
       : action === 'read_all' ? seededData : { success: true };
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
@@ -43,7 +43,8 @@ async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = fa
   await page.getByRole('textbox', { name: 'Email Address *' }).fill('release-a@example.test');
   await page.getByLabel('Password (NIM) *').fill('test-only-password');
   await page.getByRole('button', { name: 'Login' }).click();
-  await expect(page.locator('main#main-content')).toBeVisible();
+  const navigationName = (page.viewportSize()?.width || 0) < 1024 ? 'Mobile primary navigation' : 'Primary navigation';
+  await expect(page.getByRole('navigation', { name: navigationName, exact: true })).toBeVisible();
 }
 
 async function openSettings(page) {
@@ -107,6 +108,54 @@ test('authenticated dashboard does not overflow the page at mobile width', async
     contentWidth: document.documentElement.scrollWidth,
   }));
   expect(dimensions.contentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
+});
+
+test('dashboard prioritizes actionable deadlines and opens the exact task', async ({ page }) => {
+  await openAuthenticatedDashboard(page);
+  await expect(page.getByRole('heading', { name: 'What needs attention' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Next deadline|Upcoming deadlines/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Open task Campus highlights' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Update Scheduled Task (TASK-001)' })).toBeVisible();
+  await expect(page).toHaveURL(/view=tasklist&task=TASK-001/);
+});
+
+test('dashboard performance actions open analytics', async ({ page }) => {
+  test.skip((page.viewportSize()?.width || 0) >= 1024, 'Compact dashboard actions are tested on mobile and tablet.');
+  await openAuthenticatedDashboard(page);
+  await page.getByRole('button', { name: 'Full analytics' }).click();
+  await expect(page).toHaveURL(/view=analytics/);
+});
+
+test('admin navigation exposes administration controls', async ({ page }) => {
+  await openAuthenticatedDashboard(page, { role: 'Admin' });
+  if ((page.viewportSize()?.width || 0) < 1024) {
+    const navigation = page.getByRole('navigation', { name: 'Mobile primary navigation', exact: true });
+    await navigation.getByRole('button', { name: 'More', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'More tools' }).getByRole('button', { name: /Settings/ })).toBeVisible();
+  } else {
+    await expect(page.getByRole('navigation', { name: 'Primary navigation', exact: true }).getByRole('button', { name: /Task List/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Settings/ })).toBeVisible();
+  }
+  await expect(page.getByRole('button', { name: /New Post/ })).toBeVisible();
+});
+
+test('creator navigation supports assigned workflows without administration controls', async ({ page }) => {
+  await openAuthenticatedDashboard(page, { role: 'Creator' });
+  await expect(page.getByRole('heading', { name: 'What needs attention' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /New Post/ })).toHaveCount(0);
+  await openAuthenticatedView(page, { mobileName: /My Work/ });
+  await page.getByRole('button', { name: 'Open task Campus highlights' }).click();
+  await expect(page.getByRole('heading', { name: 'Update Scheduled Task (TASK-001)' })).toBeVisible();
+  await expect(page.getByTitle('Delete schedule entry')).toHaveCount(0);
+});
+
+test('viewer navigation contains reporting destinations without workflow dead ends', async ({ page }) => {
+  await openAuthenticatedDashboard(page, { role: 'Viewer' });
+  await expect(page.getByRole('heading', { name: 'What needs attention' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /New Post/ })).toHaveCount(0);
+  await page.goto('/?view=content');
+  await expect(page.locator('main#main-content')).toContainText('Total Views');
+  await expect(page.getByRole('heading', { name: 'Posts Library' })).toHaveCount(0);
 });
 
 test('mobile navigation keeps five stable destinations without horizontal scrolling', async ({ page }) => {

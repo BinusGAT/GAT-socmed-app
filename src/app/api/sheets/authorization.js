@@ -4,17 +4,12 @@ export const ROLES = Object.freeze({
   VIEWER: 'Viewer',
 });
 
-const READ_ACTIONS = new Set(['read_all', 'list_sessions', 'revoke_session', 'logout']);
+const READ_ACTIONS = new Set(['read_all', 'logout']);
 const CREATOR_ACTIONS = new Set([
   'save_script',
   'save_schedule',
-  'delete_schedule',
-  'delete_script',
-  'save_meeting',
-  'delete_meeting',
   'save_ga_summary',
   'save_ga_item',
-  'delete_ga_item',
 ]);
 
 export function getAllowedRoles(action) {

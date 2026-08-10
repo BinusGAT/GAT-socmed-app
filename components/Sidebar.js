@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useDashboard } from './DashboardContext';
+import { canAccessView } from '../utils/rolePermissions';
 
 export default function Sidebar() {
     const {
@@ -27,12 +28,7 @@ export default function Sidebar() {
         { id: 'web-analytics', label: 'Web Analytics', icon: 'language', domId: 'navItemWebAnalytics', restricted: true }
     ];
 
-    const visibleItems = navItems.filter(item => {
-        if (userRole === 'Viewer') {
-            return ['dashboard', 'analytics', 'web-analytics', 'my-work'].includes(item.id);
-        }
-        return !item.restricted || isUnlocked;
-    });
+    const visibleItems = navItems.filter(item => canAccessView(userRole, item.id) && (!item.restricted || isUnlocked));
 
     const handleNavClick = (id) => {
         if (id !== 'meeting') {
@@ -112,7 +108,7 @@ export default function Sidebar() {
 
             {/* Footer Links */}
             <div className="border-t border-outline-variant/20 pt-stack-md mx-container-padding space-y-1">
-                {isUnlocked && (
+                {isUnlocked && canAccessView(userRole, 'settings') && (
                     <button
                         className={`w-full text-left py-2.5 px-3 rounded-lg flex items-center gap-3 transition-all duration-200 cursor-pointer ${currentView === 'settings'
                                 ? 'bg-surface-container-highest/60 text-primary font-semibold font-display-sm'

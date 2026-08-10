@@ -17,6 +17,7 @@ import {
 } from '../utils/helpers';
 import PlatformBadge from './PlatformBadge.jsx';
 import SortableTableHeader from './SortableTableHeader';
+import { isTaskAssignedToUser } from '../utils/rolePermissions';
 
 const parseCleanInt = (val) => {
     if (val === undefined || val === null || val === '') return 0;
@@ -46,7 +47,11 @@ export default function DashboardTab({ onOpenDatePicker }) {
         dateRange,
         isNewPostDrawerOpen,
         setIsNewPostDrawerOpen,
-        meetingsData
+        meetingsData,
+        setCurrentView,
+        setSelectedTaskId,
+        userId,
+        userName
     } = useDashboard();
 
     // Form editing states
@@ -815,6 +820,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                     category: task.Category,
                     contentTitle: task['Content Title'] || '',
                     status: isUploaded,
+                    assignedUserId: task.AssignedUserId || '',
                     isFromDashboard: true,
                     calculatedStatus: getTaskCalculatedStatus({
                         ...task,
@@ -848,6 +854,28 @@ export default function DashboardTab({ onOpenDatePicker }) {
     const targetCount = 30;
     const goalPercentage = Math.min(Math.round((publishedCount / targetCount) * 100), 100) || 72;
 
+    const taskOverview = React.useMemo(() => {
+        const todayValue = getLocalDateInputValue();
+        const activeTasks = combinedTasks
+            .filter(task => task.isFromDashboard && task.calculatedStatus !== 'Done')
+            .filter(task => userRole !== 'Creator' || isTaskAssignedToUser(task, userId, userName))
+            .sort((a, b) => a.date.localeCompare(b.date));
+        return {
+            overdue: activeTasks.filter(task => task.calculatedStatus === 'Overdue'),
+            dueToday: activeTasks.filter(task => task.date === todayValue),
+            upcoming: activeTasks.filter(task => task.date > todayValue).slice(0, 5)
+        };
+    }, [combinedTasks, userId, userName, userRole]);
+
+    const openTask = (taskId) => {
+        setSelectedTaskId(taskId);
+        setCurrentView('tasklist');
+    };
+
+    const openTaskDirectory = () => setCurrentView('tasklist');
+    const openPlanner = () => setCurrentView('calendar');
+    const openAnalytics = () => setCurrentView('analytics');
+
     if (!isUnlocked) {
         return <LockScreen sectionName="Dashboard" />;
     }
@@ -861,6 +889,42 @@ export default function DashboardTab({ onOpenDatePicker }) {
             <div className="hidden lg:grid grid-cols-4 gap-gutter items-start">
                 {/* Left/Center 3 Columns */}
                 <div className="col-span-3 space-y-6">
+                    {userRole !== 'Viewer' && <section aria-labelledby="dashboard-priority-heading" className="grid grid-cols-[minmax(0,1.65fr)_minmax(18rem,1fr)] gap-gutter">
+                        <div className="rounded-2xl border border-outline-variant/30 bg-surface-container p-6 shadow-xs">
+                            <div className="mb-5 flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="mb-1 text-xs font-semibold text-primary">Work overview</p>
+                                    <h2 id="dashboard-priority-heading" className="text-headline-md font-bold tracking-tight text-on-surface">What needs attention</h2>
+                                </div>
+                                <button type="button" onClick={openTaskDirectory} className="shrink-0 rounded-lg px-3 py-2 text-body-sm font-semibold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">View all tasks</button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button type="button" onClick={() => taskOverview.overdue[0] ? openTask(taskOverview.overdue[0].id) : openTaskDirectory()} className="group rounded-xl border border-outline-variant/25 bg-surface-container-low p-4 text-left transition-colors hover:border-error/40 hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                                    <span className="text-xs font-semibold text-on-surface-variant">Overdue</span>
+                                    <span className={`mt-2 block text-3xl font-bold font-tabular ${taskOverview.overdue.length ? 'text-error' : 'text-on-surface'}`}>{taskOverview.overdue.length}</span>
+                                    <span className="mt-1 block text-xs text-on-surface-variant">{taskOverview.overdue.length ? 'Open the oldest overdue task' : 'No overdue tasks'}</span>
+                                </button>
+                                <button type="button" onClick={() => taskOverview.dueToday[0] ? openTask(taskOverview.dueToday[0].id) : openPlanner()} className="group rounded-xl border border-outline-variant/25 bg-surface-container-low p-4 text-left transition-colors hover:border-primary/40 hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                                    <span className="text-xs font-semibold text-on-surface-variant">Due today</span>
+                                    <span className="mt-2 block text-3xl font-bold font-tabular text-on-surface">{taskOverview.dueToday.length}</span>
+                                    <span className="mt-1 block text-xs text-on-surface-variant">{taskOverview.dueToday.length ? 'Open the next task' : 'Review today in planner'}</span>
+                                </button>
+                            </div>
+                        </div>
+                        <aside aria-labelledby="next-deadline-heading" className="rounded-2xl border border-outline-variant/30 bg-surface-container-low p-5">
+                            <div className="mb-4 flex items-center justify-between gap-3">
+                                <h2 id="next-deadline-heading" className="text-body-md font-bold text-on-surface">Next deadline</h2>
+                                <button type="button" onClick={openPlanner} className="text-xs font-semibold text-primary hover:underline">Open planner</button>
+                            </div>
+                            {taskOverview.upcoming[0] ? (
+                                <button type="button" onClick={() => openTask(taskOverview.upcoming[0].id)} className="w-full rounded-xl bg-surface-container p-4 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`Open task ${taskOverview.upcoming[0].contentTitle || 'Untitled'}`}>
+                                    <span className="text-xs font-bold text-primary">{formatDisplayDate(taskOverview.upcoming[0].date)}</span>
+                                    <span className="mt-2 block text-body-lg font-bold text-on-surface">{taskOverview.upcoming[0].contentTitle || 'Untitled'}</span>
+                                    <span className="mt-1 block text-body-sm text-on-surface-variant">{taskOverview.upcoming[0].category} · {normalizePicName(taskOverview.upcoming[0].pic)}</span>
+                                </button>
+                            ) : <p className="rounded-xl bg-surface-container p-4 text-body-sm text-on-surface-variant">Nothing is scheduled next. Open the planner to add work.</p>}
+                        </aside>
+                    </section>}
                     {/* Performance Overview header strip */}
                     {/* Stats Bento Grid - Equal 5 Column Box Sizes */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
@@ -1298,11 +1362,52 @@ export default function DashboardTab({ onOpenDatePicker }) {
                2. MOBILE VIEW LAYOUT (hidden on screens > 1024px)
                ======================================================== */}
             <div className="lg:hidden space-y-6 max-w-md mx-auto pb-20">
+                {userRole !== 'Viewer' && <section aria-labelledby="mobile-priority-heading" className="rounded-2xl border border-outline-variant/30 bg-surface-container p-5">
+                    <p className="text-xs font-semibold text-primary">Work overview</p>
+                    <h2 id="mobile-priority-heading" className="mt-1 text-headline-md font-bold tracking-tight text-on-surface">What needs attention</h2>
+                    <p className="mt-1 text-body-sm leading-relaxed text-on-surface-variant">Your closest deadlines and publishing work.</p>
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                        <button type="button" onClick={() => taskOverview.overdue[0] ? openTask(taskOverview.overdue[0].id) : openTaskDirectory()} className="rounded-xl bg-surface-container-low p-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            <span className="text-xs font-semibold text-on-surface-variant">Overdue</span>
+                            <span className={`mt-1 block text-2xl font-bold font-tabular ${taskOverview.overdue.length ? 'text-error' : 'text-on-surface'}`}>{taskOverview.overdue.length}</span>
+                        </button>
+                        <button type="button" onClick={() => taskOverview.dueToday[0] ? openTask(taskOverview.dueToday[0].id) : openPlanner()} className="rounded-xl bg-surface-container-low p-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            <span className="text-xs font-semibold text-on-surface-variant">Due today</span>
+                            <span className="mt-1 block text-2xl font-bold font-tabular text-on-surface">{taskOverview.dueToday.length}</span>
+                        </button>
+                    </div>
+                    <button type="button" onClick={openTaskDirectory} className="mt-4 w-full rounded-lg bg-primary px-4 py-3 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">View all tasks</button>
+                </section>}
+
+                {/* Upcoming Posts */}
+                {userRole !== 'Viewer' && <section className="space-y-3">
+                    <div className="flex items-end justify-between gap-3 px-1">
+                        <div>
+                            <p className="text-xs font-semibold text-primary">Next up</p>
+                            <h2 className="text-body-lg font-bold text-on-surface">Upcoming deadlines</h2>
+                        </div>
+                        <button type="button" onClick={openPlanner} className="text-xs font-semibold text-primary">Planner</button>
+                    </div>
+                    {taskOverview.upcoming.length === 0 ? (
+                        <div className="rounded-xl border border-outline-variant/25 bg-surface-container-low p-5 text-body-sm text-on-surface-variant">Nothing is scheduled next. Open the planner to add work.</div>
+                    ) : (
+                        <div className="space-y-2">
+                            {taskOverview.upcoming.slice(0, 3).map(task => (
+                                <button key={task.id} type="button" onClick={() => openTask(task.id)} className="flex w-full items-center gap-3 rounded-xl border border-outline-variant/25 bg-surface-container-low p-3 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`Open task ${task.contentTitle || 'Untitled'}`}>
+                                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><span className="material-symbols-outlined" aria-hidden="true">calendar_month</span></span>
+                                    <span className="min-w-0 flex-1"><span className="block text-xs font-bold text-primary">{formatDisplayDate(task.date)}</span><span className="block truncate text-body-sm font-semibold text-on-surface">{task.contentTitle || 'Untitled'}</span><span className="block truncate text-xs text-on-surface-variant">{task.category} · {normalizePicName(task.pic)}</span></span>
+                                    <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">chevron_right</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </section>}
+
                 {/* Metrics Stack */}
                 <section className="space-y-3">
-                    <h2 className="text-label-md text-on-surface-variant uppercase tracking-widest px-1 font-bold">Performance Snapshot</h2>
+                    <div className="flex items-center justify-between px-1"><h2 className="text-body-md font-bold text-on-surface">Performance snapshot</h2><button type="button" onClick={openAnalytics} className="text-xs font-semibold text-primary">Full analytics</button></div>
                     {/* Metric Card 1: Views */}
-                    <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30 flex items-center justify-between micro-interaction cursor-pointer">
+                    <button type="button" onClick={openAnalytics} className="w-full bg-surface-container p-4 rounded-xl border border-outline-variant/30 flex items-center justify-between text-left micro-interaction cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
                         <div className="flex items-center gap-4">
                             <div className="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-primary border border-outline-variant/20">
                                 <span className="material-symbols-outlined">visibility</span>
@@ -1312,12 +1417,10 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                 <p className="text-headline-md font-bold text-on-surface leading-tight">{formatNumber(stats.totalViews)}</p>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <span className="text-primary font-bold text-body-sm">+12.4%</span>
-                        </div>
-                    </div>
+                        <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">chevron_right</span>
+                    </button>
                     {/* Metric Card 2: Reach */}
-                    <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30 flex items-center justify-between micro-interaction cursor-pointer">
+                    <button type="button" onClick={openAnalytics} className="w-full bg-surface-container p-4 rounded-xl border border-outline-variant/30 flex items-center justify-between text-left micro-interaction cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
                         <div className="flex items-center gap-4">
                             <div className="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary border border-outline-variant/20">
                                 <span className="material-symbols-outlined">public</span>
@@ -1327,12 +1430,10 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                 <p className="text-headline-md font-bold text-on-surface leading-tight">{formatNumber(stats.totalReach)}</p>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <span className="text-secondary font-bold text-body-sm">+8.1%</span>
-                        </div>
-                    </div>
+                        <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">chevron_right</span>
+                    </button>
                     {/* Metric Card 3: Engagement */}
-                    <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/30 flex items-center justify-between micro-interaction cursor-pointer">
+                    <button type="button" onClick={openAnalytics} className="w-full bg-surface-container p-4 rounded-xl border border-outline-variant/30 flex items-center justify-between text-left micro-interaction cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
                         <div className="flex items-center gap-4">
                             <div className="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary border border-outline-variant/20">
                                 <span className="material-symbols-outlined">favorite</span>
@@ -1345,56 +1446,14 @@ export default function DashboardTab({ onOpenDatePicker }) {
                         <div className="text-right">
                             <span className="text-tertiary font-bold text-body-sm">{stats.avgEngagementRate}</span>
                         </div>
-                    </div>
-                </section>
-
-                {/* Upcoming Posts Scroll */}
-                <section className="space-y-3">
-                    <div className="flex justify-between items-center px-1">
-                        <h2 className="text-label-md text-on-surface-variant uppercase tracking-widest font-bold">Upcoming Pipeline</h2>
-                    </div>
-                    <div className="flex overflow-x-auto gap-3 hide-scrollbar pb-1">
-                        {(() => {
-                            const todayStr = getLocalDateInputValue();
-                            const upcomingTasks = (scheduleData || [])
-                                .filter(task => {
-                                    const parsedDateStr = parseDate(task.Date);
-                                    return parsedDateStr && parsedDateStr >= todayStr;
-                                })
-                                .sort((a, b) => {
-                                    const dateA = parseDate(a.Date) || '';
-                                    const dateB = parseDate(b.Date) || '';
-                                    return dateA.localeCompare(dateB);
-                                })
-                                .slice(0, 5);
-
-                            if (upcomingTasks.length === 0) {
-                                return (
-                                    <div className="w-full py-6 text-center text-on-surface-variant/60 text-body-sm">
-                                        No upcoming posts in pipeline.
-                                    </div>
-                                );
-                            }
-
-                            return upcomingTasks.map((task, idx) => (
-                                <div key={task.ID || idx} className="min-w-[260px] bg-surface-container-low border border-outline-variant/20 rounded-xl p-3 flex gap-3 items-center">
-                                    <div className="w-12 h-12 rounded bg-surface-container-high flex items-center justify-center text-primary border border-outline-variant/25">
-                                        <span className="material-symbols-outlined">calendar_month</span>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-bold text-primary uppercase">{formatDisplayDate(task.Date)}</p>
-                                        <p className="text-body-sm font-semibold truncate text-on-surface">{task['Content Title'] || 'Untitled'}</p>
-                                        <p className="text-[10px] text-on-surface-variant/80">{task.Category} · {normalizePicName(task.PIC)}</p>
-                                    </div>
-                                </div>
-                            ));
-                        })()}
-                    </div>
+                    </button>
                 </section>
 
                 {/* Contextual FAB to trigger new post popup */}
                 {userRole === 'Admin' && (
                     <button
+                        type="button"
+                        aria-label="New Post"
                         className="fixed right-6 bottom-24 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 z-40"
                         onClick={() => setIsNewPostDrawerOpen(true)}
                     >

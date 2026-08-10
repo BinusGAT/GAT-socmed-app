@@ -1056,14 +1056,27 @@ export async function POST(request) {
         let taskId = id;
         let previousAssignedUserId = '';
 
+        if (auth.role === 'Creator' && !id) {
+          return NextResponse.json({ success: false, error: 'Forbidden: creators cannot create scheduled tasks' }, { status: 403 });
+        }
+
         if (id) {
           // Get the old title to update the corresponding script title if needed
           const oldRow = await db.execute({
-            sql: `SELECT "Content Title", AssignedUserId FROM laporan WHERE ID = ? LIMIT 1`,
+            sql: `SELECT "Content Title", AssignedUserId, PIC, Category FROM laporan WHERE ID = ? LIMIT 1`,
             args: [id]
           });
           const oldTitle = oldRow.rows[0]?.["Content Title"] || '';
           previousAssignedUserId = String(oldRow.rows[0]?.AssignedUserId || '');
+
+          if (auth.role === 'Creator') {
+            const existing = oldRow.rows[0];
+            const isAssigned = existing && previousAssignedUserId && previousAssignedUserId === String(auth.userId || '');
+            const changesAssignment = assignedUserId !== previousAssignedUserId || pic !== String(existing?.PIC || '') || category !== String(existing?.Category || '');
+            if (!isAssigned || changesAssignment) {
+              return NextResponse.json({ success: false, error: 'Forbidden: creators may only update content details for their assigned tasks' }, { status: 403 });
+            }
+          }
 
           await db.execute({
             sql: `UPDATE laporan SET Date = ?, "Content Title" = ?, PIC = ?, Category = ?, AssignedUserId = ? WHERE ID = ?`,
@@ -1179,6 +1192,16 @@ export async function POST(request) {
         const references = params.References || params.references || '';
         const caption = params.Caption || params.caption || '';
         const origin = params.Origin || params.origin || 'manual';
+
+        if (auth.role === 'Creator') {
+          const assignment = await db.execute({
+            sql: `SELECT ID FROM schedule WHERE LOWER("Content Title") = LOWER(?) AND AssignedUserId = ? LIMIT 1`,
+            args: [title, String(auth.userId || '')]
+          });
+          if (assignment.rows.length === 0) {
+            return NextResponse.json({ success: false, error: 'Forbidden: creators may only edit storyboards assigned to them' }, { status: 403 });
+          }
+        }
 
         await db.execute({
           sql: `INSERT OR REPLACE INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption, Origin)

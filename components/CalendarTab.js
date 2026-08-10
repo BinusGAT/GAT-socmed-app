@@ -14,6 +14,7 @@ import {
     formatDate,
     getPicBadgeClasses
 } from '../utils/helpers';
+import { isTaskAssignedToUser } from '../utils/rolePermissions';
 
 const getDateInputValue = (date) => {
     const year = date.getFullYear();
@@ -30,6 +31,8 @@ export default function CalendarTab({ onOpenExport }) {
         isUnlocked,
         isMutating,
         userRole,
+        userId,
+        userName,
         saveCalendarTask,
         deleteCalendarTask,
         memberListData,
@@ -84,7 +87,8 @@ export default function CalendarTab({ onOpenExport }) {
                     calculatedStatus: getTaskCalculatedStatus({
                         ...task,
                         Status: isUploaded
-                    })
+                    }),
+                    assignedUserId: task.AssignedUserId || ''
                 });
             }
         });
@@ -206,6 +210,7 @@ export default function CalendarTab({ onOpenExport }) {
     // Edit/Delete handlers
     const startEditTask = (task) => {
         if (!isUnlocked) return;
+        if (userRole === 'Creator' && !isTaskAssignedToUser(task, userId, userName)) return;
         setEditingTaskId(task.id);
         setFormPic(normalizePicName(resolveMemberName(task.pic, memberListData)));
         setFormCategory(task.category);
@@ -586,7 +591,7 @@ export default function CalendarTab({ onOpenExport }) {
                                                     <span className="material-symbols-outlined text-[16px]">open_in_new</span>
                                                 </button>
                                             ) : (
-                                                (!formDisabled || userRole === 'Creator') && (
+                                                (!formDisabled || userRole === 'Creator') && (userRole !== 'Creator' || isTaskAssignedToUser(task, userId, userName)) && (
                                                     <div className="flex items-center gap-1">
                                                         <button 
                                                             type="button" 

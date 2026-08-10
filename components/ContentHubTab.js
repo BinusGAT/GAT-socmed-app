@@ -9,6 +9,7 @@ import { DeleteConfirmModal } from './Modals';
 import UndoDeleteToast from './UndoDeleteToast';
 import { useDeferredDelete } from '../utils/useDeferredDelete';
 import { getVisiblePostLibraryCategories } from '../utils/postLibraryCategories';
+import { isTaskAssignedToUser } from '../utils/rolePermissions';
 import {
     normalizePicName,
     parseDate,
@@ -29,7 +30,8 @@ export default function ContentHubTab() {
         memberListData,
         categoriesData,
         appSettingsData,
-        userId
+        userId,
+        userName
     } = useDashboard();
 
     const [selectedDraftTitle, setSelectedDraftTitle] = useState(null);
@@ -144,7 +146,11 @@ export default function ContentHubTab() {
     const getFilteredDrafts = () => {
         const drafts = (draftsData || [])
             .map((d, index) => ({ d, index }))
-            .filter(({ d }) => visibleCategoryNames.has(d.category));
+            .filter(({ d }) => visibleCategoryNames.has(d.category))
+            .filter(({ d }) => userRole !== 'Creator' || (scheduleData || []).some((task) =>
+                String(task['Content Title'] || '').trim().toLowerCase() === String(d.title || '').trim().toLowerCase()
+                && isTaskAssignedToUser(task, userId, userName)
+            ));
         let list = drafts;
 
         // Search Filter

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { canAccessView } from '../utils/rolePermissions';
 
 const PRIMARY_ITEMS = [
     { id: 'dashboard', label: 'Home', icon: 'dashboard' },
@@ -18,10 +19,7 @@ const SECONDARY_ITEMS = [
 ];
 
 function canShowItem(item, userRole, isUnlocked) {
-    if (userRole === 'Viewer') {
-        return ['dashboard', 'my-work', 'analytics', 'web-analytics', 'settings'].includes(item.id);
-    }
-    return !item.restricted || isUnlocked;
+    return canAccessView(userRole, item.id) && (!item.restricted || isUnlocked);
 }
 
 export default function MobileNavigation({ currentView, userRole, isUnlocked, onNavigate }) {
@@ -29,7 +27,7 @@ export default function MobileNavigation({ currentView, userRole, isUnlocked, on
     const moreButtonRef = useRef(null);
     const sheetRef = useRef(null);
     const primaryCandidates = userRole === 'Viewer'
-        ? [...PRIMARY_ITEMS.slice(0, 2), ...SECONDARY_ITEMS.filter((item) => ['analytics', 'web-analytics'].includes(item.id))]
+        ? [PRIMARY_ITEMS[0], ...SECONDARY_ITEMS.filter((item) => ['analytics', 'web-analytics'].includes(item.id))]
         : PRIMARY_ITEMS;
     const primaryItems = primaryCandidates.filter((item) => canShowItem(item, userRole, isUnlocked));
     const primaryIds = new Set(primaryItems.map((item) => item.id));
