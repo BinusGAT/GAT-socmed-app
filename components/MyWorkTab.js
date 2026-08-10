@@ -37,34 +37,34 @@ export default function MyWorkTab() {
     const overdueCount = tasks.filter((task) => Number(task.Status) !== 1 && new Date(`${task.Date}T00:00:00`) < new Date(new Date().setHours(0, 0, 0, 0))).length;
 
     return (
-        <section className="space-y-6 max-w-6xl mx-auto">
-            <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <section className="mx-auto max-w-6xl space-y-4 sm:space-y-6">
+            <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
                 <div>
-                    <p className="text-body-sm text-primary font-semibold">Personal workspace</p>
-                    <h2 className="text-headline-md font-bold text-on-surface">My Work</h2>
-                    <p className="text-body-sm text-on-surface-variant mt-1">Tasks assigned to {userName || 'you'}.</p>
+                    <p className="text-xs font-semibold text-primary sm:text-body-sm">Personal workspace</p>
+                    <h2 className="mt-1 text-headline-md font-bold tracking-tight text-on-surface">Assigned tasks</h2>
+                    <p className="mt-1 text-body-sm text-on-surface-variant">Tasks assigned to {userName || 'you'}.</p>
                 </div>
-                <div className="flex gap-2 text-body-sm">
-                    <span className="px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant">{openCount} open</span>
-                    <span className="px-3 py-1.5 rounded-lg bg-error/10 text-error">{overdueCount} overdue</span>
+                <div className="flex gap-2 text-xs sm:text-body-sm" aria-label={`${openCount} open tasks and ${overdueCount} overdue tasks`}>
+                    <span className="rounded-lg bg-surface-container-high px-3 py-2 font-semibold text-on-surface-variant"><strong className="font-tabular text-on-surface">{openCount}</strong> open</span>
+                    <span className="rounded-lg bg-error/10 px-3 py-2 font-semibold text-error"><strong className="font-tabular">{overdueCount}</strong> overdue</span>
                 </div>
             </header>
 
-            <div className="glass-panel rounded-xl overflow-hidden">
+            <div className="sm:overflow-hidden sm:rounded-xl sm:border sm:border-outline-variant/25 sm:bg-surface-container-low">
                 {tasks.length === 0 ? (
                     <EmptyState icon="task_alt" title="No tasks assigned" description="New assignments will appear here automatically." />
                 ) : (
-                    <div className="divide-y divide-outline-variant/15">
+                    <div className="space-y-2 sm:divide-y sm:divide-outline-variant/15 sm:space-y-0">
                         {tasks.map((task) => {
                             const dueState = getDueState(task.Date, Number(task.Status) === 1);
                             return (
-                                <button key={task.ID} type="button" onClick={() => openTask(task.ID)} aria-label={`Open task ${task['Content Title'] || task.ID}`} className="w-full text-left px-5 py-4 hover:bg-surface-container-low transition-colors grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 md:items-center focus-visible:bg-surface-container-low">
+                                <button key={task.ID} type="button" onClick={() => openTask(task.ID)} aria-label={`Open task ${task['Content Title'] || task.ID}`} className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-outline-variant/25 bg-surface-container px-4 py-3.5 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:rounded-none sm:border-0 sm:bg-transparent sm:px-5 sm:py-4 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-3">
                                     <div className="min-w-0">
-                                        <p className="font-semibold text-on-surface truncate">{task['Content Title']}</p>
-                                        <p className="text-[11px] text-on-surface-variant mt-1">{task.ID} · {task.Category}</p>
+                                        <p className="line-clamp-2 text-body-md font-semibold leading-snug text-on-surface sm:truncate">{task['Content Title'] || 'Untitled task'}</p>
+                                        <p className="mt-1 text-xs text-on-surface-variant">{task.ID} · {task.Category}</p>
                                     </div>
-                                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-semibold ${dueState.className}`}>{dueState.label}</span>
-                                    <span className="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
+                                    <span className="material-symbols-outlined row-span-2 text-[22px] text-on-surface-variant md:order-3 md:row-span-1" aria-hidden="true">chevron_right</span>
+                                    <span className={`col-start-1 row-start-2 w-fit rounded-md px-2.5 py-1 text-[11px] font-semibold md:col-start-2 md:row-start-1 ${dueState.className}`}>{dueState.label}</span>
                                 </button>
                             );
                         })}

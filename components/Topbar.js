@@ -135,6 +135,8 @@ export default function Topbar({
         switch (currentView) {
             case 'dashboard':
                 return 'Dashboard';
+            case 'my-work':
+                return 'My Work';
             case 'calendar':
                 return 'Content Planner';
             case 'tasklist':
@@ -147,6 +149,8 @@ export default function Topbar({
                 return 'Analytics';
             case 'web-analytics':
                 return 'Web Analytics';
+            case 'settings':
+                return 'Settings';
             default:
                 return 'Dashboard';
         }

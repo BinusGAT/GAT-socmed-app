@@ -220,6 +220,18 @@ test('opens the selected My Work assignment in the task editor', async ({ page }
   await expect(page).toHaveURL(/view=tasklist&task=TASK-001/);
 });
 
+test('phone My Work uses compact assignment cards and the correct page title', async ({ page }) => {
+  test.skip((page.viewportSize()?.width || 0) >= 640, 'Phone-specific My Work layout is hidden on larger screens.');
+  await openAuthenticatedDashboard(page);
+  await openAuthenticatedView(page, { mobileName: /My Work/ });
+  await expect(page.locator('header').getByRole('heading', { name: 'My Work' })).toBeVisible();
+  const assignment = page.getByRole('button', { name: 'Open task Campus highlights' });
+  const status = assignment.getByText(/Due|Completed|overdue/);
+  const measurements = await Promise.all([assignment.boundingBox(), status.boundingBox()]);
+  expect(measurements[0].height).toBeLessThan(150);
+  expect(measurements[1].width).toBeLessThan(measurements[0].width * 0.6);
+});
+
 test('keeps the authenticated view in the URL across refresh', async ({ page }) => {
   await openAuthenticatedDashboard(page);
   await openAuthenticatedView(page, { mobileName: /My Work/ });
