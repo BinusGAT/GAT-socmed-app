@@ -4,7 +4,7 @@ export const ROLES = Object.freeze({
   VIEWER: 'Viewer',
 });
 
-const READ_ACTIONS = new Set(['read_all', 'logout']);
+const READ_ACTIONS = new Set(['read_all', 'read_dashboard', 'logout']);
 const CREATOR_ACTIONS = new Set([
   'save_script',
   'save_schedule',

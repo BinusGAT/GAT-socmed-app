@@ -180,11 +180,9 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false }) {
         }
     }, [formDate]);
 
-    // Process and sort table data
+    // Process and sort the complete content table locally.
     const getProcessedData = () => {
         let list = [...currentData];
-
-        // Search Query
         if (searchQuery) {
             const q = searchQuery.toLowerCase().trim();
             list = list.filter(row =>
@@ -194,44 +192,28 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false }) {
                 String(row.Platform || '').toLowerCase().includes(q)
             );
         }
-
-        // Date Range presets
-        if (dateRange.start) {
-            list = list.filter(row => parseDate(row.Date) >= dateRange.start);
-        }
-        if (dateRange.end) {
-            list = list.filter(row => parseDate(row.Date) <= dateRange.end);
-        }
-        if (tableFilterDate) {
-            list = list.filter(row => parseDate(row.Date) === tableFilterDate);
-        }
-
-        // Apply Sorting
+        if (dateRange.start) list = list.filter(row => parseDate(row.Date) >= dateRange.start);
+        if (dateRange.end) list = list.filter(row => parseDate(row.Date) <= dateRange.end);
+        if (tableFilterDate) list = list.filter(row => parseDate(row.Date) === tableFilterDate);
         if (sortColumn !== 'none') {
             list.sort((a, b) => {
-                let valA = a[sortColumn];
-                let valB = b[sortColumn];
-
+                const valA = a[sortColumn];
+                const valB = b[sortColumn];
                 if (['Views', 'Total Engagement', 'Engagement Rate (%)', 'KPI Score', 'KPI Summary'].includes(sortColumn)) {
                     const numA = parseFloat(valA) || 0;
                     const numB = parseFloat(valB) || 0;
                     return sortDirection === 'asc' ? numA - numB : numB - numA;
                 }
-
                 if (sortColumn === 'Date') {
                     const dateA = parseDate(valA) || '';
                     const dateB = parseDate(valB) || '';
                     return sortDirection === 'asc' ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
                 }
-
                 const strA = String(valA || '').toLowerCase();
                 const strB = String(valB || '').toLowerCase();
-                if (strA < strB) return sortDirection === 'asc' ? -1 : 1;
-                if (strA > strB) return sortDirection === 'asc' ? 1 : -1;
-                return 0;
+                return sortDirection === 'asc' ? strA.localeCompare(strB) : strB.localeCompare(strA);
             });
         }
-
         return list;
     };
 

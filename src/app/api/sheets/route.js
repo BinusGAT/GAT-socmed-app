@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getSessionDurationMs } from '../../../../utils/sessionPolicy';
+import { verifyCredential } from '../../../../utils/credentialHash';
 import { dbExecute, dbBatch, gatAppExecute } from '../../../../utils/db';
 import { getAllowedRoles, getExpectedRequestOrigin, getRequestServingOrigin, getVisibleAuditRows, isTrustedRequestOrigin } from './authorization';
 import { getIndonesianMonth, getIsoDateString, parseMetricToNumber } from './domain';
@@ -534,16 +535,17 @@ export async function POST(request) {
               SELECT 
                 u.id, 
                 u.email, 
-                u.nim, 
+                u.nim_hash,
                 u.name, 
                 GROUP_CONCAT(r.name) AS role_names
               FROM users u
               LEFT JOIN user_roles ur ON ur.user_id = u.id
               LEFT JOIN roles r ON r.id = ur.role_id
-              WHERE LOWER(u.email) = ? AND u.nim = ?
-              GROUP BY u.id, u.email, u.nim, u.name
+              WHERE LOWER(u.email) = ?
+              GROUP BY u.id, u.email, u.name, u.nim_hash
+              LIMIT 1
             `,
-            args: [email, nim]
+            args: [email]
           });
         } catch (err) {
           console.error("GAT App DB Query Error:", err);
@@ -553,7 +555,9 @@ export async function POST(request) {
           );
         }
 
-        if (!userRes || userRes.rows.length === 0) {
+        const userRow = userRes?.rows[0];
+        const validNim = userRow ? await verifyCredential(userRow.nim_hash, nim) : false;
+        if (!userRow || !validNim) {
           const limit = await recordLoginFailure(db, rateLimitKeys, now);
           return NextResponse.json(
             { success: false, error: 'Invalid credentials.' },
@@ -561,7 +565,6 @@ export async function POST(request) {
           );
         }
 
-        const userRow = userRes.rows[0];
         const rolePriority = { admin: 0, intern: 1 };
         const roleNames = [...new Set(
           String(userRow.role_names || '')
@@ -633,6 +636,89 @@ export async function POST(request) {
     let result = { success: false };
 
     switch (action) {
+      case 'read_dashboard': {
+        const pageSize = Math.min(Math.max(Number.parseInt(params.pageSize, 10) || 50, 10), 100);
+        const page = Math.max(Number.parseInt(params.page, 10) || 1, 1);
+        const offset = (page - 1) * pageSize;
+        const search = String(params.search || '').trim().toLowerCase();
+        const dateStart = String(params.dateStart || '').trim();
+        const dateEnd = String(params.dateEnd || '').trim();
+        const exactDate = String(params.exactDate || '').trim();
+        const where = [];
+        const args = [];
+
+        if (search) {
+          where.push(`(LOWER(COALESCE("Content Title", '')) LIKE ? OR LOWER(COALESCE(ID, '')) LIKE ? OR LOWER(COALESCE(PIC, '')) LIKE ? OR LOWER(COALESCE(Platform, '')) LIKE ?)`);
+          const term = `%${search}%`;
+          args.push(term, term, term, term);
+        }
+        if (dateStart) { where.push('Date >= ?'); args.push(dateStart); }
+        if (dateEnd) { where.push('Date <= ?'); args.push(dateEnd); }
+        if (exactDate) { where.push('Date = ?'); args.push(exactDate); }
+        const whereSql = where.length ? ` WHERE ${where.join(' AND ')}` : '';
+
+        const sortColumns = {
+          Date: 'Date',
+          'Content Title': '"Content Title"',
+          Views: 'CAST(REPLACE(REPLACE(COALESCE(Views, 0), ".", ""), ",", "") AS INTEGER)',
+          'Total Engagement': 'CAST(REPLACE(REPLACE(COALESCE("Total Engagement", 0), ".", ""), ",", "") AS INTEGER)',
+          'KPI Summary': 'CAST(COALESCE("KPI Summary", 0) AS REAL)'
+        };
+        const sortColumn = sortColumns[params.sortColumn] || sortColumns.Date;
+        const sortDirection = params.sortDirection === 'desc' ? 'DESC' : 'ASC';
+
+        const [rowsRes, countRes, scheduleRes, notificationsRes, settingsRes, platformsRes, categoriesRes, usersRes, totalsRes, platformRes, monthlyRes] = await Promise.all([
+          db.execute({ sql: `SELECT * FROM laporan${whereSql} ORDER BY ${sortColumn} ${sortDirection}, ID ASC LIMIT ? OFFSET ?`, args: [...args, pageSize, offset] }),
+          db.execute({ sql: `SELECT COUNT(*) AS total FROM laporan${whereSql}`, args }),
+          db.execute(`SELECT schedule.ID, schedule.Date, schedule.PIC,
+            schedule."Content Title", schedule.Category, schedule.Month,
+            schedule.AssignedUserId,
+            CASE WHEN EXISTS (
+              SELECT 1 FROM laporan
+              WHERE laporan.ID = schedule.ID
+                AND TRIM(COALESCE(laporan.URL, '')) <> ''
+            ) THEN 1 ELSE 0 END AS Status
+            FROM schedule`),
+          db.execute('SELECT * FROM notifications ORDER BY createdAt DESC LIMIT 100'),
+          db.execute('SELECT * FROM app_settings'),
+          db.execute('SELECT * FROM platforms'),
+          db.execute('SELECT * FROM categories'),
+          gatAppExecute({
+            sql: `SELECT DISTINCT u.id, u.name, r.name AS role FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id WHERE LOWER(TRIM(r.name)) = 'intern' ORDER BY LOWER(u.name), u.id`,
+            args: []
+          }),
+          db.execute(`SELECT COUNT(DISTINCT LOWER(TRIM("Content Title"))) AS contentTitlesSize,
+            SUM(CAST(REPLACE(REPLACE(COALESCE(Views, 0), '.', ''), ',', '') AS INTEGER)) AS totalViews,
+            SUM(CAST(REPLACE(REPLACE(COALESCE("Account Reach", 0), '.', ''), ',', '') AS INTEGER)) AS totalReach,
+            SUM(CAST(REPLACE(REPLACE(COALESCE("Total Engagement", 0), '.', ''), ',', '') AS INTEGER)) AS totalEngagement,
+            AVG(CASE WHEN CAST(COALESCE("Engagement Rate (%)", 0) AS REAL) > 0 THEN CAST("Engagement Rate (%)" AS REAL) END) AS avgEngagementRate,
+            SUM(CASE WHEN TRIM(COALESCE(URL, '')) <> '' THEN 1 ELSE 0 END) AS publishedCount FROM laporan`),
+          db.execute(`SELECT Platform, SUM(CAST(REPLACE(REPLACE(COALESCE(Views, 0), '.', ''), ',', '') AS INTEGER)) AS views FROM laporan GROUP BY Platform`),
+          db.execute(`SELECT SUBSTR(Date, 6, 2) AS month, Platform,
+            SUM(CAST(REPLACE(REPLACE(COALESCE(Follows, 0), '.', ''), ',', '') AS INTEGER)) AS follows,
+            SUM(CAST(REPLACE(REPLACE(COALESCE("Total Engagement", 0), '.', ''), ',', '') AS INTEGER)) AS engagement,
+            SUM(CAST(REPLACE(REPLACE(COALESCE("Account Reach", 0), '.', ''), ',', '') AS INTEGER)) AS reach
+            FROM laporan WHERE Date IS NOT NULL GROUP BY SUBSTR(Date, 6, 2), Platform`)
+        ]);
+
+        const internUsers = usersRes.rows.map((user) => ({ id: String(user.id), name: String(user.name), role: String(user.role || 'intern') }));
+        const total = Number(countRes.rows[0]?.total || 0);
+        result = {
+          success: true,
+          laporan: { success: true, data: rowsRes.rows },
+          pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
+          dashboardMetrics: { ...(totalsRes.rows[0] || {}), platformViews: platformRes.rows, monthly: monthlyRes.rows },
+          schedule: { success: true, data: scheduleRes.rows },
+          memberList: { success: true, data: internUsers.map((user) => ({ NAMA: user.name, STREAM: user.role, USER_ID: user.id })) },
+          internList: { success: true, data: internUsers },
+          notifications: { success: true, data: notificationsRes.rows.filter((notification) => !notification.targetUserId || String(notification.targetUserId) === String(auth.userId || '')) },
+          appSettings: { success: true, data: settingsRes.rows },
+          platforms: { success: true, data: platformsRes.rows },
+          categories: { success: true, data: categoriesRes.rows }
+        };
+        break;
+      }
+
       case 'read_all': {
         await db.execute({
           sql: 'DELETE FROM audit_log WHERE createdAt < ?',
@@ -640,7 +726,15 @@ export async function POST(request) {
         });
         const [laporanRes, scheduleRes, scriptsRes, meetingsRes, notificationsRes, gaSummaryRes, gaItemsRes, appSettingsRes, platformsRes, categoriesRes, internUsersRes, lecturerUsersRes, lecturerVisibilityRes, auditRes] = await Promise.all([
           db.execute("SELECT * FROM laporan"),
-          db.execute("SELECT * FROM schedule"),
+          db.execute(`SELECT schedule.ID, schedule.Date, schedule.PIC,
+            schedule."Content Title", schedule.Category, schedule.Month,
+            schedule.AssignedUserId,
+            CASE WHEN EXISTS (
+              SELECT 1 FROM laporan
+              WHERE laporan.ID = schedule.ID
+                AND TRIM(COALESCE(laporan.URL, '')) <> ''
+            ) THEN 1 ELSE 0 END AS Status
+            FROM schedule`),
           db.execute("SELECT * FROM scripts"),
           db.execute("SELECT * FROM meetings"),
           db.execute("SELECT * FROM notifications ORDER BY createdAt DESC"),

@@ -39,7 +39,9 @@ export default function CalendarTab({ onOpenExport }) {
         categoriesData,
         showAlert,
         setCurrentView,
-        setSelectedMeetingId
+        setSelectedMeetingId,
+        selectedTaskId,
+        setSelectedTaskId
     } = useDashboard();
 
     const [currentMonth, setCurrentMonth] = useState(() => new Date());
@@ -216,6 +218,22 @@ export default function CalendarTab({ onOpenExport }) {
         setFormCategory(task.category);
         setFormTitle(task.contentTitle || '');
     };
+
+    useEffect(() => {
+        if (!selectedTaskId) return;
+        const selectedTask = combinedTasks.find((task) =>
+            !task.isMeeting && String(task.id) === String(selectedTaskId)
+        );
+        if (!selectedTask) return;
+
+        const selectedTaskDate = new Date(`${selectedTask.date}T00:00:00`);
+        if (Number.isNaN(selectedTaskDate.getTime())) return;
+
+        setSelectedDate(selectedTask.date);
+        setCurrentMonth(new Date(selectedTaskDate.getFullYear(), selectedTaskDate.getMonth(), 1));
+        startEditTask(selectedTask);
+        setSelectedTaskId(null);
+    }, [selectedTaskId, scheduleData, currentData]);
 
     const resetForm = () => {
         setEditingTaskId(null);

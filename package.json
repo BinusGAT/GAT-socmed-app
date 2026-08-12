@@ -12,12 +12,17 @@
     "test:e2e": "npm run build && node tests/run-e2e.mjs",
     "report:bundle": "node tests/performance/bundle-report.mjs",
     "test:performance": "npm run build && npm run report:bundle && node tests/run-performance.mjs",
+    "auth:audit-nim": "node --env-file=.env.local scripts/migrate-nim-hashes.mjs --audit",
+    "auth:migrate-nim": "node --env-file=.env.local scripts/migrate-nim-hashes.mjs --migrate",
+    "auth:verify-nim": "node --env-file=.env.local scripts/migrate-nim-hashes.mjs --verify",
+    "auth:cleanup-nim": "node --env-file=.env.local scripts/migrate-nim-hashes.mjs --cleanup",
     "verify": "npm run lint && npm run test && npm run test:e2e"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@libsql/client": "^0.17.4",
     "@netlify/plugin-nextjs": "^5.15.12",
+    "argon2": "^0.45.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.26.0",

@@ -165,7 +165,7 @@ export default function ContentHubTab() {
         }
 
         // PIC Filter
-        if (picFilter) {
+        if (picFilter && userRole !== 'Creator') {
             list = list.filter(({ d }) => {
                 const sched = getResolvedSchedule(d.title);
                 return sched && normalizePicName(sched.pic) === normalizePicName(picFilter);
@@ -353,19 +353,20 @@ export default function ContentHubTab() {
                     <div className="flex items-center justify-between border-b border-outline-variant/20 pb-2">
                         <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider">Idea Backlog</h4>
 
-                        {/* PIC selector filter */}
-                        <div>
-                            <select
-                                value={picFilter}
-                                onChange={(e) => setPicFilter(e.target.value)}
-                                className="bg-surface-container-low border border-outline-variant/30 text-on-surface-variant rounded px-2 py-1 text-[11px] font-bold uppercase focus:outline-none"
-                            >
-                                <option value="">All PICs</option>
-                                {memberListData.map(m => (
-                                    <option key={m.NAMA} value={m.NAMA}>{m.NAMA}</option>
-                                ))}
-                            </select>
-                        </div>
+                        {userRole !== 'Creator' && (
+                            <div>
+                                <select
+                                    value={picFilter}
+                                    onChange={(e) => setPicFilter(e.target.value)}
+                                    className="bg-surface-container-low border border-outline-variant/30 text-on-surface-variant rounded px-2 py-1 text-[11px] font-bold uppercase focus:outline-none"
+                                >
+                                    <option value="">All PICs</option>
+                                    {memberListData.map(m => (
+                                        <option key={m.NAMA} value={m.NAMA}>{m.NAMA}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </div>
 
                     {/* Category quick selectors */}

@@ -41,14 +41,20 @@ test('login route stays within browser performance budgets', async ({ page }) =>
 
 test('authenticated dashboard stays within shell and payload budgets', async ({ page }) => {
   const fixture = createDashboardFixture(1000);
-  const payload = JSON.stringify(fixture);
+  const dashboardFixture = {
+    ...fixture,
+    laporan: { data: fixture.laporan.data.slice(0, 50) },
+    pagination: { page: 1, pageSize: 50, total: fixture.laporan.data.length, totalPages: 20 }
+  };
+  const payload = JSON.stringify(dashboardFixture);
   const payloadKiB = Math.round(Buffer.byteLength(payload) / 102.4) / 10;
 
   await page.route('**/api/sheets', async (route) => {
     const { action } = route.request().postDataJSON();
     const body = action === 'validate_mode'
       ? { success: true, valid: true, role: 'Admin', expiresAt: Date.now() + 3_600_000, user: { id: 'e2e-admin', name: 'Performance Admin' } }
-      : action === 'read_all' ? fixture : { success: true };
+      : action === 'read_dashboard' ? dashboardFixture
+        : action === 'read_all' ? fixture : { success: true };
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
 

@@ -99,6 +99,7 @@ export function DashboardProvider({ children }) {
     const [appSettingsData, setAppSettingsData] = useState({});
     const [platformsData, setPlatformsData] = useState([]);
     const [categoriesData, setCategoriesData] = useState([]);
+    const [hasLoadedWorkspace, setHasLoadedWorkspace] = useState(false);
 
     const setIsLoading = (active, phase = 'mutation') => {
         setIsLoadingState(active);
@@ -245,6 +246,7 @@ export function DashboardProvider({ children }) {
             setAuditLogData([]);
             setDraftsData([]);
             setMeetingsData([]);
+            setHasLoadedWorkspace(false);
         }
     }, [isUnlocked]);
 
@@ -523,10 +525,10 @@ export function DashboardProvider({ children }) {
                 setScheduleData(schedule);
                 setMemberListData(memberList);
                 setInternListData(internList);
-                setLecturerListData(lecturerList);
-                setDraftsData(scripts);
+                if (result.lecturerList) setLecturerListData(lecturerList);
+                if (result.scripts) setDraftsData(scripts);
                 setNotificationsData(rawNotifications);
-                setAuditLogData(rawAuditLog);
+                if (result.auditLog) setAuditLogData(rawAuditLog);
 
                 const rawAppSettings = result.appSettings?.data || [];
                 const appSettingsObj = {};
@@ -552,8 +554,10 @@ export function DashboardProvider({ children }) {
                     localStorage.setItem('GAT_categories', JSON.stringify(categories));
                 }
                 
-                setMeetingsData(meetings);
-                localStorage.setItem('GAT_meeting_memos', JSON.stringify(meetings));
+                if (result.meetings) {
+                    setMeetingsData(meetings);
+                    localStorage.setItem('GAT_meeting_memos', JSON.stringify(meetings));
+                }
 
                 const gaSummary = result.gaSummary?.data?.[0] || {
                     visitors: '± 6K',
@@ -564,16 +568,17 @@ export function DashboardProvider({ children }) {
                 };
                 const gaItems = result.gaItems?.data || [];
 
-                setGaSummaryData(gaSummary);
-                setGaItemsData(gaItems);
+                if (result.gaSummary) setGaSummaryData(gaSummary);
+                if (result.gaItems) setGaItemsData(gaItems);
+                setHasLoadedWorkspace(true);
 
                 // Cache locally
                 localStorage.setItem('laporan_data_local', JSON.stringify(processedLaporan));
                 localStorage.setItem('schedule_data_local', JSON.stringify(schedule));
-                localStorage.setItem('GAT_storyboard_drafts', JSON.stringify(scripts));
+                if (result.scripts) localStorage.setItem('GAT_storyboard_drafts', JSON.stringify(scripts));
                 localStorage.setItem('GAT_notifications', JSON.stringify(rawNotifications));
-                localStorage.setItem('GAT_ga_summary_local', JSON.stringify(gaSummary));
-                localStorage.setItem('GAT_ga_items_local', JSON.stringify(gaItems));
+                if (result.gaSummary) localStorage.setItem('GAT_ga_summary_local', JSON.stringify(gaSummary));
+                if (result.gaItems) localStorage.setItem('GAT_ga_items_local', JSON.stringify(gaItems));
 
                 if (!quiet) showAlert('Database synchronized successfully!', 'success');
             }
@@ -1185,7 +1190,6 @@ export function DashboardProvider({ children }) {
             appSettingsData,
             platformsData,
             categoriesData,
-
             retryConnection: () => loadFromGoogleSheets(false),
 
             // Lockdown/Auth

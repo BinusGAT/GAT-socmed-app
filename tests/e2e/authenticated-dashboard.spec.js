@@ -27,15 +27,15 @@ async function openAuthenticatedDashboard(page, { readDelayMs = 0, failRead = fa
     if (request.method() !== 'POST') return route.continue();
     const { action } = request.postDataJSON();
     actionLog?.push(action);
-    if (action === 'read_all' && readDelayMs) {
+    if ((action === 'read_all' || action === 'read_dashboard') && readDelayMs) {
       await new Promise((resolve) => setTimeout(resolve, readDelayMs));
     }
-    if (action === 'read_all' && failRead) {
+    if ((action === 'read_all' || action === 'read_dashboard') && failRead) {
       return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ success: false, error: 'Database unavailable' }) });
     }
     const body = action === 'validate_mode'
       ? { success: true, valid: true, role, expiresAt: Date.now() + 3_600_000, user: { id: 'e2e-admin', name: role === 'Creator' ? 'Alya' : `Release K ${role}` } }
-      : action === 'read_all' ? dashboardData : { success: true };
+      : (action === 'read_all' || action === 'read_dashboard') ? dashboardData : { success: true };
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
 

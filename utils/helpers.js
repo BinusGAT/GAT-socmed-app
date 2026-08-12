@@ -204,7 +204,9 @@ export function getLocalDateInputValue() {
 }
 
 export function getTaskCalculatedStatus(task) {
-    const isDone = (task.Status === true || task.Status === 'TRUE' || task.Status === 'true');
+    const isDone = task.Status === true
+        || Number(task.Status) === 1
+        || String(task.Status).toLowerCase() === 'true';
     if (isDone) return 'Done';
 
     if (!task.Date) return 'On Progress';

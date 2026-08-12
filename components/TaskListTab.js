@@ -303,7 +303,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
         }
     };
 
-    const showActions = isUnlocked && userRole !== 'Viewer';
+    const showActions = isUnlocked && userRole === 'Admin';
     const canCreateTask = isUnlocked && userRole === 'Admin';
     const canEditTask = (task) => userRole === 'Admin' || (userRole === 'Creator' && isTaskAssignedToUser(task, userId, userName));
 
