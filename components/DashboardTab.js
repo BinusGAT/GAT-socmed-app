@@ -26,7 +26,7 @@ const parseCleanInt = (val) => {
 
 const getPicDisplayName = (pic) => normalizePicName(pic).split(/\s+/)[0] || '';
 
-export default function DashboardTab({ onOpenDatePicker, chartReady = false }) {
+export default function DashboardTab({ onOpenDatePicker, chartReady = false, onChartNeeded }) {
     const {
         currentData,
         scheduleData,
@@ -92,6 +92,10 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false }) {
     const [currentMonth, setCurrentMonth] = useState(() => today.getMonth());
     const [activeChartTab, setActiveChartTab] = useState('Followers'); // 'Followers' | 'Engagement' | 'Reach'
     const [tableFilterDate, setTableFilterDate] = useState('');
+
+    useEffect(() => {
+        onChartNeeded?.();
+    }, [onChartNeeded]);
 
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
