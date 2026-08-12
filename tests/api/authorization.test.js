@@ -17,8 +17,8 @@ import {
 import { hashSessionToken, publicErrorResponse } from '../../src/app/api/sheets/security';
 
 describe('API authorization policy', () => {
-  it('allows every authenticated role to read workspace data and end its session', () => {
-    for (const action of ['read_all', 'logout']) {
+  it('allows every authenticated role to read dashboard data and end its session', () => {
+    for (const action of ['read_dashboard', 'logout']) {
       expect(getAllowedRoles(action)).toEqual([
         ROLES.ADMIN,
         ROLES.CREATOR,
@@ -27,6 +27,11 @@ describe('API authorization policy', () => {
     }
     expect(getAllowedRoles('list_sessions')).toEqual([ROLES.ADMIN]);
     expect(getAllowedRoles('revoke_session')).toEqual([ROLES.ADMIN]);
+  });
+
+  it('restricts full workspace reads to admins and creators', () => {
+    expect(getAllowedRoles('read_all')).toEqual([ROLES.ADMIN, ROLES.CREATOR]);
+    expect(isRoleAllowed('read_all', ROLES.VIEWER)).toBe(false);
   });
 
   it('allows creators to manage content workflows', () => {

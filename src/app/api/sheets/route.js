@@ -13,6 +13,7 @@ import {
 } from './session-cookie';
 import {
   clearAccountLoginFailures,
+  consumeApiRateLimit,
   getClientIp,
   getLoginRateLimit,
   getLoginRateLimitKeys,
@@ -20,6 +21,7 @@ import {
   publicErrorResponse,
   recordLoginFailure,
 } from './security';
+import { readJsonBody, RequestValidationError, sanitizeUserAgent, validatePayload } from './request-validation';
 
 const db = {
   execute: dbExecute,
@@ -129,6 +131,10 @@ export async function POST(request) {
       );
     }
 
+    const payload = await readJsonBody(request);
+    const { action, params } = validatePayload(payload);
+    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value || '';
+
     // Ensure all required tables exist in the database dynamically (only once per server lifecycle)
     if (!isDbInitialized) {
       console.log(`[API] Initializing tables for first request...`);
@@ -156,6 +162,19 @@ export async function POST(request) {
           updatedAt INTEGER NOT NULL
         )
       `);
+
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS api_rate_limits (
+          key TEXT PRIMARY KEY,
+          requestCount INTEGER NOT NULL,
+          windowStartedAt INTEGER NOT NULL,
+          updatedAt INTEGER NOT NULL
+        )
+      `);
+      await db.execute({
+        sql: 'DELETE FROM api_rate_limits WHERE updatedAt < ?',
+        args: [Date.now() - 24 * 60 * 60 * 1000],
+      });
 
       for (const column of [
         'sessionId TEXT', 'userId TEXT', 'userName TEXT', 'userEmail TEXT',
@@ -495,11 +514,6 @@ export async function POST(request) {
       console.log(`[API] DB already initialized, skipped in ${Date.now() - startTime}ms`);
     }
 
-    const payload = await request.json();
-    const action = payload.action;
-    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value || '';
-    const params = payload.params || {};
-
     console.log(`[API] Action payload parsed. Action = "${action}" in ${Date.now() - startTime}ms`);
 
     // 1. Handle Validate Mode separately
@@ -583,7 +597,7 @@ export async function POST(request) {
 
         const sessionToken = crypto.randomBytes(32).toString('hex');
         const sessionId = crypto.randomUUID();
-        const userAgent = request.headers.get('user-agent') || 'Unknown device';
+        const userAgent = sanitizeUserAgent(request.headers.get('user-agent'));
         await db.execute({
           sql: "DELETE FROM sessions WHERE expiresAt < ?",
           args: [Date.now()]
@@ -623,6 +637,19 @@ export async function POST(request) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized: Access token required or invalid' },
         { status: 401 }
+      );
+    }
+
+    const rateLimit = await consumeApiRateLimit(
+      db,
+      auth.userId || auth.userEmail || auth.sessionId,
+      getClientIp(request.headers),
+      action,
+    );
+    if (rateLimit.limited) {
+      return NextResponse.json(
+        { success: false, error: 'Too many requests. Try again later.' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
       );
     }
 
@@ -1525,6 +1552,12 @@ export async function POST(request) {
     }
     return response;
   } catch (error) {
+    if (error instanceof RequestValidationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status },
+      );
+    }
     console.error('Error in API sheets proxy route:', error);
     return NextResponse.json(
       publicErrorResponse(),

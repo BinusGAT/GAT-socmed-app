@@ -253,9 +253,9 @@ export function DashboardProvider({ children }) {
     }, [isUnlocked]);
 
     useEffect(() => {
-        if (!isUnlocked || currentView === 'dashboard' || hasLoadedWorkspace) return;
+        if (!isUnlocked || userRole === 'Viewer' || currentView === 'dashboard' || hasLoadedWorkspace) return;
         loadFromGoogleSheets(true, { dashboardOnly: false });
-    }, [currentView, isUnlocked, hasLoadedWorkspace]);
+    }, [currentView, isUnlocked, userRole, hasLoadedWorkspace]);
 
     // Periodically check if session limit has been exceeded
     useEffect(() => {
@@ -492,7 +492,8 @@ export function DashboardProvider({ children }) {
     const loadFromGoogleSheets = async (quiet = false, options = {}) => {
         const hasLocalData = typeof window !== 'undefined' && !!localStorage.getItem('laporan_data_local');
         const showLoading = !quiet || !hasLocalData;
-        const dashboardOnly = options.dashboardOnly ?? (currentView === 'dashboard' && !hasLoadedWorkspace);
+        const dashboardOnly = userRole === 'Viewer'
+            || (options.dashboardOnly ?? (currentView === 'dashboard' && !hasLoadedWorkspace));
         
         if (showLoading) {
             setIsLoading(true, quiet ? 'initial' : 'sync');

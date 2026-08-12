@@ -4,7 +4,8 @@ export const ROLES = Object.freeze({
   VIEWER: 'Viewer',
 });
 
-const READ_ACTIONS = new Set(['read_all', 'read_dashboard', 'logout']);
+const AUTHENTICATED_ACTIONS = new Set(['read_dashboard', 'logout']);
+const WORKSPACE_READ_ACTIONS = new Set(['read_all']);
 const CREATOR_ACTIONS = new Set([
   'save_script',
   'save_schedule',
@@ -13,8 +14,12 @@ const CREATOR_ACTIONS = new Set([
 ]);
 
 export function getAllowedRoles(action) {
-  if (READ_ACTIONS.has(action)) {
+  if (AUTHENTICATED_ACTIONS.has(action)) {
     return [ROLES.ADMIN, ROLES.CREATOR, ROLES.VIEWER];
+  }
+
+  if (WORKSPACE_READ_ACTIONS.has(action)) {
+    return [ROLES.ADMIN, ROLES.CREATOR];
   }
 
   if (CREATOR_ACTIONS.has(action)) {

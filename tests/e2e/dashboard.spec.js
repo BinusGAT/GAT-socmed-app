@@ -72,13 +72,26 @@ test('does not overflow horizontally at the configured viewport', async ({ page 
 test('serves the required browser security headers', async ({ request }) => {
   const response = await request.get('/');
   const headers = response.headers();
+  const csp = headers['content-security-policy'];
 
-  expect(headers['content-security-policy']).toContain("default-src 'self'");
-  expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
+  expect(csp).toContain("default-src 'self'");
+  expect(csp).toContain("frame-ancestors 'none'");
+  expect(csp).toContain("'strict-dynamic'");
+  expect(csp).toMatch(/script-src[^;]*'nonce-[A-Za-z0-9+/=]+'/);
+  expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
   expect(headers['x-content-type-options']).toBe('nosniff');
   expect(headers['x-frame-options']).toBe('DENY');
   expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
   expect(headers['permissions-policy']).toContain('camera=()');
+
+  const secondCsp = (await request.get('/')).headers()['content-security-policy'];
+  expect(secondCsp).not.toBe(csp);
+});
+
+test('nonces every rendered script', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('script')).not.toHaveCount(0);
+  await expect(page.locator('script:not([nonce])')).toHaveCount(0);
 });
 
 test('rejects forged cross-origin API requests', async ({ request }) => {

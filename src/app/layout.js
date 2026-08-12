@@ -1,4 +1,5 @@
 import Script from 'next/script';
+import { headers } from 'next/headers';
 import "./globals.css";
 
 export const metadata = {
@@ -11,7 +12,9 @@ export const viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const nonce = (await headers()).get('x-nonce') || undefined;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -23,7 +26,7 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
-        <Script id="theme-html-initializer">
+        <Script id="theme-html-initializer" nonce={nonce}>
           {`
             (function () {
               try {
@@ -37,7 +40,7 @@ export default function RootLayout({ children }) {
         </Script>
       </head>
       <body suppressHydrationWarning>
-        <Script id="theme-body-initializer">
+        <Script id="theme-body-initializer" nonce={nonce}>
           {`
             (function () {
               try {
