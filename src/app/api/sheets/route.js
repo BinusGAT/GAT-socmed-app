@@ -164,6 +164,15 @@ export async function POST(request) {
       `);
 
       await db.execute(`
+        CREATE TABLE IF NOT EXISTS user_credentials (
+          userId TEXT PRIMARY KEY,
+          nimHash TEXT NOT NULL,
+          createdAt INTEGER NOT NULL,
+          updatedAt INTEGER NOT NULL
+        )
+      `);
+
+      await db.execute(`
         CREATE TABLE IF NOT EXISTS api_rate_limits (
           key TEXT PRIMARY KEY,
           requestCount INTEGER NOT NULL,
@@ -543,14 +552,13 @@ export async function POST(request) {
               SELECT 
                 u.id, 
                 u.email, 
-                u.nim_hash,
                 u.name, 
                 GROUP_CONCAT(r.name) AS role_names
               FROM users u
               LEFT JOIN user_roles ur ON ur.user_id = u.id
               LEFT JOIN roles r ON r.id = ur.role_id
               WHERE LOWER(u.email) = ?
-              GROUP BY u.id, u.email, u.name, u.nim_hash
+              GROUP BY u.id, u.email, u.name
               LIMIT 1
             `,
             args: [email]
@@ -564,7 +572,15 @@ export async function POST(request) {
         }
 
         const userRow = userRes?.rows[0];
-        const validNim = userRow ? await verifyCredential(userRow.nim_hash, nim) : false;
+        let nimHash = '';
+        if (userRow) {
+          const credentialRes = await db.execute({
+            sql: 'SELECT nimHash FROM user_credentials WHERE userId = ? LIMIT 1',
+            args: [String(userRow.id)],
+          });
+          nimHash = String(credentialRes.rows[0]?.nimHash || '');
+        }
+        const validNim = userRow ? await verifyCredential(nimHash, nim) : false;
         if (!userRow || !validNim) {
           const limit = await recordLoginFailure(db, rateLimitKeys, now);
           return NextResponse.json(

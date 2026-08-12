@@ -14,6 +14,8 @@
 /coverage
 /playwright-report/
 /test-results/
+/blob-report/
+/.nyc_output/
 
 # next.js
 /.next/
@@ -24,14 +26,27 @@
 
 # misc
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 *.pem
 
 # debug
+*.log
 debug.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# local caches and deployment state
+/.cache/
+/.turbo/
+/.vercel/
+/.netlify/
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -54,7 +69,8 @@ local.db
 *generate-hash.js
 
 # dev utility scripts
-/scripts/
+/scripts/*
+!/scripts/migrate-nim-hashes.mjs
 /assets/
 
 # local editor spell-check configuration

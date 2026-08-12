@@ -25,6 +25,7 @@ const parseCleanInt = (val) => {
 };
 
 const getPicDisplayName = (pic) => normalizePicName(pic).split(/\s+/)[0] || '';
+const TABLE_PAGE_SIZE = 100;
 
 export default function DashboardTab({ onOpenDatePicker, chartReady = false, onChartNeeded }) {
     const {
@@ -79,6 +80,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
     const [sortColumn, setSortColumn] = useState('Date');
     const [sortDirection, setSortDirection] = useState('asc');
     const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
+    const [tablePage, setTablePage] = useState(1);
 
     // Sidebar state (defaults to today's date dynamically)
     const today = React.useMemo(() => new Date(), []);
@@ -218,10 +220,40 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
         return list;
     }, [currentData, searchQuery, dateRange.start, dateRange.end, tableFilterDate, sortColumn, sortDirection]);
 
-    const rowspans = React.useMemo(() => {
-        if (!processedData || processedData.length === 0) return [];
+    // Keep content groups together so rowspans never cross a page boundary.
+    const tablePages = React.useMemo(() => {
+        if (processedData.length === 0) return [];
+        const pages = [];
+        let start = 0;
+        while (start < processedData.length) {
+            let end = Math.min(start + TABLE_PAGE_SIZE, processedData.length);
+            if (end < processedData.length) {
+                const boundaryGroup = getContentGroupKey(processedData[end - 1]);
+                while (end < processedData.length && boundaryGroup && getContentGroupKey(processedData[end]) === boundaryGroup) {
+                    end++;
+                }
+            }
+            pages.push({ start, rows: processedData.slice(start, end) });
+            start = end;
+        }
+        return pages;
+    }, [processedData]);
 
-        const preprocessed = processedData.map(item => ({
+    useEffect(() => {
+        setTablePage(1);
+    }, [searchQuery, dateRange.start, dateRange.end, tableFilterDate, sortColumn, sortDirection]);
+
+    useEffect(() => {
+        setTablePage((page) => Math.min(page, Math.max(tablePages.length, 1)));
+    }, [tablePages.length]);
+
+    const activeTablePage = tablePages[tablePage - 1] || { start: 0, rows: [] };
+    const visibleTableData = activeTablePage.rows;
+
+    const rowspans = React.useMemo(() => {
+        if (visibleTableData.length === 0) return [];
+
+        const preprocessed = visibleTableData.map(item => ({
             ...item,
             _parsedDate: parseDate(item.Date),
             _normalizedPic: normalizePicName(item.PIC),
@@ -299,12 +331,17 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
             i = j;
         }
         return spans;
-    }, [processedData]);
+    }, [visibleTableData]);
 
     const contentGroupNumbers = React.useMemo(() => {
         let groupNumber = 0;
+        for (let index = 0; index < activeTablePage.start; index++) {
+            if (index === 0 || getContentGroupKey(processedData[index]) !== getContentGroupKey(processedData[index - 1])) {
+                groupNumber++;
+            }
+        }
         return rowspans.map((span) => span.ContentTitle > 0 ? ++groupNumber : groupNumber);
-    }, [rowspans]);
+    }, [rowspans, activeTablePage.start, processedData]);
 
     // Stats calculations
     const stats = React.useMemo(() => {
@@ -568,10 +605,12 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
     };
 
     const toggleSelectAll = () => {
-        if (selectedRows.length === processedData.length) {
-            setSelectedRows([]);
+        const visibleIds = visibleTableData.map(row => row.ID);
+        const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedRows.includes(id));
+        if (allVisibleSelected) {
+            setSelectedRows(selectedRows.filter(id => !visibleIds.includes(id)));
         } else {
-            setSelectedRows(processedData.map(row => row.ID));
+            setSelectedRows(Array.from(new Set([...selectedRows, ...visibleIds])));
         }
     };
 
@@ -873,42 +912,6 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
             <div className="hidden lg:grid grid-cols-4 gap-gutter items-start">
                 {/* Left/Center 3 Columns */}
                 <div className="col-span-3 space-y-6">
-                    {userRole !== 'Viewer' && <section aria-labelledby="dashboard-priority-heading" className="grid grid-cols-[minmax(0,1.65fr)_minmax(18rem,1fr)] gap-gutter">
-                        <div className="rounded-2xl border border-outline-variant/30 bg-surface-container p-6 shadow-xs">
-                            <div className="mb-5 flex items-start justify-between gap-4">
-                                <div>
-                                    <p className="mb-1 text-xs font-semibold text-primary">Work overview</p>
-                                    <h2 id="dashboard-priority-heading" className="text-headline-md font-bold tracking-tight text-on-surface">What needs attention</h2>
-                                </div>
-                                <button type="button" onClick={openTaskDirectory} className="shrink-0 rounded-lg px-3 py-2 text-body-sm font-semibold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">View all tasks</button>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button type="button" onClick={() => taskOverview.overdue[0] ? openTask(taskOverview.overdue[0].id) : openTaskDirectory()} className="group rounded-xl border border-outline-variant/25 bg-surface-container-low p-4 text-left transition-colors hover:border-error/40 hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                                    <span className="text-xs font-semibold text-on-surface-variant">Overdue</span>
-                                    <span className={`mt-2 block text-3xl font-bold font-tabular ${taskOverview.overdue.length ? 'text-error' : 'text-on-surface'}`}>{taskOverview.overdue.length}</span>
-                                    <span className="mt-1 block text-xs text-on-surface-variant">{taskOverview.overdue.length ? 'Open the oldest overdue task' : 'No overdue tasks'}</span>
-                                </button>
-                                <button type="button" onClick={() => taskOverview.dueToday[0] ? openTask(taskOverview.dueToday[0].id) : openPlanner()} className="group rounded-xl border border-outline-variant/25 bg-surface-container-low p-4 text-left transition-colors hover:border-primary/40 hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                                    <span className="text-xs font-semibold text-on-surface-variant">Due today</span>
-                                    <span className="mt-2 block text-3xl font-bold font-tabular text-on-surface">{taskOverview.dueToday.length}</span>
-                                    <span className="mt-1 block text-xs text-on-surface-variant">{taskOverview.dueToday.length ? 'Open the next task' : 'Review today in planner'}</span>
-                                </button>
-                            </div>
-                        </div>
-                        <aside aria-labelledby="next-deadline-heading" className="rounded-2xl border border-outline-variant/30 bg-surface-container-low p-5">
-                            <div className="mb-4 flex items-center justify-between gap-3">
-                                <h2 id="next-deadline-heading" className="text-body-md font-bold text-on-surface">Next deadline</h2>
-                                <button type="button" onClick={openPlanner} className="text-xs font-semibold text-primary hover:underline">Open planner</button>
-                            </div>
-                            {taskOverview.upcoming[0] ? (
-                                <button type="button" onClick={() => openTask(taskOverview.upcoming[0].id)} className="w-full rounded-xl bg-surface-container p-4 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`Open task ${taskOverview.upcoming[0].contentTitle || 'Untitled'}`}>
-                                    <span className="text-xs font-bold text-primary">{formatDisplayDate(taskOverview.upcoming[0].date)}</span>
-                                    <span className="mt-2 block text-body-lg font-bold text-on-surface">{taskOverview.upcoming[0].contentTitle || 'Untitled'}</span>
-                                    <span className="mt-1 block text-body-sm text-on-surface-variant">{taskOverview.upcoming[0].category} · {getPicDisplayName(taskOverview.upcoming[0].pic)}</span>
-                                </button>
-                            ) : <p className="rounded-xl bg-surface-container p-4 text-body-sm text-on-surface-variant">Nothing is scheduled next. Open the planner to add work.</p>}
-                        </aside>
-                    </section>}
                     {/* Performance Overview header strip */}
                     {/* Stats Bento Grid - Equal 5 Column Box Sizes */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
@@ -1096,7 +1099,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                                         type="checkbox"
                                                         aria-label="Select all visible content records"
                                                         className="rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
-                                                        checked={selectedRows.length > 0 && selectedRows.length === processedData.length}
+                                                        checked={visibleTableData.length > 0 && visibleTableData.every(row => selectedRows.includes(row.ID))}
                                                         onChange={toggleSelectAll}
                                                     />
                                                 </th>
@@ -1113,7 +1116,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                         </tr>
                                     </thead>
                                     <tbody className="">
-                                        {processedData.map((row, idx) => {
+                                        {visibleTableData.map((row, idx) => {
                                             const isRowSelected = selectedRows.includes(row.ID);
                                             const rowSpan = rowspans[idx] || { Date: 1, ID: 1, ContentTitle: 1, PIC: 1, Category: 1, KPISummary: 1 };
                                             const isNewGroup = rowSpan.ContentTitle > 0;
@@ -1188,7 +1191,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                                             <button
                                                                 type="button"
                                                                 className="p-1 text-on-surface-variant hover:text-primary transition-colors cursor-pointer micro-interaction"
-                                                                onClick={() => loadRowForEdit(row, idx)}
+                                                                onClick={() => loadRowForEdit(row, currentData.indexOf(row))}
                                                                 title="Edit metrics"
                                                             >
                                                                 <span className="material-symbols-outlined text-[16px]">edit</span>
@@ -1202,11 +1205,70 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                 </table>
                             )}
                         </div>
+                        {tablePages.length > 1 && (
+                            <nav className="flex items-center justify-between gap-4 border-t border-outline-variant/20 bg-surface-container-low px-5 py-3" aria-label="Content table pagination">
+                                <p className="text-[11px] text-on-surface-variant">
+                                    Showing {activeTablePage.start + 1}–{activeTablePage.start + visibleTableData.length} of {processedData.length}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        className="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-[11px] font-semibold text-on-surface disabled:cursor-not-allowed disabled:opacity-40"
+                                        disabled={tablePage === 1}
+                                        onClick={() => setTablePage(page => Math.max(1, page - 1))}
+                                    >
+                                        Previous
+                                    </button>
+                                    <span className="text-[11px] font-semibold text-on-surface" aria-live="polite">
+                                        Page {tablePage} of {tablePages.length}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-[11px] font-semibold text-on-surface disabled:cursor-not-allowed disabled:opacity-40"
+                                        disabled={tablePage === tablePages.length}
+                                        onClick={() => setTablePage(page => Math.min(tablePages.length, page + 1))}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </nav>
+                        )}
                     </div>
                 </div>
 
                 {/* Right 1 Column Sidebar */}
                 <div className="space-y-6">
+                    {userRole !== 'Viewer' && (
+                        <section aria-labelledby="dashboard-priority-heading" className="rounded-xl border border-outline-variant/30 bg-surface-container p-3 shadow-xs">
+                            <div className="flex items-center justify-between gap-3">
+                                <h2 id="dashboard-priority-heading" className="text-xs font-bold text-on-surface">Work overview</h2>
+                                <button type="button" onClick={openTaskDirectory} className="text-[11px] font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">View all tasks</button>
+                            </div>
+                            <div className="mt-2 grid grid-cols-2 divide-x divide-outline-variant/25 rounded-lg bg-surface-container-low">
+                                <button type="button" onClick={() => taskOverview.overdue[0] ? openTask(taskOverview.overdue[0].id) : openTaskDirectory()} className="flex items-center justify-between gap-2 rounded-l-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                                    <span className="text-[11px] font-medium text-on-surface-variant">Overdue</span>
+                                    <span className={`font-tabular text-base font-bold ${taskOverview.overdue.length ? 'text-error' : 'text-on-surface'}`}>{taskOverview.overdue.length}</span>
+                                </button>
+                                <button type="button" onClick={() => taskOverview.dueToday[0] ? openTask(taskOverview.dueToday[0].id) : openPlanner()} className="flex items-center justify-between gap-2 rounded-r-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                                    <span className="text-[11px] font-medium text-on-surface-variant">Due today</span>
+                                    <span className="font-tabular text-base font-bold text-on-surface">{taskOverview.dueToday.length}</span>
+                                </button>
+                            </div>
+                            <div className="mt-2 border-t border-outline-variant/20 pt-2">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="text-[10px] font-semibold text-on-surface-variant">Next deadline</span>
+                                    <button type="button" onClick={openPlanner} className="text-[10px] font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Planner</button>
+                                </div>
+                                {taskOverview.upcoming[0] ? (
+                                    <button type="button" onClick={() => openTask(taskOverview.upcoming[0].id)} className="mt-1 flex w-full min-w-0 items-center gap-2 rounded-md px-1 py-1 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`Open task ${taskOverview.upcoming[0].contentTitle || 'Untitled'}`}>
+                                        <span className="shrink-0 text-[10px] font-bold text-primary">{formatDisplayDate(taskOverview.upcoming[0].date)}</span>
+                                        <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-on-surface">{taskOverview.upcoming[0].contentTitle || 'Untitled'}</span>
+                                        <span className="material-symbols-outlined shrink-0 text-[14px] text-on-surface-variant" aria-hidden="true">chevron_right</span>
+                                    </button>
+                                ) : <p className="mt-1 text-[11px] text-on-surface-variant">Nothing scheduled next.</p>}
+                            </div>
+                        </section>
+                    )}
                     {/* Monthly Calendar Widget */}
                     <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl">
                         <div className="flex justify-between items-center pb-2 mb-3 border-b border-outline-variant/20">

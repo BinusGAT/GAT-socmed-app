@@ -113,7 +113,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                 task.id.toLowerCase().includes(query)
             )
             .filter(task => !tasklistFilterPic || 
-                normalizePicName(task.pic) === normalizePicName(tasklistFilterPic)
+                normalizePicName(resolveMemberName(task.pic, memberListData)) === normalizePicName(tasklistFilterPic)
             )
             .filter(task => !tasklistFilterStatus || 
                 task.calculatedStatus === tasklistFilterStatus

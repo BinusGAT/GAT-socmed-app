@@ -40,7 +40,8 @@ test('login route stays within browser performance budgets', async ({ page }) =>
 });
 
 test('authenticated dashboard stays within shell and payload budgets', async ({ page }) => {
-  const fixture = createDashboardFixture(1000);
+  const rowCount = Number.parseInt(process.env.PERFORMANCE_ROW_COUNT || '1000', 10);
+  const fixture = createDashboardFixture(rowCount);
   const dashboardFixture = fixture;
   const payload = JSON.stringify(dashboardFixture);
   const payloadKiB = Math.round(Buffer.byteLength(payload) / 102.4) / 10;
@@ -62,9 +63,21 @@ test('authenticated dashboard stays within shell and payload budgets', async ({ 
   await expect(page.getByRole('heading', { name: 'What needs attention' })).toBeVisible();
   const shellReadyMs = Date.now() - startedAt;
 
-  console.log('Authenticated baseline:', { rows: 1000, shellReadyMs, readAllPayloadKiB: payloadKiB });
-  expect(shellReadyMs).toBeLessThanOrEqual(budgets.authenticated.shellReadyMs);
-  expect(payloadKiB).toBeLessThanOrEqual(budgets.authenticated.readAllPayloadKiB);
+  const pagination = page.getByRole('navigation', { name: 'Content table pagination' });
+  const expectedTotalViews = Array.from({ length: rowCount }, (_, index) => 1000 + index)
+    .reduce((total, views) => total + views, 0)
+    .toLocaleString('id-ID');
+  await expect(pagination).toContainText(`of ${rowCount}`);
+  await expect(page.getByText(expectedTotalViews, { exact: true }).first()).toBeVisible();
+  await pagination.getByRole('button', { name: 'Next' }).click();
+  await expect(pagination).toContainText('Page 2 of');
+  await expect(page.getByText(expectedTotalViews, { exact: true }).first()).toBeVisible();
+
+  console.log('Authenticated baseline:', { rows: rowCount, shellReadyMs, readAllPayloadKiB: payloadKiB });
+  if (rowCount === 1000) {
+    expect(shellReadyMs).toBeLessThanOrEqual(budgets.authenticated.shellReadyMs);
+    expect(payloadKiB).toBeLessThanOrEqual(budgets.authenticated.readAllPayloadKiB);
+  }
 });
 
 test('reports representative read_all fixture sizes', () => {
