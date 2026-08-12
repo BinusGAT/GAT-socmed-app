@@ -25,6 +25,8 @@ const parseCleanInt = (val) => {
     return parseInt(cleaned, 10) || 0;
 };
 
+const getPicDisplayName = (pic) => normalizePicName(pic).split(/\s+/)[0] || '';
+
 export default function DashboardTab({ onOpenDatePicker }) {
     const {
         currentData,
@@ -318,6 +320,11 @@ export default function DashboardTab({ onOpenDatePicker }) {
         return spans;
     }, [processedData]);
 
+    const contentGroupNumbers = React.useMemo(() => {
+        let groupNumber = 0;
+        return rowspans.map((span) => span.ContentTitle > 0 ? ++groupNumber : groupNumber);
+    }, [rowspans]);
+
     // Stats calculations
     const calculateStats = () => {
         let totalViews = 0;
@@ -338,8 +345,9 @@ export default function DashboardTab({ onOpenDatePicker }) {
                 rateCount++;
             }
 
-            if (row['Content Title']) {
-                contentTitles.add(String(row['Content Title']).trim().toLowerCase());
+            const normalizedTitle = String(row['Content Title'] || '').trim().toLowerCase();
+            if (normalizedTitle && normalizedTitle !== 'null' && normalizedTitle !== 'untitled') {
+                contentTitles.add(normalizedTitle);
             }
         });
 
@@ -920,7 +928,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                 <button type="button" onClick={() => openTask(taskOverview.upcoming[0].id)} className="w-full rounded-xl bg-surface-container p-4 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`Open task ${taskOverview.upcoming[0].contentTitle || 'Untitled'}`}>
                                     <span className="text-xs font-bold text-primary">{formatDisplayDate(taskOverview.upcoming[0].date)}</span>
                                     <span className="mt-2 block text-body-lg font-bold text-on-surface">{taskOverview.upcoming[0].contentTitle || 'Untitled'}</span>
-                                    <span className="mt-1 block text-body-sm text-on-surface-variant">{taskOverview.upcoming[0].category} · {normalizePicName(taskOverview.upcoming[0].pic)}</span>
+                                    <span className="mt-1 block text-body-sm text-on-surface-variant">{taskOverview.upcoming[0].category} · {getPicDisplayName(taskOverview.upcoming[0].pic)}</span>
                                 </button>
                             ) : <p className="rounded-xl bg-surface-container p-4 text-body-sm text-on-surface-variant">Nothing is scheduled next. Open the planner to add work.</p>}
                         </aside>
@@ -1152,7 +1160,11 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                                             />
                                                         </td>
                                                     )}
-                                                    <td className="px-3 py-3 w-12 text-center text-on-surface-variant/70 text-[12px]">{idx + 1}</td>
+                                                    {rowSpan.ContentTitle > 0 && (
+                                                        <td rowSpan={rowSpan.ContentTitle} className="px-3 py-3 w-12 text-center text-on-surface-variant/70 text-[12px]">
+                                                            {contentGroupNumbers[idx]}
+                                                        </td>
+                                                    )}
                                                     {rowSpan.Date > 0 && (
                                                         <td rowSpan={rowSpan.Date} className="px-4 py-3 text-[12px] font-semibold text-on-surface-variant">
                                                             {formatDisplayDate(row.Date)}
@@ -1165,7 +1177,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                                                     {row['Content Title'] || 'Untitled'}
                                                                 </p>
                                                                 <p className="text-[11px] text-on-surface-variant/80">
-                                                                    {row.Category} · PIC: <span className="font-bold text-primary">{normalizePicName(row.PIC)}</span>
+                                                                    {row.Category} · PIC: <span className="font-bold text-primary">{getPicDisplayName(row.PIC)}</span>
                                                                 </p>
                                                             </div>
                                                         </td>
@@ -1320,7 +1332,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                             <p className="text-[9.5px] text-primary uppercase font-bold tracking-wider">Upload: {task.Category}</p>
                                             <p className="text-xs font-semibold text-on-surface leading-snug line-clamp-2">{task['Content Title']}</p>
                                             <p className="text-[10px] text-on-surface-variant/80">
-                                                PIC: <span className="font-semibold">{normalizePicName(task.PIC)}</span> | {task.Status ? 'Published' : 'Pending'}
+                                                PIC: <span className="font-semibold">{getPicDisplayName(task.PIC)}</span> | {task.Status ? 'Published' : 'Pending'}
                                             </p>
                                         </div>
                                     </div>
@@ -1396,7 +1408,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                             {taskOverview.upcoming.slice(0, 3).map(task => (
                                 <button key={task.id} type="button" onClick={() => openTask(task.id)} className="flex w-full items-center gap-3 rounded-xl border border-outline-variant/25 bg-surface-container-low p-3 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`Open task ${task.contentTitle || 'Untitled'}`}>
                                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><span className="material-symbols-outlined" aria-hidden="true">calendar_month</span></span>
-                                    <span className="min-w-0 flex-1"><span className="block text-xs font-bold text-primary">{formatDisplayDate(task.date)}</span><span className="block truncate text-body-sm font-semibold text-on-surface">{task.contentTitle || 'Untitled'}</span><span className="block truncate text-xs text-on-surface-variant">{task.category} · {normalizePicName(task.pic)}</span></span>
+                                    <span className="min-w-0 flex-1"><span className="block text-xs font-bold text-primary">{formatDisplayDate(task.date)}</span><span className="block truncate text-body-sm font-semibold text-on-surface">{task.contentTitle || 'Untitled'}</span><span className="block truncate text-xs text-on-surface-variant">{task.category} · {getPicDisplayName(task.pic)}</span></span>
                                     <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">chevron_right</span>
                                 </button>
                             ))}
@@ -1554,7 +1566,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
                                         >
                                             <option value="" disabled hidden>Select PIC</option>
                                             {memberListData.map(m => (
-                                                <option key={m.NAMA} value={m.NAMA}>{m.NAMA}</option>
+                                                <option key={m.NAMA} value={m.NAMA}>{getPicDisplayName(m.NAMA)}</option>
                                             ))}
                                         </select>
                                     </div>

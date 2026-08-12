@@ -364,6 +364,7 @@ export default function SettingsTab() {
                         <table className="w-full text-left border-collapse text-body-sm">
                             <thead className="bg-surface-container-low text-on-surface-variant uppercase text-[10px] tracking-wider border-b border-outline-variant/20">
                                 <tr>
+                                    <th className="px-5 py-4">Full name</th>
                                     <th className="px-5 py-4">Name</th>
                                     <th className="px-5 py-4">Role</th>
                                 </tr>
@@ -371,13 +372,14 @@ export default function SettingsTab() {
                             <tbody className="divide-y divide-outline-variant/10">
                                 {internListData.length === 0 ? (
                                     <tr>
-                                        <td colSpan="2" className="px-5 py-8 text-center text-on-surface-variant/60 italic">
+                                        <td colSpan="3" className="px-5 py-8 text-center text-on-surface-variant/60 italic">
                                             No users with the intern role were found.
                                         </td>
                                     </tr>
                                 ) : internListData.map((intern) => (
                                     <tr key={intern.id} className="hover:bg-surface-container-low/30 transition-colors">
                                         <td className="px-5 py-4 font-semibold text-on-surface">{intern.name}</td>
+                                        <td className="px-5 py-4 font-semibold text-on-surface">{intern.name.trim().split(/\s+/)[0]}</td>
                                         <td className="px-5 py-4 text-on-surface-variant capitalize">{intern.role}</td>
                                     </tr>
                                 ))}
