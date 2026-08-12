@@ -10,6 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "npm run build && node tests/run-e2e.mjs",
+    "report:bundle": "node tests/performance/bundle-report.mjs",
+    "test:performance": "npm run build && npm run report:bundle && node tests/run-performance.mjs",
     "verify": "npm run lint && npm run test && npm run test:e2e"
   },
   "dependencies": {

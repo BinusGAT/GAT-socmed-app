@@ -1,30 +1,49 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import Script from 'next/script';
 import { DashboardProvider, useDashboard } from '../../components/DashboardContext';
 import Sidebar from '../../components/Sidebar';
 import Topbar from '../../components/Topbar';
-import {
-    UnlockModal,
-    DateRangeModal,
-    DatePickerModal,
-    CalendarExportModal,
-    HelpGuideModal
-} from '../../components/Modals';
-import DashboardTab from '../../components/DashboardTab';
-import CalendarTab from '../../components/CalendarTab';
-import TaskListTab from '../../components/TaskListTab';
-import ContentHubTab from '../../components/ContentHubTab';
-import MeetingsTab from '../../components/MeetingsTab';
-import AnalyticsTab from '../../components/AnalyticsTab';
-import WebAnalyticsTab from '../../components/WebAnalyticsTab';
-import SettingsTab from '../../components/SettingsTab';
-import MyWorkTab from '../../components/MyWorkTab';
 import { formatDisplayDate } from '../../utils/helpers';
 import LockScreen from '../../components/LockScreen';
 import { BackgroundActivity, DashboardSkeleton } from '../../components/LoadingStates';
 import MobileNavigation from '../../components/MobileNavigation';
 import { canAccessView, getDefaultView, isKnownView } from '../../utils/rolePermissions';
+
+const viewLoadingFallback = () => <DashboardSkeleton />;
+const dynamicView = (loader) => dynamic(loader, { loading: viewLoadingFallback });
+const DashboardTab = dynamicView(() => import('../../components/DashboardTab'));
+const CalendarTab = dynamicView(() => import('../../components/CalendarTab'));
+const TaskListTab = dynamicView(() => import('../../components/TaskListTab'));
+const ContentHubTab = dynamicView(() => import('../../components/ContentHubTab'));
+const MeetingsTab = dynamicView(() => import('../../components/MeetingsTab'));
+const AnalyticsTab = dynamicView(() => import('../../components/AnalyticsTab'));
+const WebAnalyticsTab = dynamicView(() => import('../../components/WebAnalyticsTab'));
+const SettingsTab = dynamicView(() => import('../../components/SettingsTab'));
+const MyWorkTab = dynamicView(() => import('../../components/MyWorkTab'));
+
+const UnlockModal = dynamic(() => import('../../components/Modals').then((module) => module.UnlockModal));
+const DateRangeModal = dynamic(() => import('../../components/Modals').then((module) => module.DateRangeModal));
+const DatePickerModal = dynamic(() => import('../../components/Modals').then((module) => module.DatePickerModal));
+const CalendarExportModal = dynamic(() => import('../../components/Modals').then((module) => module.CalendarExportModal));
+const HelpGuideModal = dynamic(() => import('../../components/Modals').then((module) => module.HelpGuideModal));
+
+const loadBrowserScript = (src, globalName) => {
+    if (window[globalName]) return Promise.resolve(window[globalName]);
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[src="${src}"]`);
+        const script = existing || document.createElement('script');
+        script.addEventListener('load', () => resolve(window[globalName]), { once: true });
+        script.addEventListener('error', () => reject(new Error(`Failed to load ${globalName}`)), { once: true });
+        if (!existing) {
+            script.src = src;
+            script.async = true;
+            document.head.appendChild(script);
+        }
+    });
+};
 
 function DashboardAppContent() {
     const {
@@ -47,6 +66,7 @@ function DashboardAppContent() {
 
     // Layout states
     const [isExporting, setIsExporting] = useState(false);
+    const [chartReady, setChartReady] = useState(false);
 
     useEffect(() => {
         if (!userRole || !isKnownView(currentView) || canAccessView(userRole, currentView)) return;
@@ -103,20 +123,16 @@ function DashboardAppContent() {
         setDatePickerOpen(false);
     };
 
-    const handleExportAll = () => {
+    const handleExportAll = async () => {
         if (isExporting) return;
         if (currentData.length === 0) {
             showAlert('No data to export', 'error');
             return;
         }
 
-        if (typeof window === 'undefined' || !window.XLSX) {
-            showAlert('❌ Export library is loading. Please try again.', 'error');
-            return;
-        }
-
         setIsExporting(true);
         try {
+            await loadBrowserScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 'XLSX');
             const XLSX = window.XLSX;
 
             // Map headers to match Google Sheets format
@@ -191,7 +207,7 @@ function DashboardAppContent() {
         }
         switch (view) {
             case 'dashboard':
-                return <DashboardTab onOpenDatePicker={openDatePicker} />;
+                return <DashboardTab onOpenDatePicker={openDatePicker} chartReady={chartReady} />;
             case 'my-work':
                 return <MyWorkTab />;
             case 'calendar':
@@ -203,13 +219,13 @@ function DashboardAppContent() {
             case 'meeting':
                 return <MeetingsTab onOpenDatePicker={openDatePicker} />;
             case 'analytics':
-                return <AnalyticsTab />;
+                return <AnalyticsTab chartReady={chartReady} />;
             case 'web-analytics':
                 return <WebAnalyticsTab />;
             case 'settings':
                 return <SettingsTab />;
             default:
-                return <DashboardTab onOpenDatePicker={openDatePicker} />;
+                return <DashboardTab onOpenDatePicker={openDatePicker} chartReady={chartReady} />;
         }
     };
 
@@ -257,6 +273,16 @@ function DashboardAppContent() {
 
     return (
         <div className="flex min-h-screen w-full max-w-full overflow-x-clip relative bg-background">
+            {(currentView === 'dashboard' || currentView === 'analytics') && (
+                <Script
+                    src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+                    strategy="afterInteractive"
+                    onReady={() => setChartReady(true)}
+                />
+            )}
+            {(currentView === 'analytics' || currentView === 'meeting') && (
+                <Script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.7/dist/purify.min.js" strategy="afterInteractive" />
+            )}
             <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[120] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-on-primary focus:font-semibold">
                 Skip to main content
             </a>
@@ -325,20 +351,20 @@ function DashboardAppContent() {
             <MobileNavigation currentView={currentView} userRole={userRole} isUnlocked={isUnlocked} onNavigate={handleMobileNavClick} onOpenHelp={() => setHelpOpen(true)} />
 
             {/* Modals Overlays */}
-            <UnlockModal isOpen={unlockOpen} onClose={() => setUnlockOpen(false)} />
-            <DateRangeModal
+            {unlockOpen && <UnlockModal isOpen onClose={() => setUnlockOpen(false)} />}
+            {dateRangeOpen && <DateRangeModal
                 isOpen={dateRangeOpen}
                 onClose={() => setDateRangeOpen(false)}
                 onOpenDatePicker={openDatePicker}
-            />
-            <DatePickerModal
+            />}
+            {datePickerOpen && <DatePickerModal
                 isOpen={datePickerOpen}
                 onClose={() => setDatePickerOpen(false)}
                 onSelect={handleDatePickerSelect}
                 initialDate={datePickerInitialDate}
-            />
-            <CalendarExportModal isOpen={calendarExportOpen} onClose={() => setCalendarExportOpen(false)} />
-            <HelpGuideModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
+            />}
+            {calendarExportOpen && <CalendarExportModal isOpen onClose={() => setCalendarExportOpen(false)} />}
+            {helpOpen && <HelpGuideModal isOpen onClose={() => setHelpOpen(false)} />}
         </div>
     );
 }

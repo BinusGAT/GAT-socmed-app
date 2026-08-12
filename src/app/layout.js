@@ -22,8 +22,6 @@ export default function RootLayout({ children }) {
         <link rel="manifest" href="/site.webmanifest" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-        <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
         <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
         <Script id="theme-html-initializer">
           {`
@@ -55,24 +53,6 @@ export default function RootLayout({ children }) {
           `}
         </Script>
         {children}
-
-        {/* Load CDN Dependencies asynchronously to prevent render-blocking */}
-        <Script
-          src="https://cdn.jsdelivr.net/npm/dompurify@3.2.7/dist/purify.min.js"
-          strategy="afterInteractive"
-        />
-        <Script
-          src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
-          strategy="afterInteractive"
-        />
-        <Script
-          src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
-          strategy="lazyOnload"
-        />
-        <Script
-          src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-          strategy="lazyOnload"
-        />
       </body>
     </html>
   );

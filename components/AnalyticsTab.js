@@ -12,7 +12,7 @@ import {
 } from '../utils/helpers';
 import PlatformBadge from './PlatformBadge.jsx';
 
-export default function AnalyticsTab() {
+export default function AnalyticsTab({ chartReady = false }) {
     const createSafeHtml = (htmlContent) => {
         if (typeof window !== 'undefined' && window.DOMPurify) {
             return { __html: window.DOMPurify.sanitize(htmlContent) };
@@ -431,7 +431,7 @@ export default function AnalyticsTab() {
             if (picChartRef.current) picChartRef.current.destroy();
             if (categoryChartRef.current) categoryChartRef.current.destroy();
         };
-    }, [hasData, activeData]);
+    }, [hasData, activeData, chartReady]);
 
     if (!isUnlocked) {
         return <LockScreen sectionName="Analytics" />;

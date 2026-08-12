@@ -27,7 +27,7 @@ const parseCleanInt = (val) => {
 
 const getPicDisplayName = (pic) => normalizePicName(pic).split(/\s+/)[0] || '';
 
-export default function DashboardTab({ onOpenDatePicker }) {
+export default function DashboardTab({ onOpenDatePicker, chartReady = false }) {
     const {
         currentData,
         scheduleData,
@@ -772,7 +772,7 @@ export default function DashboardTab({ onOpenDatePicker }) {
         }, 150);
 
         return () => clearTimeout(timer);
-    }, [currentData, activeChartTab]);
+    }, [currentData, activeChartTab, chartReady]);
 
     // Scheduled tasks timeline filtering
     const getScheduledTasksForDay = () => {

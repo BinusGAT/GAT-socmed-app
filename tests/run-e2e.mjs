@@ -48,7 +48,7 @@ const server = spawnNode([
 let exitCode = 1;
 try {
   await waitForServer(server);
-  const playwright = spawnNode(['node_modules/@playwright/test/cli.js', 'test']);
+  const playwright = spawnNode(['node_modules/@playwright/test/cli.js', 'test', ...process.argv.slice(2)]);
   const result = await waitForExit(playwright);
   exitCode = result.code ?? 1;
 } finally {
@@ -56,4 +56,3 @@ try {
 }
 
 process.exitCode = exitCode;
-

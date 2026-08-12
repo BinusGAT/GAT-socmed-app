@@ -1,0 +1,15 @@
+{
+  "bundle": {
+    "totalGzipKiB": 350,
+    "largestGzipKiB": 150
+  },
+  "login": {
+    "lcpMs": 2500,
+    "cls": 0.1,
+    "domContentLoadedMs": 2000
+  },
+  "authenticated": {
+    "shellReadyMs": 2500,
+    "readAllPayloadKiB": 1024
+  }
+}

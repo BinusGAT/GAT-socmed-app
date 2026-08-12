@@ -129,7 +129,12 @@ test('core controls remain perceivable in Windows forced-colors mode', async ({ 
 });
 
 test('dashboard prioritizes actionable deadlines and opens the exact task', async ({ page }) => {
-  await openAuthenticatedDashboard(page);
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const dashboardData = {
+    ...seededData,
+    schedule: { data: seededData.schedule.data.map((task) => ({ ...task, Date: tomorrow })) }
+  };
+  await openAuthenticatedDashboard(page, { dashboardData });
   await expect(page.getByRole('heading', { name: 'What needs attention' })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Next deadline|Upcoming deadlines/ })).toBeVisible();
   await page.getByRole('button', { name: 'Open task Campus highlights' }).first().click();
