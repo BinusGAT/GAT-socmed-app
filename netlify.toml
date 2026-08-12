@@ -4,3 +4,9 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[functions]
+  directory = "functions"
+
+[functions."prune-audit-log"]
+  schedule = "@daily"

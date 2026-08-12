@@ -17,7 +17,6 @@ import {
 } from '../utils/helpers';
 import PlatformBadge from './PlatformBadge.jsx';
 import SortableTableHeader from './SortableTableHeader';
-import { isTaskAssignedToUser } from '../utils/rolePermissions';
 
 const parseCleanInt = (val) => {
     if (val === undefined || val === null || val === '') return 0;
@@ -51,9 +50,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false }) {
         setIsNewPostDrawerOpen,
         meetingsData,
         setCurrentView,
-        setSelectedTaskId,
-        userId,
-        userName
+        setSelectedTaskId
     } = useDashboard();
 
     // Form editing states
@@ -848,14 +845,13 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false }) {
         const todayValue = getLocalDateInputValue();
         const activeTasks = combinedTasks
             .filter(task => task.isFromDashboard && task.calculatedStatus !== 'Done')
-            .filter(task => userRole !== 'Creator' || isTaskAssignedToUser(task, userId, userName))
             .sort((a, b) => a.date.localeCompare(b.date));
         return {
             overdue: activeTasks.filter(task => task.calculatedStatus === 'Overdue'),
             dueToday: activeTasks.filter(task => task.date === todayValue),
             upcoming: activeTasks.filter(task => task.date > todayValue).slice(0, 5)
         };
-    }, [combinedTasks, userId, userName, userRole]);
+    }, [combinedTasks]);
 
     const openTask = (taskId) => {
         setSelectedTaskId(taskId);

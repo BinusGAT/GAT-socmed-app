@@ -41,11 +41,7 @@ test('login route stays within browser performance budgets', async ({ page }) =>
 
 test('authenticated dashboard stays within shell and payload budgets', async ({ page }) => {
   const fixture = createDashboardFixture(1000);
-  const dashboardFixture = {
-    ...fixture,
-    laporan: { data: fixture.laporan.data.slice(0, 50) },
-    pagination: { page: 1, pageSize: 50, total: fixture.laporan.data.length, totalPages: 20 }
-  };
+  const dashboardFixture = fixture;
   const payload = JSON.stringify(dashboardFixture);
   const payloadKiB = Math.round(Buffer.byteLength(payload) / 102.4) / 10;
 

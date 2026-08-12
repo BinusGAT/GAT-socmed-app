@@ -67,3 +67,4 @@ playwright.performance.config.mjs
 playwright.config.mjs
 PERFORMANCE.md
 vitest.config.mjs
+netlify

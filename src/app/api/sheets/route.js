@@ -26,7 +26,6 @@ const db = {
   batch: dbBatch
 };
 
-const AUDIT_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 let isDbInitialized = false;
 
 
@@ -281,11 +280,6 @@ export async function POST(request) {
           createdAt INTEGER NOT NULL
         )
       `);
-      await db.execute({
-        sql: 'DELETE FROM audit_log WHERE createdAt < ?',
-        args: [Date.now() - AUDIT_RETENTION_MS]
-      });
-
       await db.execute(`
         CREATE TABLE IF NOT EXISTS lecturer_attendee_visibility (
           userId TEXT PRIMARY KEY,
@@ -637,39 +631,8 @@ export async function POST(request) {
 
     switch (action) {
       case 'read_dashboard': {
-        const pageSize = Math.min(Math.max(Number.parseInt(params.pageSize, 10) || 50, 10), 100);
-        const page = Math.max(Number.parseInt(params.page, 10) || 1, 1);
-        const offset = (page - 1) * pageSize;
-        const search = String(params.search || '').trim().toLowerCase();
-        const dateStart = String(params.dateStart || '').trim();
-        const dateEnd = String(params.dateEnd || '').trim();
-        const exactDate = String(params.exactDate || '').trim();
-        const where = [];
-        const args = [];
-
-        if (search) {
-          where.push(`(LOWER(COALESCE("Content Title", '')) LIKE ? OR LOWER(COALESCE(ID, '')) LIKE ? OR LOWER(COALESCE(PIC, '')) LIKE ? OR LOWER(COALESCE(Platform, '')) LIKE ?)`);
-          const term = `%${search}%`;
-          args.push(term, term, term, term);
-        }
-        if (dateStart) { where.push('Date >= ?'); args.push(dateStart); }
-        if (dateEnd) { where.push('Date <= ?'); args.push(dateEnd); }
-        if (exactDate) { where.push('Date = ?'); args.push(exactDate); }
-        const whereSql = where.length ? ` WHERE ${where.join(' AND ')}` : '';
-
-        const sortColumns = {
-          Date: 'Date',
-          'Content Title': '"Content Title"',
-          Views: 'CAST(REPLACE(REPLACE(COALESCE(Views, 0), ".", ""), ",", "") AS INTEGER)',
-          'Total Engagement': 'CAST(REPLACE(REPLACE(COALESCE("Total Engagement", 0), ".", ""), ",", "") AS INTEGER)',
-          'KPI Summary': 'CAST(COALESCE("KPI Summary", 0) AS REAL)'
-        };
-        const sortColumn = sortColumns[params.sortColumn] || sortColumns.Date;
-        const sortDirection = params.sortDirection === 'desc' ? 'DESC' : 'ASC';
-
-        const [rowsRes, countRes, scheduleRes, notificationsRes, settingsRes, platformsRes, categoriesRes, usersRes, totalsRes, platformRes, monthlyRes] = await Promise.all([
-          db.execute({ sql: `SELECT * FROM laporan${whereSql} ORDER BY ${sortColumn} ${sortDirection}, ID ASC LIMIT ? OFFSET ?`, args: [...args, pageSize, offset] }),
-          db.execute({ sql: `SELECT COUNT(*) AS total FROM laporan${whereSql}`, args }),
+        const [rowsRes, scheduleRes, notificationsRes, settingsRes, platformsRes, categoriesRes, usersRes, totalsRes, platformRes, monthlyRes] = await Promise.all([
+          db.execute('SELECT * FROM laporan'),
           db.execute(`SELECT schedule.ID, schedule.Date, schedule.PIC,
             schedule."Content Title", schedule.Category, schedule.Month,
             schedule.AssignedUserId,
@@ -694,19 +657,27 @@ export async function POST(request) {
             AVG(CASE WHEN CAST(COALESCE("Engagement Rate (%)", 0) AS REAL) > 0 THEN CAST("Engagement Rate (%)" AS REAL) END) AS avgEngagementRate,
             SUM(CASE WHEN TRIM(COALESCE(URL, '')) <> '' THEN 1 ELSE 0 END) AS publishedCount FROM laporan`),
           db.execute(`SELECT Platform, SUM(CAST(REPLACE(REPLACE(COALESCE(Views, 0), '.', ''), ',', '') AS INTEGER)) AS views FROM laporan GROUP BY Platform`),
-          db.execute(`SELECT SUBSTR(Date, 6, 2) AS month, Platform,
+          db.execute(`SELECT CASE
+              WHEN Date LIKE '____-__-__' THEN SUBSTR(Date, 6, 2)
+              WHEN Date LIKE '__/__/____' THEN SUBSTR(Date, 1, 2)
+              ELSE NULL
+            END AS month, Platform,
             SUM(CAST(REPLACE(REPLACE(COALESCE(Follows, 0), '.', ''), ',', '') AS INTEGER)) AS follows,
             SUM(CAST(REPLACE(REPLACE(COALESCE("Total Engagement", 0), '.', ''), ',', '') AS INTEGER)) AS engagement,
             SUM(CAST(REPLACE(REPLACE(COALESCE("Account Reach", 0), '.', ''), ',', '') AS INTEGER)) AS reach
-            FROM laporan WHERE Date IS NOT NULL GROUP BY SUBSTR(Date, 6, 2), Platform`)
+            FROM laporan
+            WHERE Date IS NOT NULL
+            GROUP BY CASE
+              WHEN Date LIKE '____-__-__' THEN SUBSTR(Date, 6, 2)
+              WHEN Date LIKE '__/__/____' THEN SUBSTR(Date, 1, 2)
+              ELSE NULL
+            END, Platform`)
         ]);
 
         const internUsers = usersRes.rows.map((user) => ({ id: String(user.id), name: String(user.name), role: String(user.role || 'intern') }));
-        const total = Number(countRes.rows[0]?.total || 0);
         result = {
           success: true,
           laporan: { success: true, data: rowsRes.rows },
-          pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
           dashboardMetrics: { ...(totalsRes.rows[0] || {}), platformViews: platformRes.rows, monthly: monthlyRes.rows },
           schedule: { success: true, data: scheduleRes.rows },
           memberList: { success: true, data: internUsers.map((user) => ({ NAMA: user.name, STREAM: user.role, USER_ID: user.id })) },
@@ -720,10 +691,6 @@ export async function POST(request) {
       }
 
       case 'read_all': {
-        await db.execute({
-          sql: 'DELETE FROM audit_log WHERE createdAt < ?',
-          args: [Date.now() - AUDIT_RETENTION_MS]
-        });
         const [laporanRes, scheduleRes, scriptsRes, meetingsRes, notificationsRes, gaSummaryRes, gaItemsRes, appSettingsRes, platformsRes, categoriesRes, internUsersRes, lecturerUsersRes, lecturerVisibilityRes, auditRes] = await Promise.all([
           db.execute("SELECT * FROM laporan"),
           db.execute(`SELECT schedule.ID, schedule.Date, schedule.PIC,

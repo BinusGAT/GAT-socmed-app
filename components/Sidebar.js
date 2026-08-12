@@ -17,18 +17,43 @@ export default function Sidebar() {
         appSettingsData
     } = useDashboard();
 
-    const navItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', fillActive: true },
-        { id: 'my-work', label: 'My Work', icon: 'work_history', fillActive: true },
-        { id: 'calendar', label: 'Calendar', icon: 'calendar_month' },
-        { id: 'tasklist', label: 'Task List', icon: 'assignment', domId: 'navItemTasklist', restricted: true },
-        { id: 'content', label: 'Posts library', icon: 'folder_open', domId: 'navItemContent', restricted: true },
-        { id: 'meeting', label: 'Meeting Memo', icon: 'description', domId: 'navItemMeeting', restricted: true },
-        { id: 'analytics', label: 'Analytics', icon: 'analytics', fillActive: true },
-        { id: 'web-analytics', label: 'Web Analytics', icon: 'language', domId: 'navItemWebAnalytics', restricted: true }
+    const navGroups = [
+        {
+            label: 'Overview',
+            items: [
+                { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', fillActive: true },
+                { id: 'my-work', label: 'My Work', icon: 'work_history', fillActive: true }
+            ]
+        },
+        {
+            label: 'Planning',
+            items: [
+                { id: 'calendar', label: 'Calendar', icon: 'calendar_month' },
+                { id: 'tasklist', label: 'Task List', icon: 'assignment', domId: 'navItemTasklist', restricted: true }
+            ]
+        },
+        {
+            label: 'Content',
+            items: [
+                { id: 'content', label: 'Posts library', icon: 'folder_open', domId: 'navItemContent', restricted: true },
+                { id: 'meeting', label: 'Meeting Memo', icon: 'description', domId: 'navItemMeeting', restricted: true }
+            ]
+        },
+        {
+            label: 'Insights',
+            items: [
+                { id: 'analytics', label: 'Analytics', icon: 'analytics', fillActive: true },
+                { id: 'web-analytics', label: 'Web Analytics', icon: 'language', domId: 'navItemWebAnalytics', restricted: true }
+            ]
+        }
     ];
 
-    const visibleItems = navItems.filter(item => canAccessView(userRole, item.id) && (!item.restricted || isUnlocked));
+    const visibleGroups = navGroups
+        .map(group => ({
+            ...group,
+            items: group.items.filter(item => canAccessView(userRole, item.id) && (!item.restricted || isUnlocked))
+        }))
+        .filter(group => group.items.length > 0);
 
     const handleNavClick = (id) => {
         if (id !== 'meeting') {
@@ -55,7 +80,7 @@ export default function Sidebar() {
 
     return (
         <aside className="fixed left-0 top-0 hidden h-full w-[280px] flex-col justify-between border-r border-outline-variant/30 bg-surface-container-lowest py-stack-lg dark:border-[#22232a] dark:bg-[#0c0d10] lg:flex">
-            <div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
                 {/* Brand */}
                 <div className="px-container-padding mb-stack-lg flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -83,31 +108,40 @@ export default function Sidebar() {
                 )}
 
                 {/* Navigation Links */}
-                <nav aria-label="Primary navigation" className="px-3 space-y-1">
-                    {visibleItems.map((item) => {
-                        const isActive = currentView === item.id;
-                        return (
-                            <button
-                                key={item.id}
-                                id={item.domId}
-                                onClick={() => handleNavClick(item.id)}
-                                className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all duration-150 cursor-pointer relative group text-sm ${isActive
-                                        ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-xs border border-zinc-200 dark:bg-zinc-800/90 dark:text-white dark:border-zinc-700/50'
-                                        : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/40 dark:hover:text-zinc-200'
-                                    }`}
-                            >
-                            <span className="material-symbols-outlined text-[19px] transition-transform duration-150 text-zinc-500 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-200" style={isActive ? { color: 'var(--primary)', fontVariationSettings: item.fillActive ? "'FILL' 1" : undefined } : undefined}>
-                                    {item.icon}
-                                </span>
-                                <span>{item.label}</span>
-                            </button>
-                        );
-                    })}
+                <nav aria-label="Primary navigation" className="space-y-4 px-3">
+                    {visibleGroups.map((group) => (
+                        <section key={group.label} aria-labelledby={`nav-group-${group.label.toLowerCase()}`}>
+                            <h2 id={`nav-group-${group.label.toLowerCase()}`} className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
+                                {group.label}
+                            </h2>
+                            <div className="space-y-1">
+                                {group.items.map((item) => {
+                                    const isActive = currentView === item.id;
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            id={item.domId}
+                                            onClick={() => handleNavClick(item.id)}
+                                            className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all duration-150 cursor-pointer relative group text-sm ${isActive
+                                                    ? 'bg-zinc-100 text-zinc-900 font-semibold shadow-xs border border-zinc-200 dark:bg-zinc-800/90 dark:text-white dark:border-zinc-700/50'
+                                                    : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/40 dark:hover:text-zinc-200'
+                                                }`}
+                                        >
+                                            <span className="material-symbols-outlined text-[19px] transition-transform duration-150 text-zinc-500 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-200" style={isActive ? { color: 'var(--primary)', fontVariationSettings: item.fillActive ? "'FILL' 1" : undefined } : undefined}>
+                                                {item.icon}
+                                            </span>
+                                            <span>{item.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    ))}
                 </nav>
             </div>
 
             {/* Footer Links */}
-            <div className="border-t border-outline-variant/20 pt-stack-md mx-container-padding space-y-1">
+            <div className="mx-container-padding shrink-0 space-y-1 border-t border-outline-variant/20 pt-stack-md">
                 {isUnlocked && canAccessView(userRole, 'settings') && (
                     <button
                         className={`w-full text-left py-2.5 px-3 rounded-lg flex items-center gap-3 transition-all duration-200 cursor-pointer ${currentView === 'settings'

@@ -99,6 +99,7 @@ export function DashboardProvider({ children }) {
     const [appSettingsData, setAppSettingsData] = useState({});
     const [platformsData, setPlatformsData] = useState([]);
     const [categoriesData, setCategoriesData] = useState([]);
+    const [dashboardMetrics, setDashboardMetrics] = useState(null);
     const [hasLoadedWorkspace, setHasLoadedWorkspace] = useState(false);
 
     const setIsLoading = (active, phase = 'mutation') => {
@@ -236,7 +237,7 @@ export function DashboardProvider({ children }) {
             // Load local storage cache instantly to populate UI
             loadOfflineData(true);
             // Sync database from server in the background
-            loadFromGoogleSheets(true);
+            loadFromGoogleSheets(true, { dashboardOnly: currentView === 'dashboard' });
         } else {
             // Clear all data states when locked so no data is shown
             setCurrentData([]);
@@ -246,9 +247,15 @@ export function DashboardProvider({ children }) {
             setAuditLogData([]);
             setDraftsData([]);
             setMeetingsData([]);
+            setDashboardMetrics(null);
             setHasLoadedWorkspace(false);
         }
     }, [isUnlocked]);
+
+    useEffect(() => {
+        if (!isUnlocked || currentView === 'dashboard' || hasLoadedWorkspace) return;
+        loadFromGoogleSheets(true, { dashboardOnly: false });
+    }, [currentView, isUnlocked, hasLoadedWorkspace]);
 
     // Periodically check if session limit has been exceeded
     useEffect(() => {
@@ -482,16 +489,17 @@ export function DashboardProvider({ children }) {
     };
 
     // Load live database from Google Sheets
-    const loadFromGoogleSheets = async (quiet = false) => {
+    const loadFromGoogleSheets = async (quiet = false, options = {}) => {
         const hasLocalData = typeof window !== 'undefined' && !!localStorage.getItem('laporan_data_local');
         const showLoading = !quiet || !hasLocalData;
+        const dashboardOnly = options.dashboardOnly ?? (currentView === 'dashboard' && !hasLoadedWorkspace);
         
         if (showLoading) {
             setIsLoading(true, quiet ? 'initial' : 'sync');
         }
 
         try {
-            const result = await callSheetsAPI('read_all');
+            const result = await callSheetsAPI(dashboardOnly ? 'read_dashboard' : 'read_all');
             if (result && result.success) {
                 setConnectionState('online');
                 const laporan = result.laporan?.data || [];
@@ -529,6 +537,7 @@ export function DashboardProvider({ children }) {
                 if (result.scripts) setDraftsData(scripts);
                 setNotificationsData(rawNotifications);
                 if (result.auditLog) setAuditLogData(rawAuditLog);
+                if (result.dashboardMetrics) setDashboardMetrics(result.dashboardMetrics);
 
                 const rawAppSettings = result.appSettings?.data || [];
                 const appSettingsObj = {};
@@ -570,7 +579,7 @@ export function DashboardProvider({ children }) {
 
                 if (result.gaSummary) setGaSummaryData(gaSummary);
                 if (result.gaItems) setGaItemsData(gaItems);
-                setHasLoadedWorkspace(true);
+                if (!dashboardOnly) setHasLoadedWorkspace(true);
 
                 // Cache locally
                 localStorage.setItem('laporan_data_local', JSON.stringify(processedLaporan));
@@ -1190,6 +1199,7 @@ export function DashboardProvider({ children }) {
             appSettingsData,
             platformsData,
             categoriesData,
+            dashboardMetrics,
             retryConnection: () => loadFromGoogleSheets(false),
 
             // Lockdown/Auth

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import Script from 'next/script';
 import { DashboardProvider, useDashboard } from '../../components/DashboardContext';
@@ -67,6 +67,8 @@ function DashboardAppContent() {
     // Layout states
     const [isExporting, setIsExporting] = useState(false);
     const [chartReady, setChartReady] = useState(false);
+    const [chartRequested, setChartRequested] = useState(false);
+    const requestChart = useCallback(() => setChartRequested(true), []);
 
     useEffect(() => {
         if (!userRole || !isKnownView(currentView) || canAccessView(userRole, currentView)) return;
@@ -207,7 +209,7 @@ function DashboardAppContent() {
         }
         switch (view) {
             case 'dashboard':
-                return <DashboardTab onOpenDatePicker={openDatePicker} chartReady={chartReady} />;
+                return <DashboardTab onOpenDatePicker={openDatePicker} chartReady={chartReady} onChartNeeded={requestChart} />;
             case 'my-work':
                 return <MyWorkTab />;
             case 'calendar':
@@ -225,7 +227,7 @@ function DashboardAppContent() {
             case 'settings':
                 return <SettingsTab />;
             default:
-                return <DashboardTab onOpenDatePicker={openDatePicker} chartReady={chartReady} />;
+                return <DashboardTab onOpenDatePicker={openDatePicker} chartReady={chartReady} onChartNeeded={requestChart} />;
         }
     };
 
@@ -273,7 +275,7 @@ function DashboardAppContent() {
 
     return (
         <div className="flex min-h-screen w-full max-w-full overflow-x-clip relative bg-background">
-            {(currentView === 'dashboard' || currentView === 'analytics') && (
+            {(currentView === 'analytics' || chartRequested) && (
                 <Script
                     src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
                     strategy="afterInteractive"
