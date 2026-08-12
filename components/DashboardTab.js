@@ -181,8 +181,8 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
         }
     }, [formDate]);
 
-    // Process and sort the complete content table locally.
-    const getProcessedData = () => {
+    // Process and sort the complete content table only when its inputs change.
+    const processedData = React.useMemo(() => {
         let list = [...currentData];
         if (searchQuery) {
             const q = searchQuery.toLowerCase().trim();
@@ -216,9 +216,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
             });
         }
         return list;
-    };
-
-    const processedData = getProcessedData();
+    }, [currentData, searchQuery, dateRange.start, dateRange.end, tableFilterDate, sortColumn, sortDirection]);
 
     const rowspans = React.useMemo(() => {
         if (!processedData || processedData.length === 0) return [];
@@ -309,7 +307,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
     }, [rowspans]);
 
     // Stats calculations
-    const calculateStats = () => {
+    const stats = React.useMemo(() => {
         let totalViews = 0;
         let totalReach = 0;
         let totalEngagement = 0;
@@ -343,12 +341,10 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
             totalEngagement,
             avgEngagementRate
         };
-    };
-
-    const stats = calculateStats();
+    }, [currentData]);
 
     // Channels aggregation
-    const getPlatformViews = () => {
+    const platformStats = React.useMemo(() => {
         const counts = {
             Instagram: { views: 0 },
             TikTok: { views: 0 },
@@ -363,9 +359,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
         });
 
         return counts;
-    };
-
-    const platformStats = getPlatformViews();
+    }, [currentData]);
 
     const getKpiBadgeClass = (score) => {
         const kpi = parseCleanInt(score);

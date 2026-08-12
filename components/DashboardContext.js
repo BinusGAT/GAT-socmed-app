@@ -16,6 +16,24 @@ const readStoredValue = (key, fallback = '') => {
     return localStorage.getItem(key) ?? fallback;
 };
 
+const cacheDataWhenIdle = (entries) => {
+    if (typeof window === 'undefined') return;
+    const write = () => {
+        for (const [key, value] of entries) {
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+            } catch (error) {
+                console.warn(`Unable to cache ${key} for offline use.`, error);
+            }
+        }
+    };
+    if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(write, { timeout: 2000 });
+    } else {
+        window.setTimeout(write, 0);
+    }
+};
+
 export function useDashboard() {
     return useContext(DashboardContext);
 }
@@ -582,13 +600,15 @@ export function DashboardProvider({ children }) {
                 if (result.gaItems) setGaItemsData(gaItems);
                 if (!dashboardOnly) setHasLoadedWorkspace(true);
 
-                // Cache locally
-                localStorage.setItem('laporan_data_local', JSON.stringify(processedLaporan));
-                localStorage.setItem('schedule_data_local', JSON.stringify(schedule));
-                if (result.scripts) localStorage.setItem('GAT_storyboard_drafts', JSON.stringify(scripts));
-                localStorage.setItem('GAT_notifications', JSON.stringify(rawNotifications));
-                if (result.gaSummary) localStorage.setItem('GAT_ga_summary_local', JSON.stringify(gaSummary));
-                if (result.gaItems) localStorage.setItem('GAT_ga_items_local', JSON.stringify(gaItems));
+                // Keep large JSON serialization and storage I/O off the login-critical path.
+                cacheDataWhenIdle([
+                    ['laporan_data_local', processedLaporan],
+                    ['schedule_data_local', schedule],
+                    ...(result.scripts ? [['GAT_storyboard_drafts', scripts]] : []),
+                    ['GAT_notifications', rawNotifications],
+                    ...(result.gaSummary ? [['GAT_ga_summary_local', gaSummary]] : []),
+                    ...(result.gaItems ? [['GAT_ga_items_local', gaItems]] : [])
+                ]);
 
                 if (!quiet) showAlert('Database synchronized successfully!', 'success');
             }
