@@ -111,7 +111,7 @@ export default function Sidebar() {
                 <nav aria-label="Primary navigation" className="space-y-4 px-3">
                     {visibleGroups.map((group) => (
                         <section key={group.label} aria-labelledby={`nav-group-${group.label.toLowerCase()}`}>
-                            <h2 id={`nav-group-${group.label.toLowerCase()}`} className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
+                            <h2 id={`nav-group-${group.label.toLowerCase()}`} className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
                                 {group.label}
                             </h2>
                             <div className="space-y-1">

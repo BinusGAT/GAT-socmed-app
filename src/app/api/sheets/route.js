@@ -138,8 +138,10 @@ export async function POST(request) {
     // Ensure all required tables exist in the database dynamically (only once per server lifecycle)
     if (!isDbInitialized) {
       console.log(`[API] Initializing tables for first request...`);
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS sessions (
+
+      // 1. Batch create all tables in a single roundtrip
+      await db.batch([
+        `CREATE TABLE IF NOT EXISTS sessions (
           token TEXT PRIMARY KEY,
           role TEXT NOT NULL,
           expiresAt INTEGER NOT NULL,
@@ -150,57 +152,31 @@ export async function POST(request) {
           createdAt INTEGER,
           lastSeenAt INTEGER,
           userAgent TEXT
-        )
-      `);
-
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS login_attempts (
+        )`,
+        `CREATE TABLE IF NOT EXISTS login_attempts (
           key TEXT PRIMARY KEY,
           attempts INTEGER NOT NULL,
           windowStartedAt INTEGER NOT NULL,
           lockUntil INTEGER NOT NULL,
           updatedAt INTEGER NOT NULL
-        )
-      `);
-
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS user_credentials (
+        )`,
+        `CREATE TABLE IF NOT EXISTS user_credentials (
           userId TEXT PRIMARY KEY,
           nimHash TEXT NOT NULL,
           createdAt INTEGER NOT NULL,
           updatedAt INTEGER NOT NULL
-        )
-      `);
-
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS api_rate_limits (
+        )`,
+        `CREATE TABLE IF NOT EXISTS api_rate_limits (
           key TEXT PRIMARY KEY,
           requestCount INTEGER NOT NULL,
           windowStartedAt INTEGER NOT NULL,
           updatedAt INTEGER NOT NULL
-        )
-      `);
-      await db.execute({
-        sql: 'DELETE FROM api_rate_limits WHERE updatedAt < ?',
-        args: [Date.now() - 24 * 60 * 60 * 1000],
-      });
-
-      for (const column of [
-        'sessionId TEXT', 'userId TEXT', 'userName TEXT', 'userEmail TEXT',
-        'createdAt INTEGER', 'lastSeenAt INTEGER', 'userAgent TEXT'
-      ]) {
-        try { await db.execute(`ALTER TABLE sessions ADD COLUMN ${column}`); } catch (e) {}
-      }
-
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS member_list (
+        )`,
+        `CREATE TABLE IF NOT EXISTS member_list (
           NAMA TEXT PRIMARY KEY,
           STREAM TEXT NOT NULL
-        )
-      `);
-
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS schedule (
+        )`,
+        `CREATE TABLE IF NOT EXISTS schedule (
           ID TEXT PRIMARY KEY,
           Date TEXT NOT NULL,
           PIC TEXT NOT NULL,
@@ -209,12 +185,8 @@ export async function POST(request) {
           Status INTEGER NOT NULL,
           Month TEXT NOT NULL,
           AssignedUserId TEXT
-        )
-      `);
-      try { await db.execute('ALTER TABLE schedule ADD COLUMN AssignedUserId TEXT'); } catch (e) {}
-
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS scripts (
+        )`,
+        `CREATE TABLE IF NOT EXISTS scripts (
           Title TEXT PRIMARY KEY,
           Status TEXT NOT NULL,
           Category TEXT NOT NULL,
@@ -224,33 +196,16 @@ export async function POST(request) {
           "References" TEXT,
           Caption TEXT,
           Origin TEXT DEFAULT 'legacy'
-        )
-      `);
-      try { await db.execute("ALTER TABLE scripts ADD COLUMN Origin TEXT DEFAULT 'legacy'"); } catch (e) {}
-      await db.execute(`
-        UPDATE scripts
-        SET Status = 'Scripting', Origin = 'auto'
-        WHERE Status = 'Idea'
-          AND (Origin IS NULL OR Origin = 'legacy')
-          AND EXISTS (
-            SELECT 1 FROM schedule
-            WHERE LOWER(schedule."Content Title") = LOWER(scripts.Title)
-          )
-      `);
-
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS meetings (
+        )`,
+        `CREATE TABLE IF NOT EXISTS meetings (
           ID TEXT PRIMARY KEY,
           Date TEXT NOT NULL,
           Attendees TEXT,
           Absentees TEXT,
           Recap TEXT,
           VideoRecap TEXT
-        )
-      `);
-
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS laporan (
+        )`,
+        `CREATE TABLE IF NOT EXISTS laporan (
           Date TEXT NOT NULL,
           ID TEXT NOT NULL,
           "Content Title" TEXT NOT NULL,
@@ -269,13 +224,10 @@ export async function POST(request) {
           "KPI Score" INTEGER DEFAULT 0,
           "KPI Summary" INTEGER DEFAULT 0,
           URL TEXT,
-          "Comment Text" TEXT
-        )
-      `);
-      try { await db.execute('ALTER TABLE laporan ADD COLUMN AssignedUserId TEXT'); } catch (e) {}
-
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS notifications (
+          "Comment Text" TEXT,
+          AssignedUserId TEXT
+        )`,
+        `CREATE TABLE IF NOT EXISTS notifications (
           id TEXT PRIMARY KEY,
           message TEXT NOT NULL,
           targetRole TEXT NOT NULL,
@@ -285,18 +237,8 @@ export async function POST(request) {
           targetUserId TEXT,
           type TEXT,
           taskId TEXT
-        )
-      `);
-
-      try {
-        await db.execute("ALTER TABLE notifications ADD COLUMN isUrgent INTEGER DEFAULT 0");
-      } catch (e) {}
-      for (const column of ['targetUserId TEXT', 'type TEXT', 'taskId TEXT']) {
-        try { await db.execute(`ALTER TABLE notifications ADD COLUMN ${column}`); } catch (e) {}
-      }
-
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS audit_log (
+        )`,
+        `CREATE TABLE IF NOT EXISTS audit_log (
           id TEXT PRIMARY KEY,
           userId TEXT,
           userName TEXT NOT NULL,
@@ -306,95 +248,106 @@ export async function POST(request) {
           entityId TEXT,
           details TEXT,
           createdAt INTEGER NOT NULL
-        )
-      `);
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS lecturer_attendee_visibility (
+        )`,
+        `CREATE TABLE IF NOT EXISTS lecturer_attendee_visibility (
           userId TEXT PRIMARY KEY,
           visible INTEGER NOT NULL DEFAULT 1,
           updatedAt INTEGER NOT NULL
-        )
-      `);
-
-      // Google Analytics Summary Table
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS google_analytics_summary (
+        )`,
+        `CREATE TABLE IF NOT EXISTS google_analytics_summary (
           id TEXT PRIMARY KEY,
           visitors TEXT,
           pageviews TEXT,
           new_visits TEXT,
           avg_time_on_site TEXT,
           engagement_rate TEXT
-        )
-      `);
-
-      // Google Analytics Items Table
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS google_analytics_items (
+        )`,
+        `CREATE TABLE IF NOT EXISTS google_analytics_items (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           category TEXT NOT NULL,
           label TEXT NOT NULL,
           metric TEXT NOT NULL,
           sort_order INTEGER DEFAULT 0
-        )
-      `);
-
-      // App settings table
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS app_settings (
+        )`,
+        `CREATE TABLE IF NOT EXISTS app_settings (
           key TEXT PRIMARY KEY,
           value TEXT NOT NULL
-        )
-      `);
-
-      // Platforms table
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS platforms (
+        )`,
+        `CREATE TABLE IF NOT EXISTS platforms (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           logo_url TEXT,
           color_class TEXT
-        )
-      `);
-
-      // Categories table
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS categories (
+        )`,
+        `CREATE TABLE IF NOT EXISTS categories (
           name TEXT PRIMARY KEY,
           color_class TEXT
-        )
-      `);
+        )`
+      ]);
 
-      // Seed Google Analytics data matching user's screenshots
+      // 2. Parallelize migrations for legacy databases (ignore duplicate column errors)
+      const migrationQueries = [
+        'ALTER TABLE sessions ADD COLUMN sessionId TEXT',
+        'ALTER TABLE sessions ADD COLUMN userId TEXT',
+        'ALTER TABLE sessions ADD COLUMN userName TEXT',
+        'ALTER TABLE sessions ADD COLUMN userEmail TEXT',
+        'ALTER TABLE sessions ADD COLUMN createdAt INTEGER',
+        'ALTER TABLE sessions ADD COLUMN lastSeenAt INTEGER',
+        'ALTER TABLE sessions ADD COLUMN userAgent TEXT',
+        'ALTER TABLE schedule ADD COLUMN AssignedUserId TEXT',
+        "ALTER TABLE scripts ADD COLUMN Origin TEXT DEFAULT 'legacy'",
+        'ALTER TABLE laporan ADD COLUMN AssignedUserId TEXT',
+        'ALTER TABLE notifications ADD COLUMN isUrgent INTEGER DEFAULT 0',
+        'ALTER TABLE notifications ADD COLUMN targetUserId TEXT',
+        'ALTER TABLE notifications ADD COLUMN type TEXT',
+        'ALTER TABLE notifications ADD COLUMN taskId TEXT'
+      ];
+      await Promise.allSettled(migrationQueries.map(sql => db.execute(sql)));
+
+      // Rate limit cleanup & script status sync
+      await Promise.allSettled([
+        db.execute({
+          sql: 'DELETE FROM api_rate_limits WHERE updatedAt < ?',
+          args: [Date.now() - 24 * 60 * 60 * 1000],
+        }),
+        db.execute(`
+          UPDATE scripts
+          SET Status = 'Scripting', Origin = 'auto'
+          WHERE Status = 'Idea'
+            AND (Origin IS NULL OR Origin = 'legacy')
+            AND EXISTS (
+              SELECT 1 FROM schedule
+              WHERE LOWER(schedule."Content Title") = LOWER(scripts.Title)
+            )
+        `)
+      ]);
+
+      // 3. Parallelize seed count checks
       try {
-        const summaryCount = await db.execute("SELECT COUNT(*) as count FROM google_analytics_summary");
-        const itemsCount = await db.execute("SELECT COUNT(*) as count FROM google_analytics_items");
-        
-        let shouldSeedSummary = false;
-        if (summaryCount.rows[0].count === 0) {
-          shouldSeedSummary = true;
-        } else {
-          const currentSummary = await db.execute("SELECT visitors FROM google_analytics_summary WHERE id = 'current'");
-          if (currentSummary.rows[0]?.visitors === '0' || currentSummary.rows[0]?.visitors === '') {
-            shouldSeedSummary = true;
-          }
+        const [summaryRes, itemsCountRes, settingsCountRes, platformsCountRes, categoriesCountRes] = await Promise.all([
+          db.execute("SELECT visitors FROM google_analytics_summary WHERE id = 'current'"),
+          db.execute("SELECT COUNT(*) as count FROM google_analytics_items"),
+          db.execute("SELECT COUNT(*) as count FROM app_settings"),
+          db.execute("SELECT COUNT(*) as count FROM platforms"),
+          db.execute("SELECT COUNT(*) as count FROM categories")
+        ]);
+
+        const seedBatches = [];
+
+        // GA summary seed
+        const currentVisitors = summaryRes.rows[0]?.visitors;
+        if (!currentVisitors || currentVisitors === '0') {
+          seedBatches.push({
+            sql: `INSERT OR REPLACE INTO google_analytics_summary (id, visitors, pageviews, new_visits, avg_time_on_site, engagement_rate)
+                  VALUES ('current', '± 6K', '201', '± 6K', '00:01:24', '48%')`,
+            args: []
+          });
         }
 
-        // Seed summary if empty or zeroed
-        if (shouldSeedSummary) {
-          await db.execute(`
-            INSERT OR REPLACE INTO google_analytics_summary (id, visitors, pageviews, new_visits, avg_time_on_site, engagement_rate)
-            VALUES ('current', '± 6K', '201', '± 6K', '00:01:24', '48%')
-          `);
-        }
-
-        // Seed items if empty
-        if (itemsCount.rows[0].count <= 1) {
-          // Clear any current single item to avoid duplicates
-          await db.execute("DELETE FROM google_analytics_items");
-
+        // GA items seed
+        if ((itemsCountRes.rows[0]?.count || 0) <= 1) {
+          seedBatches.push({ sql: "DELETE FROM google_analytics_items", args: [] });
           const defaultItems = [
-            // Pages
             { category: 'pages', label: '/game/2026/05/18/meccha-chameleon', metric: '± 2K views' },
             { category: 'pages', label: '/game/event/8682/gacci-2026', metric: '± 1K views' },
             { category: 'pages', label: '/game', metric: '546 views' },
@@ -404,8 +357,6 @@ export async function POST(request) {
             { category: 'pages', label: '/game/2026/02/26/refind-self-the-personality-test-game', metric: '71 views' },
             { category: 'pages', label: '/game/not-found', metric: '63 views' },
             { category: 'pages', label: '/game/2026/03/14/sword-art-online-echoes-of-aincrad', metric: '53 views' },
-            
-            // Referrers
             { category: 'referrers', label: 'google / organic', metric: '± 3K' },
             { category: 'referrers', label: '(direct) / (none)', metric: '± 1K' },
             { category: 'referrers', label: 'bit.ly / referral', metric: '± 1K' },
@@ -415,108 +366,63 @@ export async function POST(request) {
             { category: 'referrers', label: 'bing / organic', metric: '45' },
             { category: 'referrers', label: 'id.search.yahoo.com / referral', metric: '15' },
             { category: 'referrers', label: 'chatgpt.com / ai-assistant', metric: '14' },
-
-            // Keywords
             { category: 'keywords', label: 'meccha chameleon game review', metric: '1.2K clicks' },
             { category: 'keywords', label: 'gacci 2026 event', metric: '850 clicks' },
             { category: 'keywords', label: 'indie games 2026', metric: '520 clicks' },
             { category: 'keywords', label: 'best horror games underwater', metric: '310 clicks' },
             { category: 'keywords', label: 'sword art online echoes of aincrad', metric: '150 clicks' },
-
-            // Trending
             { category: 'trending', label: 'AI Game Assistant Guides', metric: '+140% spike' },
             { category: 'trending', label: 'Underwater Horror Games', metric: '+85% spike' },
             { category: 'trending', label: 'Refind Self Personality Test', metric: '+60% spike' },
             { category: 'trending', label: 'Mecha Chameleon release date', metric: '+40% spike' }
           ];
-
-          const batchQueries = defaultItems.map(item => {
-            const calculatedOrder = parseMetricToNumber(item.metric);
-            return {
+          for (const item of defaultItems) {
+            seedBatches.push({
               sql: `INSERT INTO google_analytics_items (category, label, metric, sort_order) VALUES (?, ?, ?, ?)`,
-              args: [item.category, item.label, item.metric, calculatedOrder]
-            };
-          });
-          await db.batch(batchQueries);
+              args: [item.category, item.label, item.metric, parseMetricToNumber(item.metric)]
+            });
+          }
         }
-      } catch (e) {
-        console.error("Failed to seed Google Analytics data:", e);
-      }
 
-      // Seed App Settings if empty
-      try {
-        const settingsCount = await db.execute("SELECT COUNT(*) as count FROM app_settings");
-        if (settingsCount.rows[0].count === 0) {
-          await db.batch([
+        // App settings seed
+        if ((settingsCountRes.rows[0]?.count || 0) === 0) {
+          seedBatches.push(
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_name", "contentmanager"] },
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_subtitle", "Socmed Apps"] },
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_full_name", "Socmed Apps"] },
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["company_name", "Internal Content Team"] },
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_version", "v0.2.0-alpha"] }
-          ]);
+          );
+        }
+
+        // Platforms seed
+        if ((platformsCountRes.rows[0]?.count || 0) === 0) {
+          seedBatches.push(
+            { sql: "INSERT INTO platforms (id, name, logo_url, color_class) VALUES (?, ?, ?, ?)", args: ["instagram", "Instagram", "/img/icons/instagram-logo.png", "badge-platform-instagram"] },
+            { sql: "INSERT INTO platforms (id, name, logo_url, color_class) VALUES (?, ?, ?, ?)", args: ["tiktok", "TikTok", "/img/icons/tiktok-logo.png", "badge-platform-tiktok"] },
+            { sql: "INSERT INTO platforms (id, name, logo_url, color_class) VALUES (?, ?, ?, ?)", args: ["youtube", "YouTube", "/img/icons/youtube-logo.webp", "badge-platform-youtube"] }
+          );
+        }
+
+        // Categories seed
+        if ((categoriesCountRes.rows[0]?.count || 0) === 0) {
+          seedBatches.push(
+            { sql: "INSERT INTO categories (name, color_class) VALUES (?, ?)", args: ["Article Reels", "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"] },
+            { sql: "INSERT INTO categories (name, color_class) VALUES (?, ?)", args: ["Story Telling", "bg-sky-500/10 text-sky-400 border border-sky-500/20"] },
+            { sql: "INSERT INTO categories (name, color_class) VALUES (?, ?)", args: ["News", "bg-purple-500/10 text-purple-400 border border-purple-500/20"] },
+            { sql: "INSERT INTO categories (name, color_class) VALUES (?, ?)", args: ["Talking Head", "bg-pink-500/10 text-pink-400 border border-pink-500/20"] },
+            { sql: "INSERT INTO categories (name, color_class) VALUES (?, ?)", args: ["Clipper", "bg-amber-500/10 text-amber-400 border border-amber-500/20"] },
+            { sql: "INSERT INTO categories (name, color_class) VALUES (?, ?)", args: ["Motion", "bg-rose-500/10 text-rose-400 border border-rose-500/20"] }
+          );
+        }
+
+        if (seedBatches.length > 0) {
+          await db.batch(seedBatches);
         }
       } catch (e) {
-        console.error("Failed to seed App Settings:", e);
+        console.error("Failed during seed checks:", e);
       }
 
-      // Seed Platforms if empty
-      try {
-        const platformsCount = await db.execute("SELECT COUNT(*) as count FROM platforms");
-        if (platformsCount.rows[0].count === 0) {
-          await db.batch([
-            {
-              sql: "INSERT INTO platforms (id, name, logo_url, color_class) VALUES (?, ?, ?, ?)",
-              args: ["instagram", "Instagram", "/img/icons/instagram-logo.png", "badge-platform-instagram"]
-            },
-            {
-              sql: "INSERT INTO platforms (id, name, logo_url, color_class) VALUES (?, ?, ?, ?)",
-              args: ["tiktok", "TikTok", "/img/icons/tiktok-logo.png", "badge-platform-tiktok"]
-            },
-            {
-              sql: "INSERT INTO platforms (id, name, logo_url, color_class) VALUES (?, ?, ?, ?)",
-              args: ["youtube", "YouTube", "/img/icons/youtube-logo.webp", "badge-platform-youtube"]
-            }
-          ]);
-        }
-      } catch (e) {
-        console.error("Failed to seed Platforms:", e);
-      }
-
-      // Seed Categories if empty
-      try {
-        const categoriesCount = await db.execute("SELECT COUNT(*) as count FROM categories");
-        if (categoriesCount.rows[0].count === 0) {
-          await db.batch([
-            {
-              sql: "INSERT INTO categories (name, color_class) VALUES (?, ?)",
-              args: ["Article Reels", "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"]
-            },
-            {
-              sql: "INSERT INTO categories (name, color_class) VALUES (?, ?)",
-              args: ["Story Telling", "bg-sky-500/10 text-sky-400 border border-sky-500/20"]
-            },
-            {
-              sql: "INSERT INTO categories (name, color_class) VALUES (?, ?)",
-              args: ["News", "bg-purple-500/10 text-purple-400 border border-purple-500/20"]
-            },
-            {
-              sql: "INSERT INTO categories (name, color_class) VALUES (?, ?)",
-              args: ["Talking Head", "bg-pink-500/10 text-pink-400 border border-pink-500/20"]
-            },
-            {
-              sql: "INSERT INTO categories (name, color_class) VALUES (?, ?)",
-              args: ["Clipper", "bg-amber-500/10 text-amber-400 border border-amber-500/20"]
-            },
-            {
-              sql: "INSERT INTO categories (name, color_class) VALUES (?, ?)",
-              args: ["Motion", "bg-rose-500/10 text-rose-400 border border-rose-500/20"]
-            }
-          ]);
-        }
-      } catch (e) {
-        console.error("Failed to seed Categories:", e);
-      }
-      
       isDbInitialized = true;
       console.log(`[API] DB initialization completed in ${Date.now() - startTime}ms`);
     } else {
@@ -524,8 +430,6 @@ export async function POST(request) {
     }
 
     console.log(`[API] Action payload parsed. Action = "${action}" in ${Date.now() - startTime}ms`);
-
-    // 1. Handle Validate Mode separately
     if (action === 'validate_mode') {
       const now = Date.now();
       const email = (params.email || '').trim().toLowerCase();

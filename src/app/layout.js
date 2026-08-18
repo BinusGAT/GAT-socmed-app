@@ -1,9 +1,22 @@
 import Script from 'next/script';
 import { headers } from 'next/headers';
+import { Inter, Hanken_Grotesk } from 'next/font/google';
 import "./globals.css";
 
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+const hankenGrotesk = Hanken_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-hanken',
+});
+
 export const metadata = {
-  title: "GAT Content Suite - Media & Social Dashboard",
+  title: "GAT App - Media & Social Dashboard",
   description: "An independent internal content performance management tool for tracking publication metrics and team analytics.",
 };
 
@@ -16,7 +29,7 @@ export default async function RootLayout({ children }) {
   const nonce = (await headers()).get('x-nonce') || undefined;
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${hankenGrotesk.variable}`} suppressHydrationWarning>
       <head>
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -25,7 +38,7 @@ export default async function RootLayout({ children }) {
         <link rel="manifest" href="/site.webmanifest" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
         <Script id="theme-html-initializer" nonce={nonce}>
           {`
             (function () {

@@ -337,7 +337,7 @@ function DashboardAppContent() {
                 {/* Footer copyright */}
                 <footer className="hidden w-full flex-col items-center justify-between gap-3 border-t border-outline-variant/10 bg-surface-container-lowest px-6 py-5 text-xs text-on-surface-variant sm:flex sm:flex-row">
                     <div className="flex items-center gap-2">
-                        <span>&copy; {new Date().getFullYear()} {appSettingsData?.app_full_name || 'Content suite'}. All rights reserved.</span>
+                        <span>&copy; {new Date().getFullYear()} {appSettingsData?.app_full_name || appSettingsData?.app_name || 'GAT'}. All rights reserved.</span>
                         <span className="px-1.5 py-0.5 rounded bg-surface-container-high text-[9px] font-bold tracking-wider text-on-surface-variant uppercase">{appSettingsData?.app_version || 'v0.1.0-alpha'}</span>
                     </div>
                     <div className="flex items-center gap-4 font-medium">

@@ -26,7 +26,7 @@ export default function MyWorkTab() {
 
     const openTask = (taskId) => {
         setSelectedTaskId(taskId);
-        setCurrentView('calendar');
+        setCurrentView('tasklist');
     };
     const normalizedUserName = String(userName || '').trim().toLowerCase();
     const userFirstName = normalizedUserName.split(/\s+/)[0];
@@ -78,7 +78,7 @@ export default function MyWorkTab() {
                         {tasks.map((task) => {
                             const dueState = getDueState(task.Date, getTaskCalculatedStatus(task) === 'Done');
                             return (
-                                <button key={task.ID} type="button" onClick={() => openTask(task.ID)} aria-label={`Open calendar for task ${task['Content Title'] || task.ID}`} className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-outline-variant/25 bg-surface-container px-4 py-3.5 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:rounded-none sm:border-0 sm:bg-transparent sm:px-5 sm:py-4 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-3">
+                                <button key={task.ID} type="button" onClick={() => openTask(task.ID)} aria-label={`Open task ${task['Content Title'] || task.ID}`} className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-outline-variant/25 bg-surface-container px-4 py-3.5 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:rounded-none sm:border-0 sm:bg-transparent sm:px-5 sm:py-4 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-3">
                                     <div className="min-w-0">
                                         <p className="line-clamp-2 text-body-md font-semibold leading-snug text-on-surface sm:truncate">{task['Content Title'] || 'Untitled task'}</p>
                                         <p className="mt-1 text-xs text-on-surface-variant">{task.ID} · {task.Category}</p>

@@ -1082,7 +1082,7 @@ export function CalendarExportModal({ isOpen, onClose }) {
 // 8. HELP & OPERATIONS GUIDE MODAL
 // ----------------------------------------------------
 export function HelpGuideModal({ isOpen, onClose }) {
-    const { userRole } = useDashboard();
+    const { userRole, appSettingsData } = useDashboard();
     const [activeTab, setActiveTab] = useState('roles');
 
     if (!isOpen) return null;
@@ -1099,7 +1099,7 @@ export function HelpGuideModal({ isOpen, onClose }) {
                         </div>
 
                         <p className="text-body-sm text-on-surface-variant/80 leading-relaxed">
-                            Content suite dynamically adapts its interface and access controls based on the authenticated role.
+                            {appSettingsData?.app_full_name || appSettingsData?.app_name || 'The workspace'} dynamically adapts its interface and access controls based on the authenticated role.
                         </p>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">

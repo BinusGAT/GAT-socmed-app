@@ -206,7 +206,6 @@ export function DashboardProvider({ children }) {
             { id: 'tiktok', name: 'TikTok', logo_url: '/img/icons/tiktok-logo.png', color_class: 'badge-platform-tiktok' },
             { id: 'youtube', name: 'YouTube', logo_url: '/img/icons/youtube-logo.webp', color_class: 'badge-platform-youtube' }
         ]);
-
         setCategoriesData([
             { name: 'Article Reels', color_class: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' },
             { name: 'Story Telling', color_class: 'bg-sky-500/10 text-sky-400 border border-sky-500/20' },
@@ -249,14 +248,9 @@ export function DashboardProvider({ children }) {
         }
     }, [appSettingsData]);
 
-    // Load data from Google Sheets when unlock status changes
+    // Load data from Google Sheets when unlock status changes or on view transition
     useEffect(() => {
-        if (isUnlocked) {
-            // Load local storage cache instantly to populate UI
-            loadOfflineData(true);
-            // Sync database from server in the background
-            loadFromGoogleSheets(true, { dashboardOnly: currentView === 'dashboard' });
-        } else {
+        if (!isUnlocked) {
             // Clear all data states when locked so no data is shown
             setCurrentData([]);
             setScheduleData([]);
@@ -267,13 +261,23 @@ export function DashboardProvider({ children }) {
             setMeetingsData([]);
             setDashboardMetrics(null);
             setHasLoadedWorkspace(false);
+            return;
         }
-    }, [isUnlocked]);
 
-    useEffect(() => {
-        if (!isUnlocked || userRole === 'Viewer' || currentView === 'dashboard' || hasLoadedWorkspace) return;
-        loadFromGoogleSheets(true, { dashboardOnly: false });
-    }, [currentView, isUnlocked, userRole, hasLoadedWorkspace]);
+        // Instantly populate UI from local cache
+        loadOfflineData(true);
+
+        const shouldLoadFull = currentView !== 'dashboard' && userRole !== 'Viewer';
+        if (shouldLoadFull) {
+            if (!hasLoadedWorkspace) {
+                loadFromGoogleSheets(true, { dashboardOnly: false });
+            }
+        } else {
+            if (!hasLoadedWorkspace) {
+                loadFromGoogleSheets(true, { dashboardOnly: true });
+            }
+        }
+    }, [isUnlocked, currentView, userRole, hasLoadedWorkspace]);
 
     // Periodically check if session limit has been exceeded
     useEffect(() => {

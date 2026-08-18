@@ -1241,7 +1241,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                     {userRole !== 'Viewer' && (
                         <section aria-labelledby="dashboard-priority-heading" className="rounded-xl border border-outline-variant/30 bg-surface-container p-3 shadow-xs">
                             <div className="flex items-center justify-between gap-3">
-                                <h2 id="dashboard-priority-heading" className="text-xs font-bold text-on-surface">Work overview</h2>
+                                <h2 id="dashboard-priority-heading" className="text-xs font-bold text-on-surface">What needs attention</h2>
                                 <button type="button" onClick={openTaskDirectory} className="text-[11px] font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">View all tasks</button>
                             </div>
                             <div className="mt-2 grid grid-cols-2 divide-x divide-outline-variant/25 rounded-lg bg-surface-container-low">
@@ -1256,7 +1256,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                             </div>
                             <div className="mt-2 border-t border-outline-variant/20 pt-2">
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="text-[10px] font-semibold text-on-surface-variant">Next deadline</span>
+                                    <h3 className="text-[10px] font-semibold text-on-surface-variant">Next deadline</h3>
                                     <button type="button" onClick={openPlanner} className="text-[10px] font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Planner</button>
                                 </div>
                                 {taskOverview.upcoming[0] ? (

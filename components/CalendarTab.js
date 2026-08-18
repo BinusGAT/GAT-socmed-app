@@ -59,11 +59,22 @@ export default function CalendarTab({ onOpenExport }) {
     const [formTitle, setFormTitle] = useState('');
     const [taskToDelete, setTaskToDelete] = useState(null);
 
-    // Initialize selected date to today on load
+    // Initialize selected date to first task date or today on load
     useEffect(() => {
         const today = getLocalDateInputValue();
+        if (scheduleData && scheduleData.length > 0) {
+            const firstTaskDate = parseDate(scheduleData[0].Date);
+            if (firstTaskDate) {
+                setSelectedDate(firstTaskDate);
+                const d = new Date(`${firstTaskDate}T00:00:00`);
+                if (!Number.isNaN(d.getTime())) {
+                    setCurrentMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+                }
+                return;
+            }
+        }
         setSelectedDate(today);
-    }, []);
+    }, [scheduleData]);
 
     // Get combined calendar tasks (schedules + meetings)
     const getCombinedTasks = () => {
