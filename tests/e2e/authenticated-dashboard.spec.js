@@ -212,7 +212,11 @@ test('mobile planner uses an agenda strip instead of a compressed month grid', a
   await expect(page.locator('.calendar-shell')).toBeHidden();
   const dateStrip = page.locator('[aria-label="Choose a planning date"]');
   await expect(dateStrip.getByRole('button')).toHaveCount(7);
-  await dateStrip.getByRole('button', { name: /Tuesday, August 11/ }).click();
+  const targetDateBtn = dateStrip.getByRole('button', { name: /Tuesday, August 11/ });
+  if (await targetDateBtn.count() === 0) {
+    await page.getByLabel('Previous week').click();
+  }
+  await targetDateBtn.click();
   await expect(page.getByText('Campus highlights')).toBeVisible();
   await expect(page.getByText('11/08/2026', { exact: true }).last()).toBeVisible();
 });
