@@ -117,7 +117,6 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                             placeholder="user@domain.com"
                             required
                             autoComplete="username"
-                            autoFocus
                             value={email}
                             onChange={(e) => {
                                 setEmail(e.target.value);
