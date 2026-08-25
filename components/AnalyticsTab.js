@@ -8,7 +8,9 @@ import {
     formatNumber,
     parseDate,
     aggregateAllChartsData,
-    getPicBadgeClasses
+    getPicBadgeClasses,
+    resolveMemberName,
+    getPicDisplayName
 } from '../utils/helpers';
 import PlatformBadge from './PlatformBadge.jsx';
 
@@ -73,6 +75,7 @@ export default function AnalyticsTab({ chartReady = false }) {
 
     const {
         currentData,
+        memberListData,
         isUnlocked
     } = useDashboard();
 
@@ -221,19 +224,21 @@ export default function AnalyticsTab({ chartReady = false }) {
     const getCreatorLeaderboard = () => {
         const creators = {};
         activeData.forEach(row => {
-            const pic = normalizePicName(row.PIC);
+            const resolved = resolveMemberName(row.PIC, memberListData);
+            const pic = getPicDisplayName(resolved || row.PIC);
             if (!pic) return;
 
-            if (!creators[pic]) {
-                creators[pic] = {
+            const key = pic.toLowerCase();
+            if (!creators[key]) {
+                creators[key] = {
                     name: pic,
                     views: 0,
                     posts: new Set()
                 };
             }
-            creators[pic].views += parseInt(row.Views) || 0;
+            creators[key].views += parseInt(row.Views) || 0;
             if (row['Content Title']) {
-                creators[pic].posts.add(row['Content Title'].trim());
+                creators[key].posts.add(row['Content Title'].trim());
             }
         });
 
@@ -241,7 +246,7 @@ export default function AnalyticsTab({ chartReady = false }) {
     };
 
     const creatorLeaderboard = getCreatorLeaderboard();
-    const accessibleChartData = aggregateAllChartsData(activeData);
+    const accessibleChartData = aggregateAllChartsData(activeData, memberListData);
     const describeSeries = (labels = [], values = []) => labels.map((label, index) => `${label}: ${formatNumber(values[index] || 0)}`).join('; ');
 
     // Chart lifecycle
@@ -252,7 +257,7 @@ export default function AnalyticsTab({ chartReady = false }) {
             if (typeof window === 'undefined' || !window.Chart) return;
 
             const Chart = window.Chart;
-            const { trendData, platformData, picData, categoryData } = aggregateAllChartsData(activeData);
+            const { trendData, platformData, picData, categoryData } = aggregateAllChartsData(activeData, memberListData);
 
             if (trendChartRef.current) trendChartRef.current.destroy();
             if (platformChartRef.current) platformChartRef.current.destroy();
@@ -552,7 +557,7 @@ export default function AnalyticsTab({ chartReady = false }) {
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${getPicBadgeClasses(row.PIC)}`}>
-                                                        {normalizePicName(row.PIC)}
+                                                        {getPicDisplayName(row.PIC)}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
@@ -709,7 +714,7 @@ export default function AnalyticsTab({ chartReady = false }) {
                                                 <td className="px-5 py-3 text-on-surface-variant">{row.Category || 'Story Telling'}</td>
                                                 <td className="px-5 py-3">
                                                     <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${getPicBadgeClasses(row.PIC)}`}>
-                                                        {normalizePicName(row.PIC)}
+                                                        {getPicDisplayName(row.PIC)}
                                                     </span>
                                                 </td>
                                                 <td className="px-5 py-3">

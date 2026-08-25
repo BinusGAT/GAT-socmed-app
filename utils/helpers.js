@@ -337,7 +337,7 @@ export function aggregateTrendData(activeData) {
 }
 
 
-export function aggregateAllChartsData(activeData) {
+export function aggregateAllChartsData(activeData, memberList = []) {
     const platformGroups = {};
     const picGroups = {};
     const catGroups = {};
@@ -347,8 +347,9 @@ export function aggregateAllChartsData(activeData) {
         const platform = normalizePlatformName(row.Platform) || 'Unknown';
         platformGroups[platform] = (platformGroups[platform] || 0) + (parseInt(row.Views) || 0);
 
-        // PIC
-        const pic = normalizePicName(row.PIC) || 'Unknown';
+        // PIC - resolve with memberList and group by display name so duplicates merge
+        const resolvedPic = resolveMemberName(row.PIC, memberList);
+        const pic = getPicDisplayName(resolvedPic || row.PIC) || 'Unknown';
         picGroups[pic] = (picGroups[pic] || 0) + (parseInt(row.Views) || 0);
 
         // Category

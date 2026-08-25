@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getPicDisplayName, getPicShortName, getPicBadgeClasses } from '../../utils/helpers';
+import { getPicDisplayName, getPicShortName, getPicBadgeClasses, aggregateAllChartsData } from '../../utils/helpers';
 
 describe('PIC display name helpers', () => {
   it('extracts first name from full name', () => {
@@ -24,5 +24,18 @@ describe('PIC display name helpers', () => {
     const fullBadge = getPicBadgeClasses('Alex Morgan');
     const shortBadge = getPicBadgeClasses('Alex');
     expect(fullBadge).toBe(shortBadge);
+  });
+
+  it('aggregates and deduplicates views by display name when full and short names exist', () => {
+    const rows = [
+      { PIC: 'Alex Morgan', Views: '500', Platform: 'TikTok', Category: 'News' },
+      { PIC: 'Alex', Views: '300', Platform: 'Instagram', Category: 'News' },
+      { PIC: 'Jane Doe', Views: '200', Platform: 'YouTube', Category: 'Motion' }
+    ];
+    const memberList = [{ NAMA: 'Alex Morgan' }, { NAMA: 'Jane Doe' }];
+    const { picData } = aggregateAllChartsData(rows, memberList);
+
+    expect(picData.picLabels).toEqual(['Alex', 'Jane']);
+    expect(picData.picViews).toEqual([800, 200]);
   });
 });
