@@ -37,6 +37,7 @@ export default function CalendarTab({ onOpenExport }) {
         userId,
         userName,
         saveCalendarTask,
+        rescheduleCalendarTask,
         deleteCalendarTask,
         memberListData,
         categoriesData,
@@ -44,7 +45,12 @@ export default function CalendarTab({ onOpenExport }) {
         setCurrentView,
         setSelectedMeetingId,
         selectedTaskId,
-        setSelectedTaskId
+        setSelectedTaskId,
+        setSelectedPostId,
+        tasklistFilterPic,
+        setTasklistFilterPic,
+        tasklistFilterCategory,
+        setTasklistFilterCategory
     } = useDashboard();
 
     const [currentMonth, setCurrentMonth] = useState(() => new Date());
@@ -56,6 +62,11 @@ export default function CalendarTab({ onOpenExport }) {
     const [formCategory, setFormCategory] = useState('');
     const [formTitle, setFormTitle] = useState('');
     const [taskToDelete, setTaskToDelete] = useState(null);
+
+    // Drag and Drop & Popover States
+    const [dragOverDate, setDragOverDate] = useState(null);
+    const [draggingTaskId, setDraggingTaskId] = useState(null);
+    const [activePopoverDate, setActivePopoverDate] = useState(null);
 
     // Get combined calendar tasks (schedules + meetings)
     const getCombinedTasks = () => {
@@ -102,7 +113,20 @@ export default function CalendarTab({ onOpenExport }) {
             }
         });
 
-        return tasks;
+        return tasks.filter(task => {
+            if (task.isMeeting) {
+                if (tasklistFilterCategory && tasklistFilterCategory !== 'Recap') return false;
+                if (tasklistFilterPic) return false;
+                return true;
+            }
+            if (tasklistFilterPic && normalizePicName(resolveMemberName(task.pic, memberListData)) !== normalizePicName(tasklistFilterPic)) {
+                return false;
+            }
+            if (tasklistFilterCategory && task.category !== tasklistFilterCategory) {
+                return false;
+            }
+            return true;
+        });
     };
 
     const combinedTasks = getCombinedTasks();
@@ -293,6 +317,61 @@ export default function CalendarTab({ onOpenExport }) {
 
     return (
         <div className="space-y-5">
+            {/* Filter Toolbar */}
+            <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row gap-3 items-center justify-between shadow-sm">
+                <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                    <span className="material-symbols-outlined text-primary text-[22px]">calendar_view_month</span>
+                    <div>
+                        <h4 className="text-xs font-bold text-on-surface uppercase tracking-wider">Calendar Directory</h4>
+                        <p className="text-[11px] text-on-surface-variant font-mono">{combinedTasks.length} {combinedTasks.length === 1 ? 'task' : 'tasks'} scheduled</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+                    {/* Reset button */}
+                    {(tasklistFilterPic || tasklistFilterCategory) && (
+                        <button 
+                            type="button"
+                            className="bg-surface-container-high border border-outline-variant/30 hover:bg-surface-container-highest text-on-surface font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                            onClick={() => {
+                                setTasklistFilterPic('');
+                                setTasklistFilterCategory('');
+                            }}
+                        >
+                            <span className="material-symbols-outlined text-[14px]">restart_alt</span> Reset
+                        </button>
+                    )}
+
+                    {/* PIC filter */}
+                    <div className="flex-1 sm:w-40 min-w-[130px]">
+                        <select 
+                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                            value={tasklistFilterPic}
+                            onChange={(e) => setTasklistFilterPic(e.target.value)}
+                        >
+                            <option value="">All PICs</option>
+                            {memberListData.map(m => (
+                                <option key={m.NAMA} value={m.NAMA}>{getPicDisplayName(m.NAMA)}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Category filter */}
+                    <div className="flex-1 sm:w-40 min-w-[130px]">
+                        <select 
+                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                            value={tasklistFilterCategory}
+                            onChange={(e) => setTasklistFilterCategory(e.target.value)}
+                        >
+                            <option value="">All Categories</option>
+                            {categoriesData.map(c => (
+                                <option key={c.name} value={c.name}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             {/* Calendar & Form Editor Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-gutter items-start">
                 
@@ -354,6 +433,11 @@ export default function CalendarTab({ onOpenExport }) {
                             </button>
                         </div>
                         <div className="flex items-center gap-2 calendar-toolbar-actions">
+                            {userRole === 'Admin' && (
+                                <span className="hidden md:inline-flex items-center gap-1 text-[11px] text-primary/80 font-medium bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                                    <span className="material-symbols-outlined text-[13px]">drag_indicator</span> Drag to reschedule
+                                </span>
+                            )}
                             <span className="px-2.5 py-1 bg-surface-container-highest/50 text-on-surface-variant border border-outline-variant/30 rounded-md font-mono text-[11px]">
                                 {getTasksCountForMonth()} Tasks
                             </span>
@@ -391,6 +475,7 @@ export default function CalendarTab({ onOpenExport }) {
                             const isSelected = cellDate && cellDate === selectedDate;
                             const isToday = cellDate === getLocalDateInputValue();
                             const hasTask = dayTasks.length > 0;
+                            const isDropTarget = dragOverDate === cellDate;
 
                             let statusClass = 'bg-surface-container-lowest';
                             let isFullyUploaded = false;
@@ -413,7 +498,9 @@ export default function CalendarTab({ onOpenExport }) {
                                 isFullyUploaded = dayTasks.every(task => !task.isFromDashboard || task.status);
                             }
 
-                            const activeBorder = isSelected 
+                            const activeBorder = isDropTarget
+                                ? 'ring-2 ring-primary ring-inset bg-primary/20 scale-[1.02] shadow-md z-20'
+                                : isSelected 
                                 ? 'bg-indigo-600/15 border-2 border-indigo-500/60 shadow-xs z-10' 
                                 : isToday 
                                 ? 'border border-indigo-500/30 bg-indigo-500/5' 
@@ -441,8 +528,29 @@ export default function CalendarTab({ onOpenExport }) {
                             return (
                                 <div 
                                     key={cellIndex} 
-                                    className={`aspect-square p-2 flex flex-col justify-between items-stretch text-left transition-colors duration-150 cursor-pointer calendar-day ${statusClass} ${activeBorder}`}
+                                    className={`aspect-square p-2 flex flex-col justify-between items-stretch text-left transition-all duration-150 cursor-pointer calendar-day ${statusClass} ${activeBorder}`}
                                     onClick={() => setSelectedDate(cellDate)}
+                                    onDragOver={(e) => {
+                                        if (userRole === 'Admin' && cellDate) {
+                                            e.preventDefault();
+                                            e.dataTransfer.dropEffect = 'move';
+                                            setDragOverDate(cellDate);
+                                        }
+                                    }}
+                                    onDragLeave={() => {
+                                        if (dragOverDate === cellDate) setDragOverDate(null);
+                                    }}
+                                    onDrop={async (e) => {
+                                        e.preventDefault();
+                                        setDragOverDate(null);
+                                        setDraggingTaskId(null);
+                                        if (userRole === 'Admin' && cellDate) {
+                                            const droppedTaskId = e.dataTransfer.getData('text/plain');
+                                            if (droppedTaskId) {
+                                                await rescheduleCalendarTask(droppedTaskId, cellDate);
+                                            }
+                                        }
+                                    }}
                                 >
                                     <div className="flex justify-between items-center mb-1">
                                         <span className={`text-[12px] font-bold ${
@@ -462,7 +570,23 @@ export default function CalendarTab({ onOpenExport }) {
                                         {uniqueRenderTasks.slice(0, 3).map((task, idx) => (
                                             <div 
                                                 key={idx} 
+                                                draggable={userRole === 'Admin' && !task.isMeeting}
+                                                onDragStart={(e) => {
+                                                    if (userRole === 'Admin' && !task.isMeeting) {
+                                                        e.dataTransfer.setData('text/plain', String(task.id));
+                                                        e.dataTransfer.effectAllowed = 'move';
+                                                        setDraggingTaskId(task.id);
+                                                    }
+                                                }}
+                                                onDragEnd={() => {
+                                                    setDraggingTaskId(null);
+                                                    setDragOverDate(null);
+                                                }}
                                                 className={`text-[10.5px] font-bold px-2 py-1 rounded border leading-tight truncate uppercase flex items-center gap-1 calendar-day-task-item hover:opacity-85 transition-all ${
+                                                    userRole === 'Admin' && !task.isMeeting ? 'cursor-grab active:cursor-grabbing' : ''
+                                                } ${
+                                                    draggingTaskId === task.id ? 'opacity-40 scale-95' : ''
+                                                } ${
                                                     task.isMeeting 
                                                         ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' 
                                                         : getPicMobileBadgeClass(task.pic)
@@ -488,9 +612,17 @@ export default function CalendarTab({ onOpenExport }) {
                                             </div>
                                         ))}
                                         {uniqueRenderTasks.length > 3 && (
-                                            <div className="text-[8px] font-bold text-on-surface-variant/60 text-center uppercase tracking-tighter">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedDate(cellDate);
+                                                    setActivePopoverDate(cellDate);
+                                                }}
+                                                className="w-full text-[9px] font-bold text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 rounded py-0.5 text-center uppercase tracking-tight transition-colors cursor-pointer"
+                                            >
                                                 + {uniqueRenderTasks.length - 3} more
-                                            </div>
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -749,6 +881,93 @@ export default function CalendarTab({ onOpenExport }) {
                                 }}
                             >
                                 <span className="material-symbols-outlined text-[18px]">delete</span> Delete Task
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Popover Modal for Days with High Task Density */}
+            {activePopoverDate && typeof window !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-background/60 backdrop-blur-xs px-4">
+                    <div className="bg-surface-container border border-outline-variant/30 rounded-xl max-w-md w-full overflow-hidden shadow-2xl animate-scale-up">
+                        <div className="px-5 py-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
+                            <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary text-[20px]">event_note</span>
+                                <h3 className="text-body-md font-bold text-on-surface font-display">
+                                    Tasks on {formatDisplayDateString(activePopoverDate)}
+                                </h3>
+                            </div>
+                            <button 
+                                type="button" 
+                                className="text-on-surface-variant hover:text-on-surface p-1 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer" 
+                                onClick={() => setActivePopoverDate(null)}
+                            >
+                                <span className="material-symbols-outlined text-[20px]">close</span>
+                            </button>
+                        </div>
+                        <div className="p-4 space-y-2.5 max-h-[380px] overflow-y-auto">
+                            {(tasksByDateMap[activePopoverDate] || []).map((task) => (
+                                <div 
+                                    key={task.id}
+                                    className="flex items-center justify-between p-3 rounded-lg bg-surface-container-low border border-outline-variant/20 hover:border-primary/40 transition-colors"
+                                >
+                                    <div className="space-y-1 min-w-0 flex-1 pr-2">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            {task.isMeeting ? (
+                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-[11px]">handshake</span> Meeting
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${getPicMobileBadgeClass(task.pic)}`}>
+                                                        {getPicDisplayName(task.pic)}
+                                                    </span>
+                                                    <span className="text-[10px] font-bold text-on-surface">{task.category}</span>
+                                                </>
+                                            )}
+                                        </div>
+                                        <p className="text-xs font-semibold text-on-surface truncate">
+                                            {task.isMeeting ? 'Meeting Agenda & Recap Details' : (task.contentTitle || 'Untitled')}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        {task.isMeeting ? (
+                                            <button 
+                                                type="button" 
+                                                className="h-8 px-2.5 rounded-md bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                                onClick={() => {
+                                                    setSelectedMeetingId(task.id);
+                                                    setCurrentView('meeting');
+                                                    setActivePopoverDate(null);
+                                                }}
+                                            >
+                                                Open <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                type="button" 
+                                                className="h-8 px-2.5 rounded-md bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                                onClick={() => {
+                                                    startEditTask(task);
+                                                    setActivePopoverDate(null);
+                                                }}
+                                            >
+                                                Edit <span className="material-symbols-outlined text-[14px]">edit</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="px-5 py-3 border-t border-outline-variant/20 flex justify-end bg-surface-container-lowest">
+                            <button 
+                                type="button" 
+                                className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-1.5 px-4 rounded-lg text-body-sm transition-colors cursor-pointer" 
+                                onClick={() => setActivePopoverDate(null)}
+                            >
+                                Close
                             </button>
                         </div>
                     </div>

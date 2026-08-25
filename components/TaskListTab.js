@@ -40,6 +40,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
         showAlert,
         tasklistSearch, setTasklistSearch,
         tasklistFilterPic, setTasklistFilterPic,
+        tasklistFilterCategory, setTasklistFilterCategory,
         tasklistFilterStatus, setTasklistFilterStatus,
         selectedTaskId, setSelectedTaskId
     } = useDashboard();
@@ -115,6 +116,9 @@ export default function TaskListTab({ onOpenDatePicker }) {
             )
             .filter(task => !tasklistFilterPic || 
                 normalizePicName(resolveMemberName(task.pic, memberListData)) === normalizePicName(tasklistFilterPic)
+            )
+            .filter(task => !tasklistFilterCategory || 
+                task.category === tasklistFilterCategory
             )
             .filter(task => !tasklistFilterStatus || 
                 task.calculatedStatus === tasklistFilterStatus
@@ -336,12 +340,13 @@ export default function TaskListTab({ onOpenDatePicker }) {
                         </button>
                     )}
                     {/* Reset button */}
-                    {(tasklistSearch || tasklistFilterPic || tasklistFilterStatus) && (
+                    {(tasklistSearch || tasklistFilterPic || tasklistFilterCategory || tasklistFilterStatus) && (
                         <button 
                             className="bg-surface-container-high border border-outline-variant/30 hover:bg-surface-container-highest text-on-surface font-bold py-2 px-3 rounded text-[11px] uppercase transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                             onClick={() => {
                                 setTasklistSearch('');
                                 setTasklistFilterPic('');
+                                setTasklistFilterCategory('');
                                 setTasklistFilterStatus('');
                             }}
                         >
@@ -364,7 +369,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                     </div>
 
                     {/* PIC filter dropdown */}
-                    <div className="sm:w-40">
+                    <div className="sm:w-36">
                         <select 
                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                             value={tasklistFilterPic}
@@ -377,8 +382,22 @@ export default function TaskListTab({ onOpenDatePicker }) {
                         </select>
                     </div>
 
+                    {/* Category filter dropdown */}
+                    <div className="sm:w-36">
+                        <select 
+                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                            value={tasklistFilterCategory}
+                            onChange={(e) => setTasklistFilterCategory(e.target.value)}
+                        >
+                            <option value="">All Categories</option>
+                            {categoriesData.map(c => (
+                                <option key={c.name} value={c.name}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
                     {/* Status filter dropdown */}
-                    <div className="sm:w-44">
+                    <div className="sm:w-36">
                         <select 
                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary"
                             value={tasklistFilterStatus}

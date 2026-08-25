@@ -78,9 +78,10 @@ export function DashboardProvider({ children }) {
     const [mainFilterCategory, setMainFilterCategory] = useState(() => readStoredValue('GAT_dashboard_filter_category'));
     const [mainFilterPlatform, setMainFilterPlatform] = useState(() => readStoredValue('GAT_dashboard_filter_platform'));
 
-    // Tasklist Filter States
+    // Tasklist & Workflow Filter States
     const [tasklistSearch, setTasklistSearch] = useState(() => readStoredValue('GAT_task_filter_search'));
     const [tasklistFilterPic, setTasklistFilterPic] = useState(() => readStoredValue('GAT_task_filter_pic'));
+    const [tasklistFilterCategory, setTasklistFilterCategory] = useState(() => readStoredValue('GAT_task_filter_category'));
     const [tasklistFilterStatus, setTasklistFilterStatus] = useState(() => readStoredValue('GAT_task_filter_status'));
     const [connectionState, setConnectionState] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'online');
 
@@ -333,8 +334,9 @@ export function DashboardProvider({ children }) {
     useEffect(() => {
         localStorage.setItem('GAT_task_filter_search', tasklistSearch);
         localStorage.setItem('GAT_task_filter_pic', tasklistFilterPic);
+        localStorage.setItem('GAT_task_filter_category', tasklistFilterCategory);
         localStorage.setItem('GAT_task_filter_status', tasklistFilterStatus);
-    }, [tasklistSearch, tasklistFilterPic, tasklistFilterStatus]);
+    }, [tasklistSearch, tasklistFilterPic, tasklistFilterCategory, tasklistFilterStatus]);
 
     useEffect(() => {
         const handleOffline = () => setConnectionState('offline');
@@ -834,6 +836,7 @@ export function DashboardProvider({ children }) {
     // CRUD: Calendar Tasks
     const saveCalendarTask = async (task) => {
         const prevSchedule = scheduleData;
+        const prevCurrentData = currentData;
         const assignedIntern = internListData.find((intern) => intern.name === (task.PIC || task.pic));
         const payload = {
             ...task,
@@ -856,6 +859,22 @@ export function DashboardProvider({ children }) {
                 ? prev.map(t => String(t.ID) === String(normalizedTask.ID) ? { ...t, ...normalizedTask } : t)
                 : [normalizedTask, ...prev];
         });
+
+        // Optimistically sync shared columns in currentData if rows with this ID exist
+        setCurrentData((prev) =>
+            prev.map(row => String(row.ID) === String(normalizedTask.ID)
+                ? {
+                    ...row,
+                    Date: normalizedTask.Date,
+                    'Content Title': normalizedTask['Content Title'],
+                    PIC: normalizedTask.PIC,
+                    Category: normalizedTask.Category,
+                    AssignedUserId: normalizedTask.AssignedUserId
+                }
+                : row
+            )
+        );
+
         showAlert('💾 Task scheduled successfully!', 'success');
 
         (async () => {
@@ -866,11 +885,35 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setScheduleData(prevSchedule);
+                setCurrentData(prevCurrentData);
                 showAlert(`❌ Failed to save task: ${error.message}`, 'error');
             }
         })();
 
         return true;
+    };
+
+    const rescheduleCalendarTask = async (taskId, newDate) => {
+        if (!isUnlocked) {
+            showAlert('🔒 Workspace is locked. Sign in to make changes.', 'error');
+            return false;
+        }
+        if (userRole !== 'Admin') {
+            showAlert('⛔ Forbidden: Only Admins can reschedule tasks.', 'error');
+            return false;
+        }
+
+        const task = scheduleData.find(t => String(t.ID) === String(taskId));
+        if (!task) {
+            showAlert('Task not found.', 'error');
+            return false;
+        }
+
+        return await saveCalendarTask({
+            ...task,
+            Date: newDate,
+            date: newDate
+        });
     };
 
     const listSessions = async () => {
@@ -1336,6 +1379,7 @@ export function DashboardProvider({ children }) {
             
             tasklistSearch, setTasklistSearch,
             tasklistFilterPic, setTasklistFilterPic,
+            tasklistFilterCategory, setTasklistFilterCategory,
             tasklistFilterStatus, setTasklistFilterStatus,
 
             // Datasets
@@ -1367,6 +1411,7 @@ export function DashboardProvider({ children }) {
             deleteLaporanRow,
             deleteBatchLaporanRows,
             saveCalendarTask,
+            rescheduleCalendarTask,
             deleteCalendarTask,
             saveScriptDraft,
             deleteScriptDraft,
