@@ -262,7 +262,7 @@ export default function CalendarTab({ onOpenExport }) {
         const formattedDate = formatDate(selectedDate);
 
         const taskPayload = {
-            ID: editingTaskId ? taskID : '',
+            ID: taskID,
             Date: formattedDate,
             PIC: formPic,
             Category: formCategory,

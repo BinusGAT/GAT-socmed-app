@@ -260,7 +260,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
         const formattedDate = formatDate(modalDate);
 
         const taskPayload = {
-            ID: modalTaskId ? taskID : '',
+            ID: taskID,
             Date: formattedDate,
             PIC: modalPic,
             Category: modalCategory,

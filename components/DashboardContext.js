@@ -720,97 +720,137 @@ export function DashboardProvider({ children }) {
 
     // CRUD: Laporan Metrics
     const addLaporanRow = async (row) => {
-        setIsLoading(true);
-        try {
-            const assignedIntern = internListData.find((intern) => intern.name === row.PIC);
-            const result = await callSheetsAPI('create', { ...row, AssignedUserId: assignedIntern?.id || '' });
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('💾 Record added successfully!', 'success');
-                return true;
+        const prevData = currentData;
+        const assignedIntern = internListData.find((intern) => intern.name === row.PIC);
+        const newRow = { ...row, AssignedUserId: assignedIntern?.id || '' };
+        
+        setCurrentData((prev) => [newRow, ...prev]);
+        showAlert('💾 Record added successfully!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('create', newRow);
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to save record');
+                }
+            } catch (error) {
+                setCurrentData(prevData);
+                showAlert(`❌ Failed to save: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to save: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     const updateLaporanRow = async (row, rowIndex) => {
-        setIsLoading(true);
-        try {
-            const assignedIntern = internListData.find((intern) => intern.name === row.PIC);
-            const payload = { ...row, rowIndex, AssignedUserId: row.AssignedUserId || assignedIntern?.id || '' };
-            const result = await callSheetsAPI('update', payload);
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('💾 Record updated successfully!', 'success');
-                return true;
+        const prevData = currentData;
+        const assignedIntern = internListData.find((intern) => intern.name === row.PIC);
+        const payload = { ...row, rowIndex, AssignedUserId: row.AssignedUserId || assignedIntern?.id || '' };
+
+        setCurrentData((prev) => prev.map((item, idx) => 
+            (idx === rowIndex || (item.ID && row.ID && String(item.ID) === String(row.ID))) ? { ...item, ...payload } : item
+        ));
+        showAlert('💾 Record updated successfully!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('update', payload);
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to update record');
+                }
+            } catch (error) {
+                setCurrentData(prevData);
+                showAlert(`❌ Failed to update: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to update: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     const deleteLaporanRow = async (id, rowIndex) => {
-        setIsLoading(true);
-        try {
-            const result = await callSheetsAPI('delete', { id, rowIndex });
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('🗑️ Record deleted successfully!', 'success');
-                return true;
+        const prevData = currentData;
+
+        setCurrentData((prev) => prev.filter((item, idx) => (id ? String(item.ID) !== String(id) : idx !== rowIndex)));
+        showAlert('🗑️ Record deleted successfully!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('delete', { id, rowIndex });
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to delete record');
+                }
+            } catch (error) {
+                setCurrentData(prevData);
+                showAlert(`❌ Failed to delete: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to delete: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     const deleteBatchLaporanRows = async (rows) => {
-        setIsLoading(true);
-        try {
-            const result = await callSheetsAPI('delete_batch', { rows });
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert(`🗑️ Batch deleted ${rows.length} records!`, 'success');
-                return true;
+        const prevData = currentData;
+        const idsToDelete = new Set((rows || []).map(r => r.ID || r.id).filter(Boolean).map(String));
+        const indexesToDelete = new Set((rows || []).map(r => r.rowIndex).filter(i => i !== undefined));
+
+        setCurrentData(prev => prev.filter((item, idx) => !idsToDelete.has(String(item.ID)) && !indexesToDelete.has(idx)));
+        showAlert(`🗑️ Batch deleted ${rows.length} records!`, 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('delete_batch', { rows });
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed batch delete');
+                }
+            } catch (error) {
+                setCurrentData(prevData);
+                showAlert(`❌ Failed batch delete: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed batch delete: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     // CRUD: Calendar Tasks
     const saveCalendarTask = async (task) => {
-        setIsLoading(true);
-        try {
-            const assignedIntern = internListData.find((intern) => intern.name === (task.PIC || task.pic));
-            const payload = {
-                ...task,
-                AssignedUserId: task.AssignedUserId || task.assignedUserId || assignedIntern?.id || ''
-            };
-            const result = await callSheetsAPI('save_schedule', payload);
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('💾 Task scheduled successfully!', 'success');
-                return true;
+        const prevSchedule = scheduleData;
+        const assignedIntern = internListData.find((intern) => intern.name === (task.PIC || task.pic));
+        const payload = {
+            ...task,
+            AssignedUserId: task.AssignedUserId || task.assignedUserId || assignedIntern?.id || ''
+        };
+
+        const normalizedTask = {
+            ID: payload.ID || payload.id || `CT${Date.now()}`,
+            Date: payload.Date || payload.date || '',
+            PIC: payload.PIC || payload.pic || '',
+            Category: payload.Category || payload.category || '',
+            'Content Title': payload['Content Title'] || payload.contentTitle || '',
+            Status: Boolean(payload.Status ?? payload.status),
+            AssignedUserId: payload.AssignedUserId || ''
+        };
+
+        setScheduleData((prev) => {
+            const exists = prev.some(t => String(t.ID) === String(normalizedTask.ID));
+            return exists 
+                ? prev.map(t => String(t.ID) === String(normalizedTask.ID) ? { ...t, ...normalizedTask } : t)
+                : [normalizedTask, ...prev];
+        });
+        showAlert('💾 Task scheduled successfully!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('save_schedule', payload);
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to save task');
+                }
+            } catch (error) {
+                setScheduleData(prevSchedule);
+                showAlert(`❌ Failed to save task: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to save task: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     const listSessions = async () => {
@@ -849,189 +889,258 @@ export function DashboardProvider({ children }) {
     };
 
     const deleteCalendarTask = async (id) => {
-        setIsLoading(true);
-        try {
-            const result = await callSheetsAPI('delete_schedule', { ID: id });
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('🗑️ Task removed from schedule!', 'success');
-                return true;
+        const prevSchedule = scheduleData;
+
+        setScheduleData(prev => prev.filter(t => String(t.ID) !== String(id)));
+        showAlert('🗑️ Task removed from schedule!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('delete_schedule', { ID: id });
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to remove task');
+                }
+            } catch (error) {
+                setScheduleData(prevSchedule);
+                showAlert(`❌ Failed to remove task: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to remove task: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     // CRUD: Storyboard Scripts / Drafts
     const saveScriptDraft = async (draft) => {
-        setIsLoading(true);
-        try {
-            // Map to capitalized and alternative keys for Apps Script compatibility
-            const gasDraftPayload = {
-                Title: draft.title ?? draft.Title ?? '',
-                Status: draft.status ?? draft.Status ?? 'Idea',
-                Origin: draft.origin ?? draft.Origin ?? 'manual',
-                Category: draft.category ?? draft.Category ?? '',
-                Hook: draft.hook ?? draft.Hook ?? '',
-                Script: draft.script ?? draft.Script ?? '',
-                Hashtags: draft.hashtags ?? draft.Hashtags ?? '',
-                Hastags: draft.hashtags ?? draft.Hashtags ?? draft.Hastags ?? '',
-                References: draft.references ?? draft.References ?? '',
-                Caption: draft.caption ?? draft.Caption ?? ''
-            };
-            const result = await callSheetsAPI('save_script', gasDraftPayload);
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('💾 Storyboard script saved!', 'success');
-                return true;
+        const prevDrafts = draftsData;
+        const normalizedDraft = {
+            title: draft.title ?? draft.Title ?? '',
+            category: draft.category ?? draft.Category ?? 'Story Telling',
+            status: draft.status ?? draft.Status ?? 'Idea',
+            origin: draft.origin ?? draft.Origin ?? 'manual',
+            hook: draft.hook ?? draft.Hook ?? '',
+            script: draft.script ?? draft.Script ?? '',
+            hashtags: draft.hashtags ?? draft.Hashtags ?? '',
+            caption: draft.caption ?? draft.Caption ?? '',
+            references: draft.references ?? draft.References ?? ''
+        };
+
+        setDraftsData(prev => {
+            const exists = prev.some(d => (d.title || '').trim().toLowerCase() === (normalizedDraft.title || '').trim().toLowerCase());
+            return exists 
+                ? prev.map(d => (d.title || '').trim().toLowerCase() === (normalizedDraft.title || '').trim().toLowerCase() ? normalizedDraft : d)
+                : [normalizedDraft, ...prev];
+        });
+        showAlert('💾 Storyboard script saved!', 'success');
+
+        (async () => {
+            try {
+                const gasDraftPayload = {
+                    Title: normalizedDraft.title,
+                    Status: normalizedDraft.status,
+                    Origin: normalizedDraft.origin,
+                    Category: normalizedDraft.category,
+                    Hook: normalizedDraft.hook,
+                    Script: normalizedDraft.script,
+                    Hashtags: normalizedDraft.hashtags,
+                    Hastags: normalizedDraft.hashtags,
+                    References: normalizedDraft.references,
+                    Caption: normalizedDraft.caption
+                };
+                const result = await callSheetsAPI('save_script', gasDraftPayload);
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to save script');
+                }
+            } catch (error) {
+                setDraftsData(prevDrafts);
+                showAlert(`❌ Failed to save script: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to save script: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     const deleteScriptDraft = async (title) => {
-        setIsLoading(true);
-        try {
-            const result = await callSheetsAPI('delete_script', { title });
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('🗑️ Script deleted successfully!', 'success');
-                return true;
+        const prevDrafts = draftsData;
+
+        setDraftsData(prev => prev.filter(d => (d.title || '').trim().toLowerCase() !== (title || '').trim().toLowerCase()));
+        showAlert('🗑️ Script deleted successfully!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('delete_script', { title });
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to delete script');
+                }
+            } catch (error) {
+                setDraftsData(prevDrafts);
+                showAlert(`❌ Failed to delete script: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to delete script: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     // CRUD: Meeting Memos
     const saveMeetingMemo = async (memo) => {
-        setIsLoading(true);
-        try {
-            const result = await callSheetsAPI('save_meeting', memo);
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('💾 Meeting memo saved successfully!', 'success');
-                return true;
+        const prevMeetings = meetingsData;
+        const normalizedMemo = {
+            ...memo,
+            id: memo.id || memo.ID || `MTG-${Date.now()}`
+        };
+
+        setMeetingsData(prev => {
+            const exists = prev.some(m => String(m.id || m.ID) === String(normalizedMemo.id));
+            return exists
+                ? prev.map(m => String(m.id || m.ID) === String(normalizedMemo.id) ? { ...m, ...normalizedMemo } : m)
+                : [normalizedMemo, ...prev];
+        });
+        showAlert('💾 Meeting memo saved successfully!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('save_meeting', memo);
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to save meeting memo');
+                }
+            } catch (error) {
+                setMeetingsData(prevMeetings);
+                showAlert(`❌ Failed to save memo: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to save memo: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     const deleteMeetingMemo = async (id) => {
-        setIsLoading(true);
-        try {
-            const result = await callSheetsAPI('delete_meeting', { id });
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('🗑️ Meeting memo deleted!', 'success');
-                return true;
+        const prevMeetings = meetingsData;
+
+        setMeetingsData(prev => prev.filter(m => String(m.id || m.ID) !== String(id)));
+        showAlert('🗑️ Meeting memo deleted!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('delete_meeting', { id });
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to delete meeting memo');
+                }
+            } catch (error) {
+                setMeetingsData(prevMeetings);
+                showAlert(`❌ Failed to delete memo: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to delete memo: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     const saveNotification = async (notif) => {
-        setIsLoading(true);
-        try {
-            const result = await callSheetsAPI('save_notification', notif);
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('📢 Notification broadcasted successfully!', 'success');
-                return true;
+        const prevNotifications = notificationsData;
+        const newNotif = {
+            id: notif.id || `NOTIF-${Date.now()}`,
+            ...notif,
+            createdAt: notif.createdAt || new Date().toISOString()
+        };
+
+        setNotificationsData(prev => [newNotif, ...prev]);
+        showAlert('📢 Notification broadcasted successfully!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('save_notification', notif);
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to broadcast notification');
+                }
+            } catch (error) {
+                setNotificationsData(prevNotifications);
+                showAlert(`❌ Failed to send notification: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to send notification: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     const deleteNotification = async (id) => {
-        setIsLoading(true);
-        try {
-            const result = await callSheetsAPI('delete_notification', { id });
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('🗑️ Notification removed!', 'success');
-                return true;
+        const prevNotifications = notificationsData;
+
+        setNotificationsData(prev => prev.filter(n => String(n.id) !== String(id)));
+        showAlert('🗑️ Notification removed!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('delete_notification', { id });
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to delete notification');
+                }
+            } catch (error) {
+                setNotificationsData(prevNotifications);
+                showAlert(`❌ Failed to delete notification: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to delete notification: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     // CRUD: Google Analytics
     const saveGaSummary = async (summary) => {
-        setIsLoading(true);
-        try {
-            const result = await callSheetsAPI('save_ga_summary', summary);
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('💾 Google Analytics summary updated!', 'success');
-                return true;
+        const prevSummary = gaSummaryData;
+        setGaSummaryData(summary);
+        showAlert('💾 Google Analytics summary updated!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('save_ga_summary', summary);
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to update summary');
+                }
+            } catch (error) {
+                setGaSummaryData(prevSummary);
+                showAlert(`❌ Failed to update summary: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to update summary: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     const saveGaItem = async (item) => {
-        setIsLoading(true);
-        try {
-            const result = await callSheetsAPI('save_ga_item', item);
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('💾 Google Analytics item saved!', 'success');
-                return true;
+        const prevItems = gaItemsData;
+        setGaItemsData(prev => {
+            const exists = prev.some(i => String(i.id) === String(item.id));
+            return exists ? prev.map(i => String(i.id) === String(item.id) ? item : i) : [item, ...prev];
+        });
+        showAlert('💾 Google Analytics item saved!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('save_ga_item', item);
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to save item');
+                }
+            } catch (error) {
+                setGaItemsData(prevItems);
+                showAlert(`❌ Failed to save item: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to save item: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     const deleteGaItem = async (id) => {
-        setIsLoading(true);
-        try {
-            const result = await callSheetsAPI('delete_ga_item', { id });
-            if (result && result.success) {
-                await loadFromGoogleSheets(true);
-                showAlert('🗑️ Google Analytics item deleted!', 'success');
-                return true;
+        const prevItems = gaItemsData;
+        setGaItemsData(prev => prev.filter(i => String(i.id) !== String(id)));
+        showAlert('🗑️ Google Analytics item deleted!', 'success');
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('delete_ga_item', { id });
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to delete item');
+                }
+            } catch (error) {
+                setGaItemsData(prevItems);
+                showAlert(`❌ Failed to delete item: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showAlert(`❌ Failed to delete item: ${error.message}`, 'error');
-        } finally {
-            setIsLoading(false);
-        }
-        return false;
+        })();
+
+        return true;
     };
 
     // Settings CRUD
