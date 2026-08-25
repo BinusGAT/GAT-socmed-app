@@ -142,7 +142,9 @@ describe('API authorization policy', () => {
       },
     };
 
-    await expect(validateAuth(db, 'expired', [ROLES.ADMIN])).resolves.toEqual({ valid: false, role: null });
+    const result = await validateAuth(db, 'expired', [ROLES.ADMIN]);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe('expired_token');
     expect(calls[1].sql).toContain('DELETE FROM sessions');
   });
 
@@ -153,7 +155,10 @@ describe('API authorization policy', () => {
       }),
     };
 
-    await expect(validateAuth(db, 'viewer', [ROLES.ADMIN])).resolves.toEqual({ valid: false, role: null });
+    const result = await validateAuth(db, 'viewer', [ROLES.ADMIN]);
+    expect(result.valid).toBe(false);
+    expect(result.authenticated).toBe(true);
+    expect(result.reason).toBe('forbidden');
   });
 
   it('uses a server-only, strict session cookie', () => {

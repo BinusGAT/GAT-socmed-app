@@ -554,6 +554,13 @@ export async function POST(request) {
 
     const auth = await validateAuth(db, token, allowedRoles);
     if (!auth.valid) {
+      if (auth.authenticated && auth.reason === 'forbidden') {
+        await writeAudit(db, auth, 'forbidden_access_attempt', 'action', action, { attemptedAction: action, role: auth.role });
+        return NextResponse.json(
+          { success: false, error: `Forbidden: Role '${auth.role}' is not authorized to perform action '${action}'` },
+          { status: 403 }
+        );
+      }
       return NextResponse.json(
         { success: false, error: 'Unauthorized: Access token required or invalid' },
         { status: 401 }
@@ -1397,6 +1404,7 @@ export async function POST(request) {
           sql: "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)",
           args: [key, value]
         });
+        await writeAudit(db, auth, 'saved', 'setting', key, { value });
         result = { success: true, message: 'Setting saved successfully' };
         break;
       }
@@ -1410,6 +1418,7 @@ export async function POST(request) {
             args: [k, String(v || '')]
           }));
           await db.batch(statements);
+          await writeAudit(db, auth, 'saved', 'settings_batch', 'all', { count: entries.length });
         }
         result = { success: true, message: 'Batch settings saved successfully' };
         break;
@@ -1424,6 +1433,7 @@ export async function POST(request) {
           sql: "INSERT OR REPLACE INTO platforms (id, name, logo_url, color_class) VALUES (?, ?, ?, ?)",
           args: [id, name, logo_url, color_class]
         });
+        await writeAudit(db, auth, 'saved', 'platform', id, { name });
         result = { success: true, message: 'Platform saved successfully' };
         break;
       }
@@ -1434,6 +1444,7 @@ export async function POST(request) {
           sql: "DELETE FROM platforms WHERE id = ?",
           args: [id]
         });
+        await writeAudit(db, auth, 'deleted', 'platform', id, {});
         result = { success: true, message: 'Platform deleted successfully' };
         break;
       }
@@ -1445,6 +1456,7 @@ export async function POST(request) {
           sql: "INSERT OR REPLACE INTO categories (name, color_class) VALUES (?, ?)",
           args: [name, color_class]
         });
+        await writeAudit(db, auth, 'saved', 'category', name, { color_class });
         result = { success: true, message: 'Category saved successfully' };
         break;
       }
@@ -1455,6 +1467,7 @@ export async function POST(request) {
           sql: "DELETE FROM categories WHERE name = ?",
           args: [name]
         });
+        await writeAudit(db, auth, 'deleted', 'category', name, {});
         result = { success: true, message: 'Category deleted successfully' };
         break;
       }
@@ -1485,6 +1498,7 @@ export async function POST(request) {
             args: [nama, stream]
           });
         }
+        await writeAudit(db, auth, oldNama ? 'updated' : 'created', 'member', nama, { stream });
         result = { success: true, message: 'Member saved successfully' };
         break;
       }
@@ -1503,6 +1517,7 @@ export async function POST(request) {
           sql: "UPDATE schedule SET PIC = '' WHERE PIC = ?",
           args: [nama]
         });
+        await writeAudit(db, auth, 'deleted', 'member', nama, {});
         result = { success: true, message: 'Member deleted successfully' };
         break;
       }
