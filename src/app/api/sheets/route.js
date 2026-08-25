@@ -1076,20 +1076,34 @@ export async function POST(request) {
           });
           const oldTitle = oldRow.rows[0]?.["Content Title"] || '';
           previousAssignedUserId = String(oldRow.rows[0]?.AssignedUserId || '');
-
           if (auth.role === 'Creator') {
             const existing = oldRow.rows[0];
-            const isAssigned = existing && previousAssignedUserId && previousAssignedUserId === String(auth.userId || '');
-            const changesAssignment = assignedUserId !== previousAssignedUserId || pic !== String(existing?.PIC || '') || category !== String(existing?.Category || '');
-            if (!isAssigned || changesAssignment) {
+            const existingPic = String(existing?.PIC || '').trim().toLowerCase();
+            const authName = String(auth.name || '').trim().toLowerCase();
+            const isAssigned = existing && (
+              (previousAssignedUserId && previousAssignedUserId === String(auth.userId || '')) ||
+              (existingPic && authName && (
+                existingPic === authName ||
+                existingPic.startsWith(authName) ||
+                authName.startsWith(existingPic) ||
+                existingPic.split(/\s+/)[0] === authName.split(/\s+/)[0]
+              ))
+            );
+            if (!isAssigned) {
               return NextResponse.json({ success: false, error: 'Forbidden: creators may only update content details for their assigned tasks' }, { status: 403 });
             }
-          }
 
-          await db.execute({
-            sql: `UPDATE laporan SET Date = ?, "Content Title" = ?, PIC = ?, Category = ?, AssignedUserId = ? WHERE ID = ?`,
-            args: [dateStr, title, pic, category, assignedUserId, id]
-          });
+            // Creators are strictly scoped to updating Content Title only
+            await db.execute({
+              sql: `UPDATE laporan SET "Content Title" = ? WHERE ID = ?`,
+              args: [title, id]
+            });
+          } else {
+            await db.execute({
+              sql: `UPDATE laporan SET Date = ?, "Content Title" = ?, PIC = ?, Category = ?, AssignedUserId = ? WHERE ID = ?`,
+              args: [dateStr, title, pic, category, assignedUserId, id]
+            });
+          }
           await syncGroupById(id);
 
           if (title) {

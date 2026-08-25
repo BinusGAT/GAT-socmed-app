@@ -634,8 +634,21 @@ export default function CalendarTab({ onOpenExport }) {
                     {/* Task Scheduler Form (Right sidebar bottom) */}
                     {showForm && (
                         <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
-                            <h5 className="text-body-sm font-bold text-on-surface uppercase tracking-wider pb-2 border-b border-outline-variant/20">
-                                {editingTaskId ? 'Edit schedule' : 'Schedule task'}
+                            <h5 className="text-body-sm font-bold text-on-surface uppercase tracking-wider pb-2 border-b border-outline-variant/20 flex items-center justify-between">
+                                <span>{editingTaskId ? (userRole === 'Creator' ? 'Edit Content Title' : 'Edit schedule') : 'Schedule task'}</span>
+                                {userRole === 'Creator' && (
+                                    <div className="relative group inline-flex items-center">
+                                        <span 
+                                            className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold cursor-help transition-colors group-hover:bg-primary group-hover:text-on-primary select-none" 
+                                            aria-label="Creator mode info"
+                                        >
+                                            !
+                                        </span>
+                                        <div className="absolute right-0 bottom-full mb-1.5 hidden group-hover:block z-50 w-64 p-2.5 bg-surface-container-highest border border-outline-variant/40 rounded-lg shadow-xl text-[11px] font-normal text-on-surface normal-case leading-relaxed pointer-events-none animate-fade-in">
+                                            Creator mode: PIC &amp; Category are managed by Admin. You can edit the <strong>Content Title</strong>.
+                                        </div>
+                                    </div>
+                                )}
                             </h5>
                             <form onSubmit={handleFormSubmit} className="space-y-4" autoComplete="off">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

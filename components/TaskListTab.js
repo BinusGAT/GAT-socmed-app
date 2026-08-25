@@ -508,7 +508,20 @@ export default function TaskListTab({ onOpenDatePicker }) {
                         <div className="px-5 py-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
                             <h2 id="task-editor-title" className="text-body-md font-bold text-on-surface flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary text-[22px]">assignment</span>
-                                {modalTaskId ? `Update Scheduled Task (${modalTaskId})` : 'Add Scheduled Task'}
+                                <span>{modalTaskId ? (userRole === 'Creator' ? `Edit Content Title (${modalTaskId})` : `Update Scheduled Task (${modalTaskId})`) : 'Add Scheduled Task'}</span>
+                                {userRole === 'Creator' && (
+                                    <div className="relative group inline-flex items-center">
+                                        <span 
+                                            className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold cursor-help transition-colors group-hover:bg-primary group-hover:text-on-primary select-none" 
+                                            aria-label="Creator mode info"
+                                        >
+                                            !
+                                        </span>
+                                        <div className="absolute left-0 top-full mt-1.5 hidden group-hover:block z-50 w-64 p-2.5 bg-surface-container-highest border border-outline-variant/40 rounded-lg shadow-xl text-[11px] font-normal text-on-surface normal-case leading-relaxed pointer-events-none animate-fade-in">
+                                            Creator mode: Date, PIC, and Category are managed by Admin. You can edit the <strong>Content Title</strong>.
+                                        </div>
+                                    </div>
+                                )}
                             </h2>
                             <button type="button" aria-label="Close task editor" className="text-on-surface-variant hover:text-on-surface p-1 cursor-pointer" onClick={closeEditor}>
                                 <span className="material-symbols-outlined text-[20px]">close</span>
@@ -527,26 +540,29 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                         placeholder="Enter title (optional)"
                                         value={modalTitle}
                                         onChange={(e) => setModalTitle(e.target.value)}
+                                        autoFocus={userRole === 'Creator'}
                                     />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-body-sm font-semibold text-on-surface-variant">Scheduled Date <span className="text-error">*</span></label>
                                     <input 
                                         type="text" 
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer" 
+                                        className={`w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary ${userRole === 'Creator' ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`} 
                                         placeholder="YYYY-MM-DD" 
                                         readOnly
                                         required
+                                        disabled={userRole === 'Creator'}
                                         value={modalDate}
-                                        onClick={handleModalDateClick}
+                                        onClick={userRole === 'Creator' ? undefined : handleModalDateClick}
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <label className="text-body-sm font-semibold text-on-surface-variant">PIC <span className="text-error">*</span></label>
                                         <select 
-                                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-70 disabled:cursor-not-allowed"
                                             required
+                                            disabled={userRole === 'Creator'}
                                             value={modalPic}
                                             onChange={(e) => { setModalPic(e.target.value); setFormError(''); }}
                                         >
@@ -559,8 +575,9 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                     <div className="space-y-1">
                                         <label className="text-body-sm font-semibold text-on-surface-variant">Category <span className="text-error">*</span></label>
                                         <select 
-                                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-70 disabled:cursor-not-allowed"
                                             required
+                                            disabled={userRole === 'Creator'}
                                             value={modalCategory}
                                             onChange={(e) => setModalCategory(e.target.value)}
                                         >

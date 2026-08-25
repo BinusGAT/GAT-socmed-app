@@ -22,4 +22,12 @@ describe('role-specific experience', () => {
     expect(isTaskAssignedToUser({ AssignedUserId: 'creator-2', PIC: 'Alya' }, 'creator-1', 'Alya')).toBe(false);
     expect(isTaskAssignedToUser({ PIC: 'Alya Putri' }, 'creator-1', 'Alya')).toBe(true);
   });
+
+  it('restricts creators from editing unassigned tasks or administrative attributes', () => {
+    const assignedTask = { id: 'CT1', AssignedUserId: 'creator-1', PIC: 'Jane Doe', Category: 'News', contentTitle: 'Draft Title' };
+    const unassignedTask = { id: 'CT2', AssignedUserId: 'creator-2', PIC: 'Alex Morgan', Category: 'Story Telling', contentTitle: 'Other Title' };
+
+    expect(isTaskAssignedToUser(assignedTask, 'creator-1', 'Jane')).toBe(true);
+    expect(isTaskAssignedToUser(unassignedTask, 'creator-1', 'Jane')).toBe(false);
+  });
 });
