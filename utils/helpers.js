@@ -156,6 +156,13 @@ export function normalizePicName(picName) {
         .join(' ');
 }
 
+export function getPicDisplayName(picName) {
+    const normalized = normalizePicName(picName);
+    return normalized.split(/\s+/)[0] || '';
+}
+
+export const getPicShortName = getPicDisplayName;
+
 export function resolveMemberName(pic, memberList) {
     if (!pic) return '';
     if (!memberList || memberList.length === 0) return pic;
@@ -370,7 +377,7 @@ export function aggregateAllChartsData(activeData) {
 }
 
 export function getPicBadgeClasses(picName) {
-    const name = normalizePicName(picName).toLowerCase();
+    const name = (getPicDisplayName(picName) || normalizePicName(picName)).toLowerCase();
     if (!name) return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
 
     let hash = 0;

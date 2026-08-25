@@ -14,6 +14,7 @@ import { isTaskAssignedToUser } from '../utils/rolePermissions';
 import { useDialogFocus } from '../utils/useDialogFocus';
 import { 
     normalizePicName, 
+    getPicDisplayName,
     getTaskCalculatedStatus,
     getLocalDateInputValue,
     parseDate,
@@ -371,7 +372,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                         >
                             <option value="">All PICs</option>
                             {memberListData.map(m => (
-                                <option key={m.NAMA} value={m.NAMA}>{m.NAMA}</option>
+                                <option key={m.NAMA} value={m.NAMA}>{getPicDisplayName(m.NAMA)}</option>
                             ))}
                         </select>
                     </div>
@@ -451,7 +452,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                             </td>
                                             <td className="px-5 py-3.5">
                                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getPicBadgeClasses(task.pic)}`}>
-                                                    {normalizePicName(task.pic)}
+                                                    {getPicDisplayName(task.pic)}
                                                 </span>
                                             </td>
                                             <td className="px-5 py-3.5">
@@ -551,7 +552,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                         >
                                             <option value="" disabled hidden>Select PIC</option>
                                             {memberListData.map(m => (
-                                                <option key={m.NAMA} value={m.NAMA}>{m.NAMA}</option>
+                                                <option key={m.NAMA} value={m.NAMA}>{getPicDisplayName(m.NAMA)}</option>
                                             ))}
                                         </select>
                                     </div>

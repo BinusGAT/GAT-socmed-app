@@ -1,4 +1,5 @@
 'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -6,6 +7,8 @@ import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import {
     normalizePicName, 
+    getPicDisplayName,
+    getPicShortName,
     getTaskCalculatedStatus,
     getLocalDateInputValue,
     parseDate,
@@ -126,7 +129,7 @@ export default function CalendarTab({ onOpenExport }) {
             const uniqueRenderTasks = [];
             dayTasks.forEach(task => {
                 const isDup = uniqueRenderTasks.some(t => 
-                    normalizePicName(t.pic) === normalizePicName(task.pic) && 
+                    getPicDisplayName(t.pic) === getPicDisplayName(task.pic) && 
                     t.category === task.category &&
                     t.isMeeting === task.isMeeting
                 );
@@ -428,7 +431,7 @@ export default function CalendarTab({ onOpenExport }) {
                             const uniqueRenderTasks = [];
                             dayTasks.forEach(task => {
                                 const isDup = uniqueRenderTasks.some(t => 
-                                    normalizePicName(t.pic) === normalizePicName(task.pic) && 
+                                    getPicDisplayName(t.pic) === getPicDisplayName(task.pic) && 
                                     t.category === task.category &&
                                     t.isMeeting === task.isMeeting
                                 );
@@ -480,7 +483,7 @@ export default function CalendarTab({ onOpenExport }) {
                                                         <span className="material-symbols-outlined text-[10px]">handshake</span> Meeting
                                                     </span>
                                                 ) : (
-                                                    <span className="calendar-day-task-pill">{normalizePicName(task.pic)}: {task.category}</span>
+                                                    <span className="calendar-day-task-pill">{getPicDisplayName(task.pic)}: {task.category}</span>
                                                 )}
                                             </div>
                                         ))}
@@ -561,7 +564,7 @@ export default function CalendarTab({ onOpenExport }) {
                                                     ) : (
                                                         <>
                                                             <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${getPicMobileBadgeClass(task.pic)}`}>
-                                                                {normalizePicName(task.pic)}
+                                                                {getPicDisplayName(task.pic)}
                                                             </span>
                                                             <span className="font-bold text-on-surface">{task.category}</span>
                                                         </>
@@ -634,23 +637,22 @@ export default function CalendarTab({ onOpenExport }) {
                             <h5 className="text-body-sm font-bold text-on-surface uppercase tracking-wider pb-2 border-b border-outline-variant/20">
                                 {editingTaskId ? 'Edit schedule' : 'Schedule task'}
                             </h5>
-
                             <form onSubmit={handleFormSubmit} className="space-y-4" autoComplete="off">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="space-y-1">
                                         <label className="text-body-sm font-semibold text-on-surface-variant">PIC</label>
-                                         <select 
-                                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-70 disabled:cursor-not-allowed"
-                                             value={formPic}
-                                             onChange={(e) => setFormPic(e.target.value)}
-                                             required
-                                             disabled={userRole === 'Creator'}
-                                         >
-                                             <option value="" disabled hidden>Select PIC</option>
-                                             {memberListData.map(m => (
-                                                 <option key={m.NAMA} value={m.NAMA}>{m.NAMA}</option>
-                                             ))}
-                                         </select>
+                                        <select 
+                                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-70 disabled:cursor-not-allowed"
+                                            value={formPic}
+                                            onChange={(e) => setFormPic(e.target.value)}
+                                            required
+                                            disabled={userRole === 'Creator'}
+                                        >
+                                            <option value="" disabled hidden>Select PIC</option>
+                                            {memberListData.map(m => (
+                                                <option key={m.NAMA} value={m.NAMA}>{getPicDisplayName(m.NAMA)}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-body-sm font-semibold text-on-surface-variant">Category</label>

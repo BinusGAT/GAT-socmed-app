@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from './DashboardContext';
+import { getPicDisplayName } from '../utils/helpers';
 export { default as DeleteConfirmModal } from './modals/DeleteConfirmModal';
 export { default as LinkModal } from './modals/LinkModal';
 
@@ -837,7 +838,7 @@ export function CalendarExportModal({ isOpen, onClose }) {
                 clone.querySelectorAll('.calendar-day-task-item').forEach(el => {
                     const isMeeting = el.getAttribute('data-is-meeting') === 'true';
                     const pic = el.getAttribute('data-pic');
-                    if (!isMeeting && pic !== selectedPic) {
+                    if (!isMeeting && pic !== selectedPic && getPicDisplayName(pic) !== getPicDisplayName(selectedPic)) {
                         el.remove();
                     }
                 });
@@ -1007,7 +1008,7 @@ export function CalendarExportModal({ isOpen, onClose }) {
                         >
                             <option value="All">All PICs</option>
                             {memberListData.map(m => (
-                                <option key={m.NAMA} value={m.NAMA}>{m.NAMA}</option>
+                                <option key={m.NAMA} value={m.NAMA}>{getPicDisplayName(m.NAMA)}</option>
                             ))}
                         </select>
                     </div>

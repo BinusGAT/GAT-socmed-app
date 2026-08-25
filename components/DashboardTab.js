@@ -6,6 +6,7 @@ import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import {
     normalizePicName,
+    getPicDisplayName,
     formatNumber,
     getLocalDateInputValue,
     parseDate,
@@ -24,7 +25,6 @@ const parseCleanInt = (val) => {
     return parseInt(cleaned, 10) || 0;
 };
 
-const getPicDisplayName = (pic) => normalizePicName(pic).split(/\s+/)[0] || '';
 const TABLE_PAGE_SIZE = 100;
 
 export default function DashboardTab({ onOpenDatePicker, chartReady = false, onChartNeeded }) {

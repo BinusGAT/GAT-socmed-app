@@ -12,6 +12,7 @@ import { getVisiblePostLibraryCategories } from '../utils/postLibraryCategories'
 import { isTaskAssignedToUser } from '../utils/rolePermissions';
 import {
     normalizePicName,
+    getPicDisplayName,
     parseDate,
     getPicBadgeClasses
 } from '../utils/helpers';
@@ -362,7 +363,7 @@ export default function ContentHubTab() {
                                 >
                                     <option value="">All PICs</option>
                                     {memberListData.map(m => (
-                                        <option key={m.NAMA} value={m.NAMA}>{m.NAMA}</option>
+                                        <option key={m.NAMA} value={m.NAMA}>{getPicDisplayName(m.NAMA)}</option>
                                     ))}
                                 </select>
                             </div>
