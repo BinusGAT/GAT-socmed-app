@@ -116,6 +116,7 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-2.5 text-body-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
                             placeholder="user@domain.com"
                             required
+                            autoFocus
                             autoComplete="username"
                             value={email}
                             onChange={(e) => {

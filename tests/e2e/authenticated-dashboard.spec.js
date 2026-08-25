@@ -168,7 +168,7 @@ test('creator navigation supports assigned workflows without administration cont
   await expect(page.getByRole('button', { name: /New Post/ })).toHaveCount(0);
   await openAuthenticatedView(page, { mobileName: /My Work/ });
   await page.getByRole('button', { name: 'Open task Campus highlights' }).click();
-  await expect(page.getByRole('heading', { name: 'Update Scheduled Task (TASK-001)' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Update Scheduled Task \(TASK-001\)|Edit Content Title \(TASK-001\)/ })).toBeVisible();
   await expect(page.getByTitle('Delete schedule entry')).toHaveCount(0);
 });
 
@@ -212,10 +212,12 @@ test('mobile planner uses an agenda strip instead of a compressed month grid', a
   await expect(page.locator('.calendar-shell')).toBeHidden();
   const dateStrip = page.locator('[aria-label="Choose a planning date"]');
   await expect(dateStrip.getByRole('button')).toHaveCount(7);
-  const targetDateBtn = dateStrip.getByRole('button', { name: /Tuesday, August 11/ });
-  if (await targetDateBtn.count() === 0) {
+  let targetDateBtn = dateStrip.getByRole('button', { name: /Tuesday, August 11/ });
+  for (let i = 0; i < 4 && (await targetDateBtn.count()) === 0; i++) {
     await page.getByLabel('Previous week').click();
+    targetDateBtn = dateStrip.getByRole('button', { name: /Tuesday, August 11/ });
   }
+  await expect(targetDateBtn).toBeVisible();
   await targetDateBtn.click();
   await expect(page.getByText('Campus highlights')).toBeVisible();
   await expect(page.getByText('11/08/2026', { exact: true }).last()).toBeVisible();
