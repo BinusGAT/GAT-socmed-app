@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from './DashboardContext';
-import { parseDate } from '../utils/helpers';
+import { parseDate, getPicDisplayName } from '../utils/helpers';
 
 export default function Topbar({
     openUnlockModal,
@@ -115,7 +115,7 @@ export default function Topbar({
                 list.push({
                     id: task.ID,
                     icon: 'task_alt',
-                    text: `Upload today: "${task['Content Title'] || 'Untitled'}" [${task.Platform || 'All'}] by ${task.PIC || 'Team'}`
+                    text: `Upload today: "${task['Content Title'] || 'Untitled'}" [${task.Platform || 'All'}] by ${getPicDisplayName(task.PIC) || 'Team'}`
                 });
             });
         }

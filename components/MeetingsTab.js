@@ -11,6 +11,7 @@ import { useDeferredDelete } from '../utils/useDeferredDelete';
 import { useUnsavedChanges } from '../utils/useUnsavedChanges';
 import { 
     normalizePicName, 
+    getPicDisplayName,
     getLocalDateInputValue,
     parseDate,
     getPicBadgeClasses
@@ -778,7 +779,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                         ) : (
                                             formAttendees.map(att => (
                                                 <span key={att} className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getPicBadgeClasses(att)}`}>
-                                                    {normalizePicName(att)}
+                                                    {getPicDisplayName(att)}
                                                 </span>
                                             ))
                                         )}
@@ -792,7 +793,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                         ) : (
                                             absentees.map(name => (
                                                 <span key={name} className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-surface-container border border-outline-variant/35 text-on-surface-variant/60">
-                                                    {normalizePicName(name)}
+                                                    {getPicDisplayName(name)}
                                                 </span>
                                             ))
                                         )}

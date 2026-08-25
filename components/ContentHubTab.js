@@ -459,7 +459,7 @@ export default function ContentHubTab() {
                                                 </span>
                                                 {sched && (
                                                     <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold uppercase ${getPicBadgeClasses(sched.pic)}`}>
-                                                        {normalizePicName(sched.pic)}
+                                                        {getPicDisplayName(sched.pic)}
                                                     </span>
                                                 )}
                                             </div>
