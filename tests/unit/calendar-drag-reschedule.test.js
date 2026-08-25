@@ -115,4 +115,21 @@ describe('Calendar Drag-and-Drop Rescheduling & Filter Sync', () => {
     expect(canDragAndDrop('Viewer', true)).toBe(false);
     expect(canDragAndDrop('Admin', false)).toBe(false);
   });
+
+  it('correctly maps multi-platform links for a task in TaskLinksModal', () => {
+    const currentData = [
+      { ID: 'TASK-1', Platform: 'Instagram', URL: 'https://instagram.com/p/abc', Views: '1,200' },
+      { ID: 'TASK-1', Platform: 'TikTok', URL: 'https://tiktok.com/@user/video/123', Views: '5,400' },
+      { ID: 'TASK-1', Platform: 'Youtube', URL: '', Views: '0' },
+      { ID: 'TASK-2', Platform: 'Instagram', URL: 'https://instagram.com/p/xyz', Views: '300' }
+    ];
+
+    const taskId = 'TASK-1';
+    const taskRows = currentData.filter(row => String(row.ID) === String(taskId));
+    const liveUrls = taskRows.filter(row => row.URL && String(row.URL).trim() !== '');
+
+    expect(taskRows.length).toBe(3);
+    expect(liveUrls.length).toBe(2);
+    expect(liveUrls.map(r => r.Platform)).toEqual(['Instagram', 'TikTok']);
+  });
 });

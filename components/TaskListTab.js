@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
-import { DeleteConfirmModal } from './Modals';
+import { DeleteConfirmModal, TaskLinksModal } from './Modals';
 import SortableTableHeader from './SortableTableHeader';
 import EmptyState from './EmptyState';
 import DiscardChangesModal from './DiscardChangesModal';
@@ -62,6 +62,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
     // Delete confirmation state
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState(null);
+    const [linksModalTask, setLinksModalTask] = useState(null);
     const { pendingDeletion, scheduleDelete, undoDelete } = useDeferredDelete();
 
     // Sort states
@@ -483,9 +484,15 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                                 <div className="flex items-center gap-1.5 flex-wrap">
                                                     {statusPill}
                                                     {task.status && (
-                                                        <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-500/15 text-primary border border-primary/20 flex items-center gap-0.5">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setLinksModalTask(task)}
+                                                            className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-500/15 hover:bg-emerald-500/25 text-primary border border-primary/20 flex items-center gap-1 transition-colors cursor-pointer shadow-2xs group"
+                                                            title="View live platform URLs"
+                                                        >
                                                             <span className="material-symbols-outlined text-[12px]">task_alt</span> Uploaded
-                                                        </span>
+                                                            <span className="material-symbols-outlined text-[11px] opacity-70 group-hover:opacity-100">open_in_new</span>
+                                                        </button>
                                                     )}
                                                 </div>
                                             </td>
@@ -633,6 +640,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                 message={`Are you sure you want to remove task ID: ${taskToDelete}?`}
             />
             <DiscardChangesModal isOpen={isDiscardOpen} onKeepEditing={() => setIsDiscardOpen(false)} onDiscard={discardAndClose} />
+            <TaskLinksModal isOpen={!!linksModalTask} onClose={() => setLinksModalTask(null)} task={linksModalTask} />
             <UndoDeleteToast deletion={pendingDeletion} onUndo={() => { if (undoDelete()) showAlert('Task deletion canceled.', 'info'); }} />
         </div>
     );

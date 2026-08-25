@@ -6,6 +6,7 @@ import { useDashboard } from './DashboardContext';
 import { getPicDisplayName } from '../utils/helpers';
 export { default as DeleteConfirmModal } from './modals/DeleteConfirmModal';
 export { default as LinkModal } from './modals/LinkModal';
+export { default as TaskLinksModal } from './modals/TaskLinksModal';
 
 // ----------------------------------------------------
 // 1. UNLOCK MODAL

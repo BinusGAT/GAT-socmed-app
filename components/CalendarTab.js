@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
+import { TaskLinksModal } from './Modals';
 import {
     normalizePicName, 
     getPicDisplayName,
@@ -63,10 +64,11 @@ export default function CalendarTab({ onOpenExport }) {
     const [formTitle, setFormTitle] = useState('');
     const [taskToDelete, setTaskToDelete] = useState(null);
 
-    // Drag and Drop & Popover States
+    // Drag and Drop, Popover & Link Modal States
     const [dragOverDate, setDragOverDate] = useState(null);
     const [draggingTaskId, setDraggingTaskId] = useState(null);
     const [activePopoverDate, setActivePopoverDate] = useState(null);
+    const [linksModalTask, setLinksModalTask] = useState(null);
 
     // Get combined calendar tasks (schedules + meetings)
     const getCombinedTasks = () => {
@@ -711,9 +713,14 @@ export default function CalendarTab({ onOpenExport }) {
                                                             {task.calculatedStatus}
                                                         </span>
                                                         {task.status && (
-                                                            <span className="px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase bg-emerald-500/15 text-primary border border-primary/20">
-                                                                Uploaded
-                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setLinksModalTask(task)}
+                                                                className="px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase bg-emerald-500/15 hover:bg-emerald-500/25 text-primary border border-primary/20 flex items-center gap-0.5 transition-colors cursor-pointer"
+                                                                title="View live platform URLs"
+                                                            >
+                                                                Uploaded <span className="material-symbols-outlined text-[10px]">open_in_new</span>
+                                                            </button>
                                                         )}
                                                     </div>
                                                 )}
@@ -974,6 +981,13 @@ export default function CalendarTab({ onOpenExport }) {
                 </div>,
                 document.body
             )}
+
+            {/* Task Live Platform Links & Status Modal */}
+            <TaskLinksModal 
+                isOpen={!!linksModalTask} 
+                onClose={() => setLinksModalTask(null)} 
+                task={linksModalTask} 
+            />
         </div>
     );
 }
