@@ -523,7 +523,8 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
         let maxKpiScore = calculated.kpiScore;
         currentData.forEach(row => {
             if (normalizePlatformName(row.Platform) !== normalizePlatformName(formPlatform) &&
-                String(row['Content Title']).trim().toLowerCase() === formTitle.trim().toLowerCase()) {
+                ((row.ID && rowId && String(row.ID) === String(rowId)) ||
+                 String(row['Content Title']).trim().toLowerCase() === formTitle.trim().toLowerCase())) {
                 const otherKpi = parseCleanInt(row['KPI Score']);
                 if (otherKpi > maxKpiScore) maxKpiScore = otherKpi;
             }

@@ -335,17 +335,9 @@ function DashboardAppContent() {
                 </div>
 
                 {/* Footer copyright */}
-                <footer className="hidden w-full flex-col items-center justify-between gap-3 border-t border-outline-variant/10 bg-surface-container-lowest px-6 py-5 text-xs text-on-surface-variant sm:flex sm:flex-row">
-                    <div className="flex items-center gap-2">
+                <footer className="hidden w-full items-center justify-between border-t border-outline-variant/10 bg-surface-container-lowest px-6 py-4 text-xs text-on-surface-variant sm:flex">
+                    <div>
                         <span>&copy; {new Date().getFullYear()} {appSettingsData?.app_full_name || appSettingsData?.app_name || 'GAT'}. All rights reserved.</span>
-                        <span className="px-1.5 py-0.5 rounded bg-surface-container-high text-[9px] font-bold tracking-wider text-on-surface-variant uppercase">{appSettingsData?.app_version || 'v0.1.0-alpha'}</span>
-                    </div>
-                    <div className="flex items-center gap-4 font-medium">
-                        <a href="#help" className="hover:text-primary transition-colors">Operations Help</a>
-                        <span className="w-1 h-1 rounded-full bg-outline-variant/40"></span>
-                        <a href="#privacy" className="hover:text-primary transition-colors">Privacy Policy</a>
-                        <span className="w-1 h-1 rounded-full bg-outline-variant/40"></span>
-                        <a href="#terms" className="hover:text-primary transition-colors">Terms of Service</a>
                     </div>
                 </footer>
             </main>

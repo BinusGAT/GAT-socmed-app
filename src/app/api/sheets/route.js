@@ -921,14 +921,17 @@ export async function POST(request) {
         const engagementRate = views > 0 ? (totalEngagement / views) * 100 : 0.0;
 
         // Find the ID of the row being updated
-        const idRes = await db.execute({
-          sql: `SELECT ID FROM laporan WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ? LIMIT 1`,
-          args: [matchDate, matchTitle, matchPic, matchCategory, matchPlatform]
-        });
-        const id = idRes.rows[0]?.ID;
+        let id = params.ID || params.id;
+        if (!id) {
+          const idRes = await db.execute({
+            sql: `SELECT ID FROM laporan WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ? LIMIT 1`,
+            args: [matchDate, matchTitle, matchPic, matchCategory, matchPlatform]
+          });
+          id = idRes.rows[0]?.ID;
+        }
 
         if (id) {
-          await db.execute({
+          const updateRes = await db.execute({
             sql: `UPDATE laporan SET 
               Date = ?,
               "Content Title" = ?,
@@ -948,16 +951,48 @@ export async function POST(request) {
               URL = ?,
               "Comment Text" = ?,
               AssignedUserId = ?
-            WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ?`,
+            WHERE ID = ? AND LOWER(Platform) = LOWER(?)`,
             args: [
               params.Date, params['Content Title'], params.PIC, params.Category, params.Platform,
               views, parseInt(params['Account Reach']) || 0, likes, comments, follows, reposts, shares,
               totalEngagement, engagementRate, parseInt(params['KPI Score']) || 3, params.URL || '', params['Comment Text'] || '', String(params.AssignedUserId || ''),
-              matchDate, matchTitle, matchPic, matchCategory, matchPlatform
+              id, matchPlatform
             ]
           });
 
-          // Update main details for all other rows sharing this ID
+          // Fallback if matching by ID + Platform didn't find the row
+          if (updateRes.rowsAffected === 0) {
+            await db.execute({
+              sql: `UPDATE laporan SET 
+                Date = ?,
+                "Content Title" = ?,
+                PIC = ?,
+                Category = ?,
+                Platform = ?,
+                Views = ?,
+                "Account Reach" = ?,
+                Likes = ?,
+                Comments = ?,
+                Follows = ?,
+                Repost = ?,
+                Shares = ?,
+                "Total Engagement" = ?,
+                "Engagement Rate (%)" = ?,
+                "KPI Score" = ?,
+                URL = ?,
+                "Comment Text" = ?,
+                AssignedUserId = ?
+              WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ?`,
+              args: [
+                params.Date, params['Content Title'], params.PIC, params.Category, params.Platform,
+                views, parseInt(params['Account Reach']) || 0, likes, comments, follows, reposts, shares,
+                totalEngagement, engagementRate, parseInt(params['KPI Score']) || 3, params.URL || '', params['Comment Text'] || '', String(params.AssignedUserId || ''),
+                matchDate, matchTitle, matchPic, matchCategory, matchPlatform
+              ]
+            });
+          }
+
+          // Update shared metadata across all rows sharing this ID
           await db.execute({
             sql: `UPDATE laporan SET Date = ?, "Content Title" = ?, PIC = ?, Category = ?, AssignedUserId = ? WHERE ID = ?`,
             args: [params.Date, params['Content Title'], params.PIC, params.Category, String(params.AssignedUserId || ''), id]

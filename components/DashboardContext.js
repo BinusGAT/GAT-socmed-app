@@ -747,9 +747,29 @@ export function DashboardProvider({ children }) {
         const assignedIntern = internListData.find((intern) => intern.name === row.PIC);
         const payload = { ...row, rowIndex, AssignedUserId: row.AssignedUserId || assignedIntern?.id || '' };
 
-        setCurrentData((prev) => prev.map((item, idx) => 
-            (idx === rowIndex || (item.ID && row.ID && String(item.ID) === String(row.ID))) ? { ...item, ...payload } : item
-        ));
+        setCurrentData((prev) => prev.map((item, idx) => {
+            const isExactMatch = (rowIndex !== undefined && rowIndex !== null && rowIndex >= 0 && idx === rowIndex) ||
+                (item.ID && row.ID && String(item.ID) === String(row.ID) && String(item.Platform || '').toLowerCase() === String(row.Platform || '').toLowerCase());
+
+            if (isExactMatch) {
+                return { ...item, ...payload };
+            }
+
+            // Sibling rows belonging to the same content post ID: update shared content metadata only
+            if (item.ID && row.ID && String(item.ID) === String(row.ID)) {
+                return {
+                    ...item,
+                    Date: payload.Date,
+                    'Content Title': payload['Content Title'],
+                    PIC: payload.PIC,
+                    Category: payload.Category,
+                    AssignedUserId: payload.AssignedUserId,
+                    'KPI Summary': payload['KPI Summary']
+                };
+            }
+
+            return item;
+        }));
         showAlert('💾 Record updated successfully!', 'success');
 
         (async () => {
