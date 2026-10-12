@@ -1,8 +1,8 @@
 'use client';
-'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import Icon from './Icon';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import { TaskLinksModal } from './Modals';
@@ -239,7 +239,7 @@ export default function CalendarTab({ onOpenExport }) {
 
     // Shift date string to display format
     const formatDisplayDateString = (dateStr) => {
-        if (!dateStr) return '—';
+        if (!dateStr) return '-';
         const parts = dateStr.split('-');
         if (parts.length !== 3) return dateStr;
         return `${parts[2]}/${parts[1]}/${parts[0]}`;
@@ -385,14 +385,14 @@ export default function CalendarTab({ onOpenExport }) {
     };
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-4">
             {/* Filter Toolbar */}
-            <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row gap-3 items-center justify-between shadow-sm">
+            <div className="bg-surface border border-border rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row gap-3 items-center justify-between shadow-xs">
                 <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                    <span className="material-symbols-outlined text-primary text-[22px]">calendar_view_month</span>
+                    <Icon name="calendar_view_month" size={20} className="text-primary" />
                     <div>
-                        <h4 className="text-xs font-bold text-on-surface uppercase tracking-wider">Calendar Directory</h4>
-                        <p className="text-[11px] text-on-surface-variant font-mono">{combinedTasks.length} {combinedTasks.length === 1 ? 'task' : 'tasks'} scheduled</p>
+                        <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">Calendar Directory</h4>
+                        <p className="text-[11px] text-muted-foreground font-mono">{combinedTasks.length} {combinedTasks.length === 1 ? 'task' : 'tasks'} scheduled</p>
                     </div>
                 </div>
 
@@ -401,20 +401,20 @@ export default function CalendarTab({ onOpenExport }) {
                     {(tasklistFilterPic || tasklistFilterCategory) && (
                         <button 
                             type="button"
-                            className="bg-surface-container-high border border-outline-variant/30 hover:bg-surface-container-highest text-on-surface font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                            className="bg-muted hover:bg-muted/80 border border-border text-foreground font-medium py-1.5 px-3 rounded-md text-[11px] uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer"
                             onClick={() => {
                                 setTasklistFilterPic('');
                                 setTasklistFilterCategory('');
                             }}
                         >
-                            <span className="material-symbols-outlined text-[14px]">restart_alt</span> Reset
+                            <Icon name="restart_alt" size={13} /> Reset
                         </button>
                     )}
 
                     {/* PIC filter */}
                     <div className="flex-1 sm:w-40 min-w-[130px]">
                         <select 
-                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                            className="w-full bg-background border border-border rounded-md px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary transition-colors"
                             value={tasklistFilterPic}
                             onChange={(e) => setTasklistFilterPic(e.target.value)}
                         >
@@ -428,7 +428,7 @@ export default function CalendarTab({ onOpenExport }) {
                     {/* Category filter */}
                     <div className="flex-1 sm:w-40 min-w-[130px]">
                         <select 
-                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                            className="w-full bg-background border border-border rounded-md px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary transition-colors"
                             value={tasklistFilterCategory}
                             onChange={(e) => setTasklistFilterCategory(e.target.value)}
                         >
@@ -446,15 +446,15 @@ export default function CalendarTab({ onOpenExport }) {
                 <button
                     type="button"
                     onClick={() => setTasklistFilterCategory('')}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 border cursor-pointer ${
                         !tasklistFilterCategory
-                            ? 'bg-primary text-on-primary border-primary shadow-xs'
-                            : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-outline-variant/30'
+                            ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                            : 'bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border-border'
                     }`}
                 >
                     <span>All</span>
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${
-                        !tasklistFilterCategory ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-semibold leading-none ${
+                        !tasklistFilterCategory ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
                     }`}>
                         {categoryCounts.total || 0}
                     </span>
@@ -467,15 +467,15 @@ export default function CalendarTab({ onOpenExport }) {
                             key={cat.name}
                             type="button"
                             onClick={() => setTasklistFilterCategory(isActive ? '' : cat.name)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 border cursor-pointer ${
                                 isActive
-                                    ? 'bg-primary text-on-primary border-primary shadow-xs'
-                                    : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-outline-variant/30'
+                                    ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                                    : 'bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border-border'
                             }`}
                         >
                             <span>{cat.name}</span>
-                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${
-                                isActive ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-semibold leading-none ${
+                                isActive ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
                             }`}>
                                 {count}
                             </span>
@@ -486,15 +486,15 @@ export default function CalendarTab({ onOpenExport }) {
                     <button
                         type="button"
                         onClick={() => setTasklistFilterCategory(tasklistFilterCategory === 'Recap' ? '' : 'Recap')}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border cursor-pointer ${
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 border cursor-pointer ${
                             tasklistFilterCategory === 'Recap'
-                                ? 'bg-primary text-on-primary border-primary shadow-xs'
-                                : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-outline-variant/30'
+                                ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                                : 'bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border-border'
                         }`}
                     >
                         <span>Recap</span>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${
-                            tasklistFilterCategory === 'Recap' ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-semibold leading-none ${
+                            tasklistFilterCategory === 'Recap' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
                         }`}>
                             {categoryCounts['Recap'] || 0}
                         </span>
@@ -506,17 +506,17 @@ export default function CalendarTab({ onOpenExport }) {
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-gutter items-start">
                 
                 {/* Mobile agenda navigator */}
-                <section className="sm:hidden rounded-xl border border-outline-variant/30 bg-surface-container p-3 shadow-sm" aria-labelledby="mobile-planner-period">
+                <section className="sm:hidden rounded-lg border border-border bg-surface p-3 shadow-xs" aria-labelledby="mobile-planner-period">
                     <div className="flex items-center justify-between gap-2">
-                        <button type="button" onClick={() => shiftSelectedWeek(-1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-outline-variant/30 bg-surface-container-high text-on-surface" aria-label="Previous week">
-                            <span className="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+                        <button type="button" onClick={() => shiftSelectedWeek(-1)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/60 text-foreground hover:bg-muted transition-colors" aria-label="Previous week">
+                            <Icon name="chevron_left" size={16} />
                         </button>
                         <div className="min-w-0 text-center">
-                            <h3 id="mobile-planner-period" className="truncate text-base font-bold text-on-surface">{formatMonthLabel(selectedDateObject)}</h3>
-                            <p className="text-xs text-on-surface-variant">{getTasksCountForMonth()} tasks this month</p>
+                            <h3 id="mobile-planner-period" className="truncate text-sm font-semibold text-foreground">{formatMonthLabel(selectedDateObject)}</h3>
+                            <p className="text-xs text-muted-foreground font-mono">{getTasksCountForMonth()} tasks this month</p>
                         </div>
-                        <button type="button" onClick={() => shiftSelectedWeek(1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-outline-variant/30 bg-surface-container-high text-on-surface" aria-label="Next week">
-                            <span className="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+                        <button type="button" onClick={() => shiftSelectedWeek(1)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/60 text-foreground hover:bg-muted transition-colors" aria-label="Next week">
+                            <Icon name="chevron_right" size={16} />
                         </button>
                     </div>
 
@@ -531,57 +531,57 @@ export default function CalendarTab({ onOpenExport }) {
                                     onClick={() => { setSelectedDate(dateString); setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1)); }}
                                     aria-pressed={isSelected}
                                     aria-label={`${date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}${tasks.length ? `, ${tasks.length} scheduled` : ''}`}
-                                    className={`flex min-w-0 flex-col items-center gap-1 rounded-lg py-2 transition-colors ${isSelected ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'}`}
+                                    className={`flex min-w-0 flex-col items-center gap-1 rounded-md py-2 transition-colors ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted/40 text-foreground hover:bg-muted'}`}
                                 >
-                                    <span className={`text-xs font-semibold ${isSelected ? 'text-on-primary' : 'text-on-surface-variant'}`}>{date.toLocaleDateString('en-US', { weekday: 'narrow' })}</span>
-                                    <span className="text-base font-bold font-tabular">{date.getDate()}</span>
-                                    <span className={`h-1.5 min-w-1.5 rounded-full ${tasks.length ? (isSelected ? 'bg-on-primary' : 'bg-primary') : isToday ? 'border border-primary' : 'bg-transparent'}`} aria-hidden="true" />
+                                    <span className={`text-xs font-medium ${isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}`}>{date.toLocaleDateString('en-US', { weekday: 'narrow' })}</span>
+                                    <span className="text-sm font-semibold font-mono">{date.getDate()}</span>
+                                    <span className={`h-1.5 min-w-1.5 rounded-full ${tasks.length ? (isSelected ? 'bg-primary-foreground' : 'bg-primary') : isToday ? 'border border-primary' : 'bg-transparent'}`} aria-hidden="true" />
                                 </button>
                             );
                         })}
                     </div>
 
-                    <button type="button" onClick={goToToday} className="mt-3 w-full rounded-lg bg-surface-container-high py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-highest">
+                    <button type="button" onClick={goToToday} className="mt-3 w-full rounded-md bg-muted py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted/80">
                         Jump to today
                     </button>
                 </section>
 
                 {/* Main Month Grid (Left/Center 3 columns) */}
-                <div className="hidden sm:block lg:col-span-3 rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm bg-surface-container calendar-shell">
+                <div className="hidden sm:block lg:col-span-3 rounded-lg overflow-hidden border border-border shadow-xs bg-surface calendar-shell">
                     
                     {/* Month Toolbar */}
-                    <div className="px-5 py-3.5 border-b border-outline-variant/20 flex flex-col sm:flex-row gap-3 items-center justify-between bg-surface-container-low">
-                        <div className="flex items-center gap-2">
-                            <button className="h-8 w-8 rounded-lg bg-surface-container-highest/50 border border-outline-variant/30 hover:bg-surface-container-highest text-on-surface flex items-center justify-center cursor-pointer transition-colors calendar-nav-btn" onClick={() => shiftMonth(-1)}>
-                                <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                    <div className="px-4 py-3 border-b border-border flex flex-col sm:flex-row gap-2.5 items-center justify-between bg-surface">
+                        <div className="flex items-center gap-1.5">
+                            <button className="h-7 w-7 rounded-md bg-muted/60 hover:bg-muted border border-border text-foreground flex items-center justify-center cursor-pointer transition-colors calendar-nav-btn" onClick={() => shiftMonth(-1)} aria-label="Previous month">
+                                <Icon name="chevron_left" size={14} />
                             </button>
-                            <h4 className="font-semibold text-sm text-on-surface font-display px-2 min-w-[140px] text-center">
+                            <h4 className="font-semibold text-sm text-foreground px-2 min-w-[140px] text-center">
                                 {formatMonthLabel(currentMonth)}
                             </h4>
-                            <button className="h-8 w-8 rounded-lg bg-surface-container-highest/50 border border-outline-variant/30 hover:bg-surface-container-highest text-on-surface flex items-center justify-center cursor-pointer transition-colors calendar-nav-btn" onClick={() => shiftMonth(1)}>
-                                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                            <button className="h-7 w-7 rounded-md bg-muted/60 hover:bg-muted border border-border text-foreground flex items-center justify-center cursor-pointer transition-colors calendar-nav-btn" onClick={() => shiftMonth(1)} aria-label="Next month">
+                                <Icon name="chevron_right" size={14} />
                             </button>
                         </div>
                         <div className="flex items-center gap-2 calendar-toolbar-actions">
                             {userRole === 'Admin' && (
-                                <span className="hidden md:inline-flex items-center gap-1 text-[11px] text-primary/80 font-medium bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
-                                    <span className="material-symbols-outlined text-[13px]">drag_indicator</span> Drag to reschedule
+                                <span className="hidden md:inline-flex items-center gap-1 text-[11px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                                    <Icon name="drag_indicator" size={13} /> Drag to reschedule
                                 </span>
                             )}
-                            <span className="px-2.5 py-1 bg-surface-container-highest/50 text-on-surface-variant border border-outline-variant/30 rounded-md font-mono text-[11px]">
+                            <span className="px-2 py-0.5 bg-muted text-muted-foreground border border-border rounded-md font-mono text-[11px]">
                                 {getTasksCountForMonth()} Tasks
                             </span>
-                            <button className="bg-surface-container-highest/50 border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-medium py-1.5 px-3 rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer" onClick={onOpenExport}>
-                                <span className="material-symbols-outlined text-[14px]">image</span> Export
+                            <button className="bg-muted/60 hover:bg-muted border border-border text-foreground font-medium py-1 px-2.5 rounded-md text-xs transition-colors flex items-center gap-1.5 cursor-pointer" onClick={onOpenExport}>
+                                <Icon name="image" size={13} /> Export
                             </button>
-                            <button className="bg-surface-container-highest/50 border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-medium py-1.5 px-3 rounded-lg text-xs transition-colors cursor-pointer" onClick={goToToday}>
+                            <button className="bg-muted/60 hover:bg-muted border border-border text-foreground font-medium py-1 px-2.5 rounded-md text-xs transition-colors cursor-pointer" onClick={goToToday}>
                                 Today
                             </button>
                         </div>
                     </div>
 
                     {/* Weekdays indicator */}
-                    <div className="grid grid-cols-7 text-center py-2.5 border-b border-outline-variant/20 bg-surface-container-low text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider calendar-weekdays">
+                    <div className="grid grid-cols-7 text-center py-2 border-b border-border bg-muted/20 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider calendar-weekdays">
                         <span>Sun</span>
                         <span>Mon</span>
                         <span>Tue</span>
@@ -592,7 +592,7 @@ export default function CalendarTab({ onOpenExport }) {
                     </div>
 
                     {/* Days Grid Cells */}
-                    <div className="grid grid-cols-7 bg-outline-variant/20 gap-[1px] calendar-days">
+                    <div className="grid grid-cols-7 bg-border gap-[1px] calendar-days">
                         {Array.from({ length: totalCells }).map((_, cellIndex) => {
                             const dayNumber = cellIndex - startOffset + 1;
                             const isInMonth = dayNumber >= 1 && dayNumber <= daysInMonth;
@@ -607,7 +607,7 @@ export default function CalendarTab({ onOpenExport }) {
                             const hasTask = dayTasks.length > 0;
                             const isDropTarget = dragOverDate === cellDate;
 
-                            let statusClass = 'bg-surface-container-lowest';
+                            let statusClass = 'bg-surface hover:bg-muted/20';
                             let isFullyUploaded = false;
 
                             if (hasTask) {
@@ -616,29 +616,29 @@ export default function CalendarTab({ onOpenExport }) {
                                 const allDone = dayTasks.every(t => t.calculatedStatus === 'Done');
 
                                 if (allDone) {
-                                    statusClass = 'bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10';
+                                    statusClass = 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10';
                                 } else if (hasOverdue) {
-                                    statusClass = 'bg-rose-500/5 text-rose-400 hover:bg-rose-500/10';
+                                    statusClass = 'bg-rose-500/5 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10';
                                 } else if (hasToday) {
-                                    statusClass = 'bg-sky-500/5 text-sky-400 hover:bg-sky-500/10';
+                                    statusClass = 'bg-sky-500/5 text-sky-600 dark:text-sky-400 hover:bg-sky-500/10';
                                 } else {
-                                    statusClass = 'bg-amber-500/5 text-amber-400 hover:bg-amber-500/10';
+                                    statusClass = 'bg-amber-500/5 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10';
                                 }
 
                                 isFullyUploaded = dayTasks.every(task => !task.isFromDashboard || task.status);
                             }
 
                             const activeBorder = isDropTarget
-                                ? 'ring-2 ring-primary ring-inset bg-primary/20 scale-[1.02] shadow-md z-20'
+                                ? 'ring-2 ring-primary ring-inset bg-primary/20 scale-[1.01] shadow-sm z-20'
                                 : isSelected 
-                                ? 'bg-indigo-600/15 border-2 border-indigo-500/60 shadow-xs z-10' 
+                                ? 'ring-2 ring-primary ring-inset bg-primary/10 shadow-xs z-10' 
                                 : isToday 
-                                ? 'border border-indigo-500/30 bg-indigo-500/5' 
+                                ? 'border border-primary/40 bg-primary/5' 
                                 : '';
 
                             if (!isInMonth) {
                                 return (
-                                    <div key={cellIndex} className="bg-surface-container-lowest/25 aspect-square p-1.5 opacity-30 select-none">
+                                    <div key={cellIndex} className="bg-muted/20 aspect-square p-1.5 opacity-25 select-none">
                                         &nbsp;
                                     </div>
                                 );
@@ -683,20 +683,18 @@ export default function CalendarTab({ onOpenExport }) {
                                     }}
                                 >
                                     <div className="flex justify-between items-center mb-1">
-                                        <span className={`text-[12px] font-bold ${
-                                            isToday ? 'bg-primary text-on-primary w-5 h-5 rounded-full flex items-center justify-center font-display shadow-sm' : 'text-on-surface-variant'
+                                        <span className={`text-xs font-mono font-medium ${
+                                            isToday ? 'bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center shadow-xs' : 'text-muted-foreground'
                                         }`}>
                                             {dayNumber}
                                         </span>
                                         {isFullyUploaded && (
-                                            <span className="material-symbols-outlined text-primary text-[14px]" title="All posts published">
-                                                task_alt
-                                            </span>
+                                            <Icon name="task_alt" size={13} className="text-primary" />
                                         )}
                                     </div>
 
                                     {/* Task mini-tags stack */}
-                                    <div className="space-y-1 overflow-hidden mt-1.5 calendar-day-tasks-container">
+                                    <div className="space-y-1 overflow-hidden mt-1 calendar-day-tasks-container">
                                         {uniqueRenderTasks.slice(0, 3).map((task, idx) => (
                                             <div 
                                                 key={idx} 
@@ -712,13 +710,13 @@ export default function CalendarTab({ onOpenExport }) {
                                                     setDraggingTaskId(null);
                                                     setDragOverDate(null);
                                                 }}
-                                                className={`text-[10.5px] font-bold px-2 py-1 rounded border leading-tight truncate uppercase flex items-center gap-1 calendar-day-task-item hover:opacity-85 transition-all ${
+                                                className={`text-[10px] font-medium px-1.5 py-0.5 rounded border leading-tight truncate uppercase flex items-center gap-1 calendar-day-task-item hover:opacity-85 transition-all ${
                                                     userRole === 'Admin' && !task.isMeeting ? 'cursor-grab active:cursor-grabbing' : ''
                                                 } ${
                                                     draggingTaskId === task.id ? 'opacity-40 scale-95' : ''
                                                 } ${
                                                     task.isMeeting 
-                                                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' 
+                                                        ? 'bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20' 
                                                         : getPicMobileBadgeClass(task.pic)
                                                 }`}
                                                 data-is-meeting={String(!!task.isMeeting)}
@@ -734,12 +732,12 @@ export default function CalendarTab({ onOpenExport }) {
                                             >
                                                 {task.isMeeting ? (
                                                     <span className="flex items-center gap-0.5 calendar-day-task-pill">
-                                                        <span className="material-symbols-outlined text-[10px]">handshake</span> Meeting
+                                                        <Icon name="handshake" size={10} /> Meeting
                                                     </span>
                                                 ) : (
                                                     <span className="calendar-day-task-pill flex items-center gap-1 overflow-hidden">
                                                         {task.series_id && (
-                                                            <span className="material-symbols-outlined text-[10.5px] shrink-0" title="Recurring task series">repeat</span>
+                                                            <Icon name="repeat" size={10} className="shrink-0" />
                                                         )}
                                                         <span className="truncate">{getPicDisplayName(task.pic)}: {task.category}</span>
                                                     </span>
@@ -754,7 +752,7 @@ export default function CalendarTab({ onOpenExport }) {
                                                     setSelectedDate(cellDate);
                                                     setActivePopoverDate(cellDate);
                                                 }}
-                                                className="w-full text-[9px] font-bold text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 rounded py-0.5 text-center uppercase tracking-tight transition-colors cursor-pointer"
+                                                className="w-full text-[9px] font-medium text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 rounded py-0.5 text-center uppercase tracking-tight transition-colors cursor-pointer"
                                             >
                                                 + {uniqueRenderTasks.length - 3} more
                                             </button>
@@ -770,50 +768,50 @@ export default function CalendarTab({ onOpenExport }) {
                 <div className="space-y-4 sm:space-y-6">
                     
                     {/* Selection Summary Header */}
-                    <div className="hidden sm:block bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-3">
+                    <div className="hidden sm:block bg-surface border border-border rounded-lg p-3.5 shadow-xs space-y-2">
                         <div>
-                            <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold">Selected Date</span>
-                            <div className="text-body-lg font-bold text-on-surface flex items-center gap-2 mt-1">
-                                <span className="material-symbols-outlined text-primary">calendar_month</span>
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Selected Date</span>
+                            <div className="text-sm font-semibold text-foreground flex items-center gap-2 mt-0.5">
+                                <Icon name="calendar_month" size={16} className="text-primary" />
                                 {formatDisplayDateString(selectedDate)}
                             </div>
                         </div>
-                        <p className="text-[11px] text-on-surface-variant/80 italic leading-snug">
+                        <p className="text-[11px] text-muted-foreground leading-snug">
                             Click a cell in the monthly grid to schedule new tasks or modify agenda entries for that date.
                         </p>
                     </div>
 
                     {/* Selected Date Tasks List */}
-                    <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
-                        <div className="flex items-end justify-between gap-3 border-b border-outline-variant/20 pb-2">
+                    <div className="bg-surface border border-border rounded-lg p-3.5 shadow-xs space-y-3">
+                        <div className="flex items-end justify-between gap-3 border-b border-border pb-2">
                             <div>
-                                <h5 className="text-body-sm font-bold text-on-surface uppercase tracking-wider">Scheduled pipeline</h5>
+                                <h5 className="text-xs font-semibold text-foreground uppercase tracking-wider">Scheduled pipeline</h5>
                                 <p className="mt-0.5 text-xs font-semibold text-primary sm:hidden">{formatDisplayDateString(selectedDate)}</p>
                             </div>
-                            <span className="text-xs font-semibold text-on-surface-variant">{selectedDateTasks.length} {selectedDateTasks.length === 1 ? 'item' : 'items'}</span>
+                            <span className="text-xs font-mono text-muted-foreground">{selectedDateTasks.length} {selectedDateTasks.length === 1 ? 'item' : 'items'}</span>
                         </div>
 
-                        <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+                        <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
                             {selectedDateTasks.length === 0 ? (
-                                <div className="py-6 text-center text-on-surface-variant/60 text-body-sm space-y-1">
-                                    <span className="material-symbols-outlined text-[28px] text-on-surface-variant/40">inbox</span>
+                                <div className="py-6 text-center text-muted-foreground text-xs space-y-1">
+                                    <Icon name="inbox" size={24} className="text-muted-foreground/40 mx-auto" />
                                     <p>No tasks scheduled on this day</p>
                                 </div>
                             ) : (
                                 selectedDateTasks.map((task) => {
                                     const badgeClass = task.calculatedStatus === 'Done' 
-                                        ? 'bg-emerald-500/10 text-primary border border-primary/20' 
+                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
                                         : task.calculatedStatus === 'Overdue' 
-                                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' 
+                                        ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20' 
                                         : task.calculatedStatus === 'Due Today' 
-                                        ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' 
-                                        : 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
+                                        ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20' 
+                                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
 
                                     return (
                                         <div 
                                              key={task.id} 
-                                             className={`bg-surface-container-low border border-outline-variant/15 rounded p-3 text-body-sm ${
-                                                 task.isMeeting ? 'cursor-pointer hover:border-primary/45 transition-all' : ''
+                                             className={`bg-muted/30 border border-border rounded-md p-2.5 text-xs ${
+                                                 task.isMeeting ? 'cursor-pointer hover:border-primary/40 transition-colors' : ''
                                              }`}
                                         >
                                             <div 
@@ -828,21 +826,21 @@ export default function CalendarTab({ onOpenExport }) {
                                             <div className="flex-1 min-w-0 space-y-1">
                                                 <div className="flex items-center gap-1.5 flex-wrap">
                                                     {task.isMeeting ? (
-                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
-                                                            <span className="material-symbols-outlined text-[11px]">handshake</span> Meeting
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                                                            <Icon name="handshake" size={11} /> Meeting
                                                         </span>
                                                     ) : (
                                                         <>
-                                                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${getPicMobileBadgeClass(task.pic)}`}>
+                                                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase ${getPicMobileBadgeClass(task.pic)}`}>
                                                                 {getPicDisplayName(task.pic)}
                                                             </span>
-                                                            <span className="font-bold text-on-surface">{task.category}</span>
+                                                            <span className="font-semibold text-foreground">{task.category}</span>
                                                         </>
                                                     )}
                                                 </div>
-                                                <p className="text-[12px] text-on-surface-variant/90 font-medium line-clamp-2 sm:line-clamp-1 flex items-center gap-1" title={task.contentTitle || 'Untitled'}>
+                                                <p className="text-xs text-muted-foreground font-medium line-clamp-2 sm:line-clamp-1 flex items-center gap-1" title={task.contentTitle || 'Untitled'}>
                                                     {task.series_id && (
-                                                        <span className="material-symbols-outlined text-[13px] text-primary shrink-0" title="Recurring task series">repeat</span>
+                                                        <Icon name="repeat" size={12} className="text-primary shrink-0" />
                                                     )}
                                                     <span>{task.isMeeting ? 'Meeting Agenda & Recap Details' : (task.contentTitle || 'Untitled')}</span>
                                                 </p>
@@ -855,10 +853,10 @@ export default function CalendarTab({ onOpenExport }) {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setLinksModalTask(task)}
-                                                                className="px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase bg-emerald-500/15 hover:bg-emerald-500/25 text-primary border border-primary/20 flex items-center gap-0.5 transition-colors cursor-pointer"
+                                                                className="px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-0.5 transition-colors cursor-pointer"
                                                                 title="View live platform URLs"
                                                             >
-                                                                Uploaded <span className="material-symbols-outlined text-[10px]">open_in_new</span>
+                                                                Uploaded <Icon name="open_in_new" size={10} />
                                                             </button>
                                                         )}
                                                     </div>
@@ -869,14 +867,14 @@ export default function CalendarTab({ onOpenExport }) {
                                             {task.isMeeting ? (
                                                 <button 
                                                     type="button" 
-                                                    className="w-7 h-7 flex items-center justify-center bg-surface-container border border-outline-variant/30 rounded text-on-surface hover:text-primary hover:border-primary cursor-pointer transition-colors"
+                                                    className="w-7 h-7 flex items-center justify-center bg-muted/60 hover:bg-muted border border-border rounded-md text-foreground hover:text-primary transition-colors cursor-pointer"
                                                     onClick={() => {
                                                         setSelectedMeetingId(task.id);
                                                         setCurrentView('meeting');
                                                     }}
                                                     title="Go to meeting memo"
                                                 >
-                                                    <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                                                    <Icon name="open_in_new" size={14} />
                                                 </button>
                                             ) : (
                                                 (!formDisabled || userRole === 'Creator') && (userRole !== 'Creator' || isTaskAssignedToUser(task, userId, userName)) && (
@@ -884,8 +882,8 @@ export default function CalendarTab({ onOpenExport }) {
                                                         {userRole === 'Admin' && (
                                                             <button 
                                                                 type="button" 
-                                                                className={`w-7 h-7 flex items-center justify-center bg-surface-container border border-outline-variant/30 rounded cursor-pointer transition-colors ${
-                                                                    quickRescheduleTaskId === task.id ? 'text-primary border-primary bg-primary/10' : 'text-on-surface-variant hover:text-primary hover:border-primary'
+                                                                className={`w-7 h-7 flex items-center justify-center border rounded-md cursor-pointer transition-colors ${
+                                                                    quickRescheduleTaskId === task.id ? 'text-primary border-primary bg-primary/10' : 'bg-muted/60 hover:bg-muted border-border text-muted-foreground hover:text-foreground'
                                                                 }`}
                                                                 onClick={() => {
                                                                     if (quickRescheduleTaskId === task.id) {
@@ -897,25 +895,25 @@ export default function CalendarTab({ onOpenExport }) {
                                                                 }}
                                                                 title="Quick reschedule"
                                                             >
-                                                                <span className="material-symbols-outlined text-[15px]">event_repeat</span>
+                                                                <Icon name="event_repeat" size={14} />
                                                             </button>
                                                         )}
                                                         <button 
                                                             type="button" 
-                                                            className="w-7 h-7 flex items-center justify-center bg-surface-container border border-outline-variant/30 rounded text-on-surface-variant hover:text-primary hover:border-primary cursor-pointer transition-colors"
+                                                            className="w-7 h-7 flex items-center justify-center bg-muted/60 hover:bg-muted border border-border rounded-md text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
                                                             onClick={() => startEditTask(task)}
                                                             title="Edit task details"
                                                         >
-                                                            <span className="material-symbols-outlined text-[15px]">edit</span>
+                                                            <Icon name="edit" size={14} />
                                                         </button>
                                                         {userRole !== 'Creator' && (
                                                             <button 
                                                                 type="button" 
-                                                                className="w-7 h-7 flex items-center justify-center bg-surface-container border border-outline-variant/30 rounded text-on-surface-variant hover:text-error hover:border-error cursor-pointer transition-colors"
+                                                                className="w-7 h-7 flex items-center justify-center bg-muted/60 hover:bg-rose-500/10 border border-border rounded-md text-muted-foreground hover:text-rose-500 hover:border-rose-500/30 cursor-pointer transition-colors"
                                                                 onClick={() => handleDeleteTask({ id: task.id, title: task.contentTitle, series_id: task.series_id, date: task.date })}
                                                                 title="Delete task from schedule"
                                                             >
-                                                                <span className="material-symbols-outlined text-[15px]">delete</span>
+                                                                <Icon name="delete" size={14} />
                                                             </button>
                                                         )}
                                                     </div>
@@ -923,23 +921,23 @@ export default function CalendarTab({ onOpenExport }) {
                                             )}
                                         </div>
                                         {quickRescheduleTaskId === task.id && (
-                                            <div className="mt-2.5 pt-2.5 border-t border-outline-variant/20 space-y-2">
-                                                <div className="flex items-center justify-between text-[11px] font-bold text-on-surface">
+                                            <div className="mt-2.5 pt-2.5 border-t border-border space-y-2">
+                                                <div className="flex items-center justify-between text-[11px] font-semibold text-foreground">
                                                     <span className="flex items-center gap-1">
-                                                        <span className="material-symbols-outlined text-[13px] text-primary">schedule</span> Quick Reschedule
+                                                        <Icon name="schedule" size={13} className="text-primary" /> Quick Reschedule
                                                     </span>
                                                     <button 
                                                         type="button" 
                                                         onClick={() => setQuickRescheduleTaskId(null)}
-                                                        className="text-on-surface-variant hover:text-on-surface p-0.5"
+                                                        className="text-muted-foreground hover:text-foreground p-0.5"
                                                     >
-                                                        <span className="material-symbols-outlined text-[13px]">close</span>
+                                                        <Icon name="close" size={13} />
                                                     </button>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 flex-wrap">
                                                     <button
                                                         type="button"
-                                                        className="px-2 py-1 text-[11px] font-semibold bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 rounded text-on-surface transition-colors cursor-pointer"
+                                                        className="px-2 py-1 text-[11px] font-medium bg-muted hover:bg-muted/80 border border-border rounded-md text-foreground transition-colors cursor-pointer"
                                                         onClick={async () => {
                                                             const baseDate = new Date(`${task.date}T00:00:00`);
                                                             baseDate.setDate(baseDate.getDate() + 1);
@@ -954,7 +952,7 @@ export default function CalendarTab({ onOpenExport }) {
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        className="px-2 py-1 text-[11px] font-semibold bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 rounded text-on-surface transition-colors cursor-pointer"
+                                                        className="px-2 py-1 text-[11px] font-medium bg-muted hover:bg-muted/80 border border-border rounded-md text-foreground transition-colors cursor-pointer"
                                                         onClick={async () => {
                                                             const baseDate = new Date(`${task.date}T00:00:00`);
                                                             baseDate.setDate(baseDate.getDate() + 7);
@@ -972,11 +970,11 @@ export default function CalendarTab({ onOpenExport }) {
                                                             type="date"
                                                             value={quickRescheduleCustomDate}
                                                             onChange={(e) => setQuickRescheduleCustomDate(e.target.value)}
-                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2 py-1 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                            className="w-full bg-background border border-border rounded-md px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary transition-colors"
                                                         />
                                                         <button
                                                             type="button"
-                                                            className="px-2.5 py-1 text-[11px] font-semibold bg-primary text-on-primary hover:opacity-90 rounded transition-opacity cursor-pointer whitespace-nowrap"
+                                                            className="px-2.5 py-1 text-[11px] font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors cursor-pointer whitespace-nowrap active:scale-[0.98]"
                                                             onClick={async () => {
                                                                 if (quickRescheduleCustomDate) {
                                                                     await rescheduleCalendarTask(task.id, quickRescheduleCustomDate);
@@ -999,29 +997,29 @@ export default function CalendarTab({ onOpenExport }) {
 
                     {/* Task Scheduler Form (Right sidebar bottom) */}
                     {showForm && (
-                        <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
-                            <h5 className="text-body-sm font-bold text-on-surface uppercase tracking-wider pb-2 border-b border-outline-variant/20 flex items-center justify-between">
+                        <div className="bg-surface border border-border rounded-lg p-3.5 shadow-xs space-y-3">
+                            <h5 className="text-xs font-semibold text-foreground uppercase tracking-wider pb-2 border-b border-border flex items-center justify-between">
                                 <span>{editingTaskId ? (userRole === 'Creator' ? 'Edit Content Title' : 'Edit schedule') : 'Schedule task'}</span>
                                 {userRole === 'Creator' && (
                                     <div className="relative group inline-flex items-center">
                                         <span 
-                                            className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold cursor-help transition-colors group-hover:bg-primary group-hover:text-on-primary select-none" 
+                                            className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold cursor-help transition-colors group-hover:bg-primary group-hover:text-primary-foreground select-none" 
                                             aria-label="Creator mode info"
                                         >
                                             !
                                         </span>
-                                        <div className="absolute right-0 bottom-full mb-1.5 hidden group-hover:block z-50 w-64 p-2.5 bg-surface-container-highest border border-outline-variant/40 rounded-lg shadow-xl text-[11px] font-normal text-on-surface normal-case leading-relaxed pointer-events-none animate-fade-in">
-                                            Creator mode: PIC &amp; Category are managed by Admin. You can edit the <strong>Content Title</strong>.
+                                        <div className="absolute right-0 bottom-full mb-1.5 hidden group-hover:block z-50 w-64 p-2.5 bg-surface border border-border rounded-md shadow-xl text-[11px] font-normal text-muted-foreground normal-case leading-relaxed pointer-events-none">
+                                            Creator mode: PIC and Category are managed by Admin. You can edit the <strong className="text-foreground">Content Title</strong>.
                                         </div>
                                     </div>
                                 )}
                             </h5>
-                            <form onSubmit={handleFormSubmit} className="space-y-4" autoComplete="off">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <form onSubmit={handleFormSubmit} className="space-y-3" autoComplete="off">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                     <div className="space-y-1">
-                                        <label className="text-body-sm font-semibold text-on-surface-variant">PIC</label>
+                                        <label className="text-xs font-medium text-muted-foreground">PIC</label>
                                         <select 
-                                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-70 disabled:cursor-not-allowed"
+                                            className="w-full bg-background border border-border rounded-md px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
                                             value={formPic}
                                             onChange={(e) => setFormPic(e.target.value)}
                                             required
@@ -1034,9 +1032,9 @@ export default function CalendarTab({ onOpenExport }) {
                                         </select>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-body-sm font-semibold text-on-surface-variant">Category</label>
+                                        <label className="text-xs font-medium text-muted-foreground">Category</label>
                                         <select 
-                                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-70 disabled:cursor-not-allowed"
+                                            className="w-full bg-background border border-border rounded-md px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
                                             value={formCategory}
                                             onChange={(e) => setFormCategory(e.target.value)}
                                             required
@@ -1050,10 +1048,10 @@ export default function CalendarTab({ onOpenExport }) {
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Content Title / Topic</label>
+                                    <label className="text-xs font-medium text-muted-foreground">Content Title / Topic</label>
                                     <input 
                                         type="text" 
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                        className="w-full bg-background border border-border rounded-md px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                                         placeholder="Scheduled title (optional)"
                                         value={formTitle}
                                         onChange={(e) => setFormTitle(e.target.value)}
@@ -1061,28 +1059,28 @@ export default function CalendarTab({ onOpenExport }) {
                                 </div>
 
                                 {!editingTaskId && userRole === 'Admin' && (
-                                    <div className="pt-2 border-t border-outline-variant/20 space-y-2.5">
-                                        <label className="flex items-center gap-2 text-body-sm font-semibold text-on-surface cursor-pointer select-none">
+                                    <div className="pt-2 border-t border-border space-y-2">
+                                        <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer select-none">
                                             <input 
                                                 type="checkbox"
                                                 checked={isRecurring}
                                                 onChange={(e) => setIsRecurring(e.target.checked)}
-                                                className="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                                                className="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
                                             />
                                             <span className="flex items-center gap-1.5">
-                                                <span className="material-symbols-outlined text-[16px] text-primary">repeat</span>
+                                                <Icon name="repeat" size={14} className="text-primary" />
                                                 Repeat schedule
                                             </span>
                                         </label>
                                         {isRecurring && (
-                                            <div className="bg-surface-container-low/70 border border-outline-variant/30 rounded-lg p-3 space-y-3 animate-fade-in">
+                                            <div className="bg-muted/30 border border-border rounded-md p-2.5 space-y-2.5">
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <div>
-                                                        <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Frequency</label>
+                                                        <label className="text-[11px] font-medium text-muted-foreground block mb-1">Frequency</label>
                                                         <select 
                                                             value={recurrenceFreq}
                                                             onChange={(e) => setRecurrenceFreq(e.target.value)}
-                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                            className="w-full bg-background border border-border rounded-md px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary transition-colors"
                                                         >
                                                             <option value="daily">Daily</option>
                                                             <option value="weekly">Weekly</option>
@@ -1091,11 +1089,11 @@ export default function CalendarTab({ onOpenExport }) {
                                                         </select>
                                                     </div>
                                                     <div>
-                                                        <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Ends</label>
+                                                        <label className="text-[11px] font-medium text-muted-foreground block mb-1">Ends</label>
                                                         <select 
                                                             value={recurrenceLimitType}
                                                             onChange={(e) => setRecurrenceLimitType(e.target.value)}
-                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                            className="w-full bg-background border border-border rounded-md px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary transition-colors"
                                                         >
                                                             <option value="count">After count</option>
                                                             <option value="untilDate">On date</option>
@@ -1104,24 +1102,24 @@ export default function CalendarTab({ onOpenExport }) {
                                                 </div>
                                                 {recurrenceLimitType === 'count' ? (
                                                     <div>
-                                                        <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Occurrences (2 – 12)</label>
+                                                        <label className="text-[11px] font-medium text-muted-foreground block mb-1">Occurrences (2 - 12)</label>
                                                         <input 
                                                             type="number"
                                                             min="2"
                                                             max="12"
                                                             value={recurrenceCount}
                                                             onChange={(e) => setRecurrenceCount(Math.min(Math.max(Number(e.target.value) || 2, 2), 12))}
-                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2.5 py-1 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                            className="w-full bg-background border border-border rounded-md px-2.5 py-1 text-xs text-foreground font-mono focus:outline-none focus:border-primary transition-colors"
                                                         />
                                                     </div>
                                                 ) : (
                                                     <div>
-                                                        <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Until date (max 6 months)</label>
+                                                        <label className="text-[11px] font-medium text-muted-foreground block mb-1">Until date (max 6 months)</label>
                                                         <input 
                                                             type="date"
                                                             value={recurrenceUntilDate}
                                                             onChange={(e) => setRecurrenceUntilDate(e.target.value)}
-                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2.5 py-1 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                            className="w-full bg-background border border-border rounded-md px-2.5 py-1 text-xs text-foreground focus:outline-none focus:border-primary transition-colors"
                                                         />
                                                     </div>
                                                 )}
@@ -1131,13 +1129,13 @@ export default function CalendarTab({ onOpenExport }) {
                                 )}
 
                                 {editingTaskId && currentEditingTask?.series_id && userRole === 'Admin' && (
-                                    <div className="pt-2 border-t border-outline-variant/20 space-y-2">
-                                        <label className="text-body-sm font-semibold text-primary flex items-center gap-1.5">
-                                            <span className="material-symbols-outlined text-[15px]">repeat</span>
+                                    <div className="pt-2 border-t border-border space-y-2">
+                                        <label className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                                            <Icon name="repeat" size={14} />
                                             Recurring Series Options
                                         </label>
-                                        <div className="bg-surface-container-low/70 border border-outline-variant/30 rounded-lg p-2.5 space-y-1.5 text-xs">
-                                            <label className="flex items-center gap-2 cursor-pointer text-on-surface">
+                                        <div className="bg-muted/30 border border-border rounded-md p-2 space-y-1.5 text-xs text-foreground">
+                                            <label className="flex items-center gap-2 cursor-pointer">
                                                 <input 
                                                     type="radio"
                                                     name="seriesEditOption"
@@ -1148,7 +1146,7 @@ export default function CalendarTab({ onOpenExport }) {
                                                 />
                                                 <span>Update only this task</span>
                                             </label>
-                                            <label className="flex items-center gap-2 cursor-pointer text-on-surface">
+                                            <label className="flex items-center gap-2 cursor-pointer">
                                                 <input 
                                                     type="radio"
                                                     name="seriesEditOption"
@@ -1164,20 +1162,20 @@ export default function CalendarTab({ onOpenExport }) {
                                 )}
 
                                 <div className="flex gap-2 pt-2">
-                                    <button type="submit" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="flex-1 bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-3 rounded text-body-sm transition-opacity flex items-center justify-center gap-1.5 cursor-pointer micro-interaction disabled:cursor-wait disabled:opacity-70">
-                                        <span className={`material-symbols-outlined text-[16px] ${isMutating ? 'animate-spin' : ''}`}>{isMutating ? 'progress_activity' : 'save'}</span>
+                                    <button type="submit" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-1.5 px-3 rounded-md text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] disabled:cursor-wait disabled:opacity-70">
+                                        <Icon name={isMutating ? 'progress_activity' : 'save'} size={14} className={isMutating ? 'animate-spin' : ''} />
                                         {isMutating ? 'Saving…' : editingTaskId ? 'Save' : 'Add'}
                                     </button>
                                     {editingTaskId && userRole !== 'Creator' && (
                                         <button 
                                             type="button" 
-                                            className="bg-error-container/20 text-error border border-error/25 hover:bg-error-container/30 font-semibold py-2 px-3 rounded text-body-sm transition-colors cursor-pointer flex items-center justify-center gap-1 micro-interaction" 
+                                            className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer flex items-center justify-center gap-1" 
                                             onClick={() => handleDeleteTask({ id: editingTaskId, title: formTitle, series_id: currentEditingTask?.series_id, date: currentEditingTask?.Date })}
                                         >
-                                            <span className="material-symbols-outlined text-[16px]">delete</span> Delete
+                                            <Icon name="delete" size={14} /> Delete
                                         </button>
                                     )}
-                                    <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-3 rounded text-body-sm transition-colors cursor-pointer flex items-center justify-center gap-1 micro-interaction" onClick={resetForm}>
+                                    <button type="button" className="bg-muted hover:bg-muted/80 text-foreground font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer flex items-center justify-center gap-1" onClick={resetForm}>
                                         Reset
                                     </button>
                                 </div>
@@ -1190,37 +1188,37 @@ export default function CalendarTab({ onOpenExport }) {
             {/* Custom Modal Confirmation for calendar task deletion */}
             {taskToDelete && typeof window !== 'undefined' && createPortal(
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-background/60 backdrop-blur-xs px-4">
-                    <div className="bg-surface-container border border-outline-variant/30 rounded-xl max-w-md w-full overflow-hidden shadow-2xl animate-scale-up">
-                        <div className="px-5 py-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
-                            <h2 className="text-body-md font-bold text-error flex items-center gap-2">
-                                <span className="material-symbols-outlined">warning</span> Confirm Delete
+                    <div className="bg-surface border border-border rounded-lg max-w-md w-full overflow-hidden shadow-xl">
+                        <div className="px-4 py-3.5 border-b border-border flex justify-between items-center bg-surface">
+                            <h2 className="text-sm font-semibold text-rose-500 flex items-center gap-2">
+                                <Icon name="warning" size={16} /> Confirm Delete
                             </h2>
-                            <button className="text-on-surface-variant hover:text-on-surface p-1 cursor-pointer" onClick={() => setTaskToDelete(null)}>
-                                <span className="material-symbols-outlined text-[20px]">close</span>
+                            <button type="button" className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted transition-colors cursor-pointer" onClick={() => setTaskToDelete(null)} aria-label="Close">
+                                <Icon name="close" size={16} />
                             </button>
                         </div>
-                        <div className="px-5 py-4 text-body-sm text-on-surface-variant leading-relaxed space-y-2">
+                        <div className="px-4 py-3.5 text-xs text-muted-foreground leading-relaxed space-y-2">
                             <p>
-                                Are you sure you want to delete <strong className="text-on-surface">"{taskToDelete.title}"</strong> from the master schedule?
+                                Are you sure you want to delete <strong className="text-foreground">"{taskToDelete.title}"</strong> from the master schedule?
                             </p>
                             {taskToDelete.series_id && (
-                                <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-xs text-on-surface space-y-1">
-                                    <p className="font-bold flex items-center gap-1 text-primary">
-                                        <span className="material-symbols-outlined text-[15px]">repeat</span> This task is part of a recurring series.
+                                <div className="p-2.5 bg-primary/10 border border-primary/20 rounded-md text-xs text-foreground space-y-1">
+                                    <p className="font-medium flex items-center gap-1.5 text-primary">
+                                        <Icon name="repeat" size={14} /> This task is part of a recurring series.
                                     </p>
-                                    <p className="text-on-surface-variant">Choose how you want to apply this deletion:</p>
+                                    <p className="text-muted-foreground">Choose how you want to apply this deletion:</p>
                                 </div>
                             )}
                         </div>
-                        <div className="px-5 py-4 border-t border-outline-variant/20 flex flex-col sm:flex-row justify-end gap-2 bg-surface-container-lowest">
-                            <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-3 rounded-lg text-body-sm transition-colors cursor-pointer" onClick={() => setTaskToDelete(null)}>
+                        <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row justify-end gap-2 bg-surface">
+                            <button type="button" className="bg-muted hover:bg-muted/80 text-foreground font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer" onClick={() => setTaskToDelete(null)}>
                                 Cancel
                             </button>
                             {taskToDelete.series_id ? (
                                 <>
                                     <button 
                                         type="button" 
-                                        className="bg-error/20 hover:bg-error/30 text-error border border-error/30 font-semibold py-2 px-3 rounded-lg text-body-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
+                                        className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer flex items-center justify-center gap-1"
                                         onClick={async () => {
                                             const success = await deleteCalendarTask(taskToDelete.id, 'single');
                                             if (success) resetForm();
@@ -1231,18 +1229,18 @@ export default function CalendarTab({ onOpenExport }) {
                                     </button>
                                     <button 
                                         type="button" 
-                                        className="bg-error/85 hover:bg-error text-on-error font-semibold py-2 px-3 rounded-lg text-body-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
+                                        className="bg-rose-500/80 hover:bg-rose-500 text-white font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer flex items-center justify-center gap-1"
                                         onClick={async () => {
                                             const success = await deleteCalendarTask(taskToDelete.id, 'future');
                                             if (success) resetForm();
                                             setTaskToDelete(null);
                                         }}
                                     >
-                                        This &amp; future tasks
+                                        This and future tasks
                                     </button>
                                     <button 
                                         type="button" 
-                                        className="bg-error text-on-error hover:opacity-90 font-semibold py-2 px-3 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center justify-center gap-1"
+                                        className="bg-rose-600 hover:bg-rose-700 text-white font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer flex items-center justify-center gap-1"
                                         onClick={async () => {
                                             const success = await deleteCalendarTask(taskToDelete.id, 'all');
                                             if (success) resetForm();
@@ -1255,7 +1253,7 @@ export default function CalendarTab({ onOpenExport }) {
                             ) : (
                                 <button 
                                     type="button" 
-                                    className="bg-error text-on-error hover:opacity-90 font-semibold py-2 px-4 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center gap-1.5" 
+                                    className="bg-rose-600 hover:bg-rose-700 text-white font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer flex items-center gap-1.5" 
                                     onClick={async () => {
                                         const success = await deleteCalendarTask(taskToDelete.id, 'single');
                                         if (success) {
@@ -1264,7 +1262,7 @@ export default function CalendarTab({ onOpenExport }) {
                                         setTaskToDelete(null);
                                     }}
                                 >
-                                    <span className="material-symbols-outlined text-[18px]">delete</span> Delete Task
+                                    <Icon name="delete" size={14} /> Delete Task
                                 </button>
                             )}
                         </div>
@@ -1276,44 +1274,45 @@ export default function CalendarTab({ onOpenExport }) {
             {/* Popover Modal for Days with High Task Density */}
             {activePopoverDate && typeof window !== 'undefined' && createPortal(
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-background/60 backdrop-blur-xs px-4">
-                    <div className="bg-surface-container border border-outline-variant/30 rounded-xl max-w-md w-full overflow-hidden shadow-2xl animate-scale-up">
-                        <div className="px-5 py-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
+                    <div className="bg-surface border border-border rounded-lg max-w-md w-full overflow-hidden shadow-xl">
+                        <div className="px-4 py-3.5 border-b border-border flex justify-between items-center bg-surface">
                             <div className="flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary text-[20px]">event_note</span>
-                                <h3 className="text-body-md font-bold text-on-surface font-display">
+                                <Icon name="event_note" size={16} className="text-primary" />
+                                <h3 className="text-sm font-semibold text-foreground">
                                     Tasks on {formatDisplayDateString(activePopoverDate)}
                                 </h3>
                             </div>
                             <button 
                                 type="button" 
-                                className="text-on-surface-variant hover:text-on-surface p-1 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer" 
+                                className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted transition-colors cursor-pointer" 
                                 onClick={() => setActivePopoverDate(null)}
+                                aria-label="Close"
                             >
-                                <span className="material-symbols-outlined text-[20px]">close</span>
+                                <Icon name="close" size={16} />
                             </button>
                         </div>
-                        <div className="p-4 space-y-2.5 max-h-[380px] overflow-y-auto">
+                        <div className="p-3.5 space-y-2 max-h-[380px] overflow-y-auto">
                             {(tasksByDateMap[activePopoverDate] || []).map((task) => (
                                 <div 
                                     key={task.id}
-                                    className="flex items-center justify-between p-3 rounded-lg bg-surface-container-low border border-outline-variant/20 hover:border-primary/40 transition-colors"
+                                    className="flex items-center justify-between p-2.5 rounded-md bg-muted/30 border border-border hover:border-primary/40 transition-colors"
                                 >
                                     <div className="space-y-1 min-w-0 flex-1 pr-2">
                                         <div className="flex items-center gap-1.5 flex-wrap">
                                             {task.isMeeting ? (
-                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
-                                                    <span className="material-symbols-outlined text-[11px]">handshake</span> Meeting
+                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                                                    <Icon name="handshake" size={11} /> Meeting
                                                 </span>
                                             ) : (
                                                 <>
-                                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${getPicMobileBadgeClass(task.pic)}`}>
+                                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase ${getPicMobileBadgeClass(task.pic)}`}>
                                                         {getPicDisplayName(task.pic)}
                                                     </span>
-                                                    <span className="text-[10px] font-bold text-on-surface">{task.category}</span>
+                                                    <span className="text-[10px] font-semibold text-foreground">{task.category}</span>
                                                 </>
                                             )}
                                         </div>
-                                        <p className="text-xs font-semibold text-on-surface truncate">
+                                        <p className="text-xs font-medium text-foreground truncate">
                                             {task.isMeeting ? 'Meeting Agenda & Recap Details' : (task.contentTitle || 'Untitled')}
                                         </p>
                                     </div>
@@ -1321,35 +1320,35 @@ export default function CalendarTab({ onOpenExport }) {
                                         {task.isMeeting ? (
                                             <button 
                                                 type="button" 
-                                                className="h-8 px-2.5 rounded-md bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                                className="h-7 px-2.5 rounded-md bg-muted hover:bg-primary hover:text-primary-foreground text-foreground text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
                                                 onClick={() => {
                                                     setSelectedMeetingId(task.id);
                                                     setCurrentView('meeting');
                                                     setActivePopoverDate(null);
                                                 }}
                                             >
-                                                Open <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                                                Open <Icon name="arrow_forward" size={13} />
                                             </button>
                                         ) : (
                                             <button 
                                                 type="button" 
-                                                className="h-8 px-2.5 rounded-md bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                                className="h-7 px-2.5 rounded-md bg-muted hover:bg-primary hover:text-primary-foreground text-foreground text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
                                                 onClick={() => {
                                                     startEditTask(task);
                                                     setActivePopoverDate(null);
                                                 }}
                                             >
-                                                Edit <span className="material-symbols-outlined text-[14px]">edit</span>
+                                                Edit <Icon name="edit" size={13} />
                                             </button>
                                         )}
                                     </div>
                                 </div>
                             ))}
                         </div>
-                        <div className="px-5 py-3 border-t border-outline-variant/20 flex justify-end bg-surface-container-lowest">
+                        <div className="px-4 py-3 border-t border-border flex justify-end bg-surface">
                             <button 
                                 type="button" 
-                                className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-1.5 px-4 rounded-lg text-body-sm transition-colors cursor-pointer" 
+                                className="bg-muted hover:bg-muted/80 text-foreground font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer" 
                                 onClick={() => setActivePopoverDate(null)}
                             >
                                 Close

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Icon from './Icon';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import { DeleteConfirmModal, LinkModal } from './Modals';
@@ -18,7 +19,7 @@ import {
 } from '../utils/helpers';
 
 const getToolbarBtnStyle = (isActive) => {
-    return isActive ? { backgroundColor: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-primary)' } : {};
+    return isActive ? { backgroundColor: 'hsl(var(--primary) / 0.12)', color: 'hsl(var(--primary))' } : {};
 };
 
 export default function MeetingsTab({ onOpenDatePicker }) {
@@ -608,13 +609,13 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                 {isUnlocked && userRole !== 'Creator' && (
                     <button 
                         type="button" 
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm micro-interaction" 
+                        className="bg-primary hover:opacity-90 text-primary-foreground font-medium py-1.5 px-3 rounded-md text-xs transition-opacity flex items-center gap-1.5 cursor-pointer shadow-none" 
                         onClick={handleCreateNewMemo}
                     >
-                        <span className="material-symbols-outlined text-[16px]">add</span> Create Memo
+                        <Icon name="add" size={14} /> Create Memo
                     </button>
                 )}
-                <span className="px-3 py-1.5 bg-surface-container-high border border-outline-variant/30 text-on-surface-variant rounded-xl text-xs font-bold uppercase">
+                <span className="px-2.5 py-1 bg-surface border border-border text-muted-foreground rounded-md text-xs font-medium uppercase font-mono">
                     {(meetingsData || []).length} Memos
                 </span>
             </div>
@@ -623,20 +624,18 @@ export default function MeetingsTab({ onOpenDatePicker }) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter items-start">
                 
                 {/* Left Side: Memo Directory sidebar (col-span-1) */}
-                <div className="glass-panel border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
-                    <div className="flex items-center justify-between border-b border-outline-variant/20 pb-2">
-                        <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider">Memo Directory</h4>
+                <div className="bg-surface border border-border rounded-lg p-4 space-y-3.5">
+                    <div className="flex items-center justify-between border-b border-border pb-2">
+                        <h4 className="font-semibold text-xs text-foreground uppercase tracking-wider">Memo Directory</h4>
                     </div>
 
                     {/* Date filter field with clear filter option */}
                     <div className="flex gap-2">
                         <div className="relative flex-1">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 flex items-center">
-                                <span className="material-symbols-outlined text-[18px]">date_range</span>
-                            </span>
+                            <Icon name="date_range" size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                             <input 
                                 type="text" 
-                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded pl-9 pr-3 py-1.5 text-body-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary cursor-pointer" 
+                                className="w-full bg-background border border-border rounded-md pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary cursor-pointer font-mono" 
                                 placeholder="Filter by date..." 
                                 readOnly
                                 value={dateFilter}
@@ -645,20 +644,20 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                         </div>
                         {dateFilter && (
                             <button 
-                                className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest px-3 py-1.5 rounded text-[11px] font-bold uppercase transition-colors cursor-pointer" 
+                                className="bg-surface border border-border text-foreground hover:bg-muted px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer" 
                                 onClick={() => setDateFilter('')} 
                                 title="Clear filters"
                             >
-                                <span className="material-symbols-outlined text-[14px]">clear</span>
+                                <Icon name="clear" size={13} />
                             </button>
                         )}
                     </div>
 
                     {/* Memos list stack */}
-                    <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
                         {filteredMeetings.length === 0 ? (
-                            <div className="py-12 text-center text-on-surface-variant/50 text-[12px] space-y-2">
-                                <span className="material-symbols-outlined text-[32px] text-on-surface-variant/30">event_busy</span>
+                            <div className="py-12 text-center text-muted-foreground/60 text-xs space-y-2">
+                                <Icon name="event_busy" size={32} className="text-muted-foreground/30 mx-auto" />
                                 <p>No memos found</p>
                             </div>
                         ) : (
@@ -682,29 +681,29 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                                 }
                                             }, 50);
                                         }}
-                                        className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer flex flex-col gap-2 relative ${
+                                        className={`w-full text-left p-3 rounded-md border transition-all cursor-pointer flex flex-col gap-1.5 relative ${
                                             isSelected 
-                                                ? 'bg-surface-container-high border-2 border-primary active' 
-                                                : 'bg-surface-container-low border-outline-variant/15 hover:bg-surface-container'
+                                                ? 'bg-primary/5 border-primary ring-1 ring-primary active' 
+                                                : 'bg-muted/20 border-border hover:bg-muted/40'
                                         }`}
                                     >
-                                        <div className="flex items-center gap-1.5 text-on-surface-variant text-[11px] font-semibold">
-                                            <span className="material-symbols-outlined text-[13px] text-primary">calendar_today</span>
+                                        <div className="flex items-center gap-1.5 text-foreground text-xs font-medium font-mono">
+                                            <Icon name="calendar_today" size={13} className="text-primary" />
                                             {parseDate(memo.date)}
                                         </div>
                                         
                                         <div className="flex justify-between items-center gap-2 mt-0.5">
-                                            <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-bold uppercase ${
-                                                countAtt > 0 ? 'bg-emerald-500/10 text-primary border border-primary/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium uppercase ${
+                                                countAtt > 0 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
                                             }`}>
                                                 {countAtt === 1 ? '1 Attendee' : `${countAtt} Attendees`}
                                             </span>
-                                            <span className="px-1.5 py-0.2 rounded text-[8.5px] font-bold uppercase bg-emerald-500/15 text-primary border border-primary/25">
+                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-medium uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                                 Done
                                             </span>
                                         </div>
 
-                                        <p className="text-[11.5px] text-on-surface-variant/80 italic leading-snug line-clamp-2">
+                                        <p className="text-xs text-muted-foreground italic leading-relaxed line-clamp-2">
                                             {snippet || 'No recap written yet.'}
                                         </p>
                                     </button>
@@ -715,13 +714,13 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                 </div>
 
                 {/* Right Side: Main Detail Viewer or Form Editor (col-span-2) */}
-                <div className="meeting-main-content lg:col-span-2 glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl min-h-[400px]">
+                <div className="meeting-main-content lg:col-span-2 bg-surface border border-border rounded-lg p-5 min-h-[400px]">
                     {!selectedMeetingId ? (
-                        <div className="h-full flex flex-col justify-center items-center text-center p-12 space-y-4">
-                            <span className="material-symbols-outlined text-[64px] text-on-surface-variant/30">handshake</span>
+                        <div className="h-full flex flex-col justify-center items-center text-center p-12 space-y-3">
+                            <Icon name="handshake" size={48} className="text-muted-foreground/30 mx-auto" />
                             <div className="space-y-1">
-                                <h3 className="font-bold text-body-sm text-on-surface uppercase tracking-wider">No Memo Selected</h3>
-                                <p className="text-[12px] text-on-surface-variant/80 max-w-xs">Select a meeting memo from the directory list sidebar or create a new memo to view recap contents.</p>
+                                <h3 className="font-semibold text-xs text-foreground uppercase tracking-wider">No Memo Selected</h3>
+                                <p className="text-xs text-muted-foreground max-w-xs">Select a meeting memo from the directory list sidebar or create a new memo to view recap contents.</p>
                             </div>
                         </div>
                     ) : selectedMeetingId !== 'NEW' && !(meetingsData || []).some((memo) => memo.id === selectedMeetingId) ? (
@@ -734,73 +733,73 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                         />
                     ) : !isEditing ? (
                         /* VIEW MODE */
-                        <div className="space-y-6">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-outline-variant/20 pb-3 gap-3">
-                                <h4 className="font-bold text-body-md text-on-surface flex items-center gap-1.5">
-                                    <span className="material-symbols-outlined text-primary">calendar_today</span>
+                        <div className="space-y-5">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border pb-3 gap-3">
+                                <h4 className="font-semibold text-sm text-foreground flex items-center gap-1.5 font-mono">
+                                    <Icon name="calendar_today" size={15} className="text-primary" />
                                     Date: {parseDate(formDate)}
                                 </h4>
                                 <div className="flex items-center gap-2">
                                     <button 
                                         type="button" 
-                                        className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer" 
+                                        className="bg-surface border border-border text-foreground hover:bg-muted font-medium py-1.5 px-3 rounded-md text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer" 
                                         onClick={() => setSelectedMeetingId(null)}
                                     >
-                                        <span className="material-symbols-outlined text-[15px]">close</span> Close
+                                        <Icon name="close" size={14} /> Close
                                     </button>
                                     {userRole !== 'Creator' && !actionsDisabled && (
                                         <button 
                                             type="button" 
-                                            className="bg-primary text-on-primary hover:opacity-90 font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-opacity flex items-center gap-1 cursor-pointer" 
+                                            className="bg-primary text-primary-foreground hover:opacity-90 font-medium py-1.5 px-3 rounded-md text-xs uppercase tracking-wider transition-opacity flex items-center gap-1.5 cursor-pointer" 
                                             onClick={() => setIsEditing(true)}
                                         >
-                                            <span className="material-symbols-outlined text-[15px]">edit</span> Edit
+                                            <Icon name="edit" size={14} /> Edit
                                         </button>
                                     )}
                                     {userRole !== 'Creator' && (
                                         <button 
                                             type="button" 
-                                            className="bg-error-container/20 text-error border border-error/25 hover:bg-error-container/30 font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer" 
+                                            className="bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/20 font-medium py-1.5 px-3 rounded-md text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer" 
                                             onClick={() => setIsDeleteConfirmOpen(true)}
                                         >
-                                            <span className="material-symbols-outlined text-[15px]">delete</span> Delete
+                                            <Icon name="delete" size={14} /> Delete
                                         </button>
                                     )}
                                 </div>
                             </div>
 
                             {/* Attendance grids info block */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-3.5 space-y-2">
-                                    <label className="text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-wider">Attendees</label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                                <div className="bg-muted/20 border border-border rounded-md p-3 space-y-1.5">
+                                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Attendees</label>
                                     <div className="flex flex-wrap gap-1.5">
                                         {formAttendees.length === 0 ? (
-                                            <span className="text-[11.5px] text-on-surface-variant/60 italic">None present</span>
+                                            <span className="text-xs text-muted-foreground italic">None present</span>
                                         ) : (
                                             formAttendees.map(att => (
-                                                <span key={att} className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getPicBadgeClasses(att)}`}>
+                                                <span key={att} className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase ${getPicBadgeClasses(att)}`}>
                                                     {getPicDisplayName(att)}
                                                 </span>
                                             ))
                                         )}
                                     </div>
                                 </div>
-                                <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-3.5 space-y-2">
-                                    <label className="text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-wider">Absentees</label>
+                                <div className="bg-muted/20 border border-border rounded-md p-3 space-y-1.5">
+                                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Absentees</label>
                                     <div className="flex flex-wrap gap-1.5">
                                         {absentees.length === 0 ? (
-                                            <span className="text-[11.5px] text-on-surface-variant/60 italic">None absent</span>
+                                            <span className="text-xs text-muted-foreground italic">None absent</span>
                                         ) : (
                                             absentees.map(name => (
-                                                <span key={name} className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-surface-container border border-outline-variant/35 text-on-surface-variant/60">
+                                                <span key={name} className="px-2 py-0.5 rounded text-[10px] font-medium uppercase bg-muted/40 border border-border text-muted-foreground">
                                                     {getPicDisplayName(name)}
                                                 </span>
                                             ))
                                         )}
                                     </div>
                                 </div>
-                                <div className="bg-surface-container-low border border-outline-variant/20 rounded-xl p-3.5 space-y-2">
-                                    <label className="text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-wider">Video Recap</label>
+                                <div className="bg-muted/20 border border-border rounded-md p-3 space-y-1.5">
+                                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Video Recap</label>
                                     <div className="flex flex-col gap-1 items-start">
                                         {(() => {
                                             const links = formVideoRecap ? formVideoRecap.split(/[\s,]+/).map(l => l.trim()).filter(Boolean) : [];
@@ -811,13 +810,13 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                                         href={link} 
                                                         target="_blank" 
                                                         rel="noopener noreferrer" 
-                                                        className="text-[12px] text-primary hover:underline inline-flex items-center gap-1 font-semibold"
+                                                        className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-medium"
                                                     >
-                                                        <span className="material-symbols-outlined text-[13px]">videocam</span> Video Recap {links.length > 1 ? `#${idx + 1}` : ''}
+                                                        <Icon name="videocam" size={14} /> Video Recap {links.length > 1 ? `#${idx + 1}` : ''}
                                                     </a>
                                                 ))
                                             ) : (
-                                                <span className="text-[11.5px] text-on-surface-variant/60 italic">None provided</span>
+                                                <span className="text-xs text-muted-foreground italic">None provided</span>
                                             );
                                         })()}
                                     </div>
@@ -826,39 +825,44 @@ export default function MeetingsTab({ onOpenDatePicker }) {
 
                             {/* Recap details */}
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-wider pb-1.5 border-b border-outline-variant/20 block">
+                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 border-b border-border block">
                                     Meeting Recap Detail Notes
                                 </label>
                                 <div 
-                                    className="meeting-recap-text-container bg-surface-container-lowest border border-outline-variant/35 rounded-lg p-5 text-body-sm leading-relaxed text-on-surface prose dark:prose-invert max-w-none"
+                                    className="meeting-recap-text-container bg-background border border-border rounded-md p-4 text-xs leading-relaxed text-foreground prose dark:prose-invert max-w-none"
                                     dangerouslySetInnerHTML={createSafeHtml(formRecap)}
                                 />
                             </div>
                         </div>
                     ) : (
                         /* EDIT MODE */
-                        <form onSubmit={handleSaveMemo} className="space-y-5" autoComplete="off">
-                            {memoDraftRecovered && <p role="status" className="draft-recovery-note"><span className="material-symbols-outlined" aria-hidden="true">restore</span>Recovered an unsaved meeting memo from this browser.</p>}
-                            <div className="flex justify-between items-center border-b border-outline-variant/20 pb-3">
-                                <h4 className="font-bold text-body-md text-on-surface flex items-center gap-1.5">
-                                    <span className="material-symbols-outlined text-primary">edit_note</span>
+                        <form onSubmit={handleSaveMemo} className="space-y-4" autoComplete="off">
+                            {memoDraftRecovered && (
+                                <p role="status" className="flex items-center gap-1.5 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-md">
+                                    <Icon name="restore" size={14} aria-hidden="true" />
+                                    Recovered an unsaved meeting memo from this browser.
+                                </p>
+                            )}
+                            <div className="flex justify-between items-center border-b border-border pb-3">
+                                <h4 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
+                                    <Icon name="edit_note" size={16} className="text-primary" />
                                     {selectedMeetingId === 'NEW' ? 'Create Meeting Memo' : 'Edit Meeting Memo'}
                                 </h4>
                                 <button 
                                     type="button" 
-                                    className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer" 
+                                    className="bg-surface border border-border text-foreground hover:bg-muted font-medium py-1.5 px-3 rounded-md text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer" 
                                     onClick={handleCancelEdit}
                                 >
-                                    <span className="material-symbols-outlined text-[15px]">close</span> Close
+                                    <Icon name="close" size={14} /> Close
                                 </button>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-3.5">
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Date <span className="text-error">*</span></label>
+                                    <label className="text-xs font-medium text-muted-foreground">Date <span className="text-rose-500">*</span></label>
                                     <input 
                                         type="text" 
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer" 
+                                        className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer font-mono" 
                                         placeholder="YYYY-MM-DD" 
                                         readOnly
                                         required
@@ -869,10 +873,10 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Video Recap URL(s)</label>
+                                    <label className="text-xs font-medium text-muted-foreground">Video Recap URL(s)</label>
                                     <input 
                                         type="text" 
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary" 
+                                        className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors font-mono" 
                                         placeholder="e.g. https://link1.com, https://link2.com" 
                                         value={formVideoRecap}
                                         onChange={(e) => setFormVideoRecap(e.target.value)}
@@ -883,25 +887,25 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                 {/* Attendees checkboxes */}
                                 <div className="space-y-2">
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                        <label className="text-body-sm font-semibold text-on-surface-variant">Attendees Presence Checklist</label>
+                                        <label className="text-xs font-medium text-muted-foreground">Attendees Presence Checklist</label>
                                         <div className="relative sm:w-64">
-                                            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[17px] text-on-surface-variant/60">search</span>
+                                            <Icon name="search" size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                                             <input
                                                 type="search"
                                                 value={attendeeSearch}
                                                 onChange={(event) => setAttendeeSearch(event.target.value)}
                                                 placeholder="Search name or role"
-                                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg pl-9 pr-3 py-2 text-[11px] text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary"
+                                                className="w-full bg-background border border-border rounded-md pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
                                             />
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-surface-container-low/40 border border-outline-variant/20 rounded p-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-muted/20 border border-border rounded-md p-3">
                                         {meetingMembers.length === 0 ? (
-                                            <span className="col-span-full text-[11.5px] text-on-surface-variant/60 italic">
+                                            <span className="col-span-full text-xs text-muted-foreground italic">
                                                 No interns or lecturers were found.
                                             </span>
                                         ) : filteredMeetingMembers.length === 0 ? (
-                                            <span className="col-span-full text-[11.5px] text-on-surface-variant/60 italic">
+                                            <span className="col-span-full text-xs text-muted-foreground italic">
                                                 No attendees match your search.
                                             </span>
                                         ) : filteredMeetingMembers.map(user => {
@@ -909,20 +913,20 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                             return (
                                                 <label 
                                                     key={user.id}
-                                                    className="flex items-start gap-2 cursor-pointer select-none text-[12px] text-on-surface font-medium"
+                                                    className="flex items-start gap-2 cursor-pointer select-none text-xs text-foreground font-medium"
                                                 >
                                                     <input 
                                                         type="checkbox" 
                                                         checked={isChecked}
                                                         onChange={() => handleAttendeeToggle(user.name)}
                                                         disabled={actionsDisabled}
-                                                        className="rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-4 w-4 cursor-pointer mt-0.5"
+                                                        className="rounded border-border bg-background text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer mt-0.5"
                                                     />
                                                     <span className="min-w-0">
                                                         <span className="block truncate">{user.name}</span>
                                                         <span className="flex flex-wrap gap-1 mt-1">
                                                             {user.roles.map((role) => (
-                                                                <span key={role} className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${role === 'lecturer' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-primary/10 text-primary border border-primary/20'}`}>
+                                                                <span key={role} className={`px-1.5 py-0.5 rounded text-[8px] font-medium uppercase ${role === 'lecturer' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-primary/10 text-primary border border-primary/20'}`}>
                                                                     {role}
                                                                 </span>
                                                             ))}
@@ -936,52 +940,52 @@ export default function MeetingsTab({ onOpenDatePicker }) {
 
                                 {/* Rich Text Editor Recap */}
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Meeting Recap Notes <span className="text-error">*</span></label>
+                                    <label className="text-xs font-medium text-muted-foreground">Meeting Recap Notes <span className="text-rose-500">*</span></label>
                                     
-                                    {/* Format toolbar using Material symbols */}
-                                    <fieldset disabled={actionsDisabled} className="flex flex-wrap gap-1 bg-surface-container-low border border-outline-variant/35 rounded-t p-1 disabled:opacity-60">
-                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.bold)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('bold'); }} title="Bold">
-                                            <span className="material-symbols-outlined text-[18px]">format_bold</span>
+                                    {/* Format toolbar using Icon component */}
+                                    <fieldset disabled={actionsDisabled} className="flex flex-wrap gap-1 bg-muted/40 border border-border rounded-t-md p-1 disabled:opacity-60">
+                                        <button type="button" className="p-1.5 hover:bg-muted rounded text-foreground flex items-center justify-center cursor-pointer transition-colors" style={getToolbarBtnStyle(activeStyles.bold)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('bold'); }} title="Bold">
+                                            <Icon name="format_bold" size={15} />
                                         </button>
-                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.italic)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('italic'); }} title="Italic">
-                                            <span className="material-symbols-outlined text-[18px]">format_italic</span>
+                                        <button type="button" className="p-1.5 hover:bg-muted rounded text-foreground flex items-center justify-center cursor-pointer transition-colors" style={getToolbarBtnStyle(activeStyles.italic)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('italic'); }} title="Italic">
+                                            <Icon name="format_italic" size={15} />
                                         </button>
-                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.underline)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('underline'); }} title="Underline">
-                                            <span className="material-symbols-outlined text-[18px]">format_underlined</span>
-                                        </button>
-                                        
-                                        <div className="w-[1px] bg-outline-variant/30 my-1 self-stretch mx-1"></div>
-                                        
-                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.insertUnorderedList)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('insertUnorderedList'); }} title="Bulleted List">
-                                            <span className="material-symbols-outlined text-[18px]">format_list_bulleted</span>
-                                        </button>
-                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.insertOrderedList)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('insertOrderedList'); }} title="Numbered List">
-                                            <span className="material-symbols-outlined text-[18px]">format_list_numbered</span>
+                                        <button type="button" className="p-1.5 hover:bg-muted rounded text-foreground flex items-center justify-center cursor-pointer transition-colors" style={getToolbarBtnStyle(activeStyles.underline)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('underline'); }} title="Underline">
+                                            <Icon name="format_underlined" size={15} />
                                         </button>
                                         
-                                        <div className="w-[1px] bg-outline-variant/30 my-1 self-stretch mx-1"></div>
+                                        <div className="w-px bg-border my-1 self-stretch mx-0.5"></div>
                                         
-                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.justifyLeft)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyLeft'); }} title="Align Left">
-                                            <span className="material-symbols-outlined text-[18px]">format_align_left</span>
+                                        <button type="button" className="p-1.5 hover:bg-muted rounded text-foreground flex items-center justify-center cursor-pointer transition-colors" style={getToolbarBtnStyle(activeStyles.insertUnorderedList)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('insertUnorderedList'); }} title="Bulleted List">
+                                            <Icon name="format_list_bulleted" size={15} />
                                         </button>
-                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.justifyCenter)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyCenter'); }} title="Align Center">
-                                            <span className="material-symbols-outlined text-[18px]">format_align_center</span>
-                                        </button>
-                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} style={getToolbarBtnStyle(activeStyles.justifyRight)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyRight'); }} title="Align Right">
-                                            <span className="material-symbols-outlined text-[18px]">format_align_right</span>
+                                        <button type="button" className="p-1.5 hover:bg-muted rounded text-foreground flex items-center justify-center cursor-pointer transition-colors" style={getToolbarBtnStyle(activeStyles.insertOrderedList)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('insertOrderedList'); }} title="Numbered List">
+                                            <Icon name="format_list_numbered" size={15} />
                                         </button>
                                         
-                                        <div className="w-[1px] bg-outline-variant/30 my-1 self-stretch mx-1"></div>
+                                        <div className="w-px bg-border my-1 self-stretch mx-0.5"></div>
                                         
-                                        <button type="button" className={`p-1.5 hover:bg-surface-container-high rounded text-on-surface flex items-center justify-center cursor-pointer`} onMouseDown={handleLinkClick} title="Insert Link">
-                                            <span className="material-symbols-outlined text-[18px]">link</span>
+                                        <button type="button" className="p-1.5 hover:bg-muted rounded text-foreground flex items-center justify-center cursor-pointer transition-colors" style={getToolbarBtnStyle(activeStyles.justifyLeft)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyLeft'); }} title="Align Left">
+                                            <Icon name="format_align_left" size={15} />
+                                        </button>
+                                        <button type="button" className="p-1.5 hover:bg-muted rounded text-foreground flex items-center justify-center cursor-pointer transition-colors" style={getToolbarBtnStyle(activeStyles.justifyCenter)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyCenter'); }} title="Align Center">
+                                            <Icon name="format_align_center" size={15} />
+                                        </button>
+                                        <button type="button" className="p-1.5 hover:bg-muted rounded text-foreground flex items-center justify-center cursor-pointer transition-colors" style={getToolbarBtnStyle(activeStyles.justifyRight)} onMouseDown={(e) => { e.preventDefault(); applyFormatting('justifyRight'); }} title="Align Right">
+                                            <Icon name="format_align_right" size={15} />
+                                        </button>
+                                        
+                                        <div className="w-px bg-border my-1 self-stretch mx-0.5"></div>
+                                        
+                                        <button type="button" className="p-1.5 hover:bg-muted rounded text-foreground flex items-center justify-center cursor-pointer transition-colors" onMouseDown={handleLinkClick} title="Insert Link">
+                                            <Icon name="link" size={15} />
                                         </button>
                                     </fieldset>
                                     
                                     <div 
                                         ref={editorRef}
                                         id="meetingFormRecap" 
-                                        className="w-full bg-surface-container-low border border-outline-variant/35 border-t-0 rounded-b p-4 text-body-sm text-on-surface focus:outline-none focus:border-primary min-h-[220px]" 
+                                        className="w-full bg-background border border-border border-t-0 rounded-b-md p-3.5 text-xs text-foreground focus:outline-none focus:border-primary min-h-[220px]" 
                                         contentEditable={!actionsDisabled} 
                                         onBlur={(e) => setFormRecap(e.currentTarget.innerHTML)}
                                         onInput={handleEditorInput}
@@ -999,12 +1003,21 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                             {/* Form submit/cancel actions */}
                             <div className="flex gap-3 pt-2">
                                 {isUnlocked && userRole !== 'Creator' && (
-                                    <button type="submit" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="flex-1 bg-primary text-on-primary hover:opacity-90 font-bold py-2.5 px-4 rounded-lg text-body-sm transition-opacity flex items-center justify-center gap-1.5 cursor-pointer micro-interaction shadow-md disabled:cursor-wait disabled:opacity-70">
-                                        <span className={`material-symbols-outlined text-[18px] ${isMutating ? 'animate-spin' : ''}`}>{isMutating ? 'progress_activity' : 'save'}</span> {isMutating ? 'Saving…' : 'Save Memo'}
+                                    <button
+                                        type="submit"
+                                        disabled={isMutating}
+                                        aria-busy={isMutating ? 'true' : 'false'}
+                                        className="flex-1 bg-primary text-primary-foreground hover:opacity-90 font-medium py-2 px-4 rounded-md text-xs transition-opacity flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-wait disabled:opacity-60"
+                                    >
+                                        <Icon name={isMutating ? 'progress_activity' : 'save'} size={15} className={isMutating ? 'animate-spin' : ''} /> {isMutating ? 'Saving...' : 'Save Memo'}
                                     </button>
                                 )}
-                                <button type="button" className="flex-1 bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-2.5 px-4 rounded-lg text-body-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5 micro-interaction" onClick={handleCancelEdit}>
-                                    <span className="material-symbols-outlined text-[18px]">close</span> Cancel
+                                <button
+                                    type="button"
+                                    className="flex-1 bg-surface border border-border text-foreground hover:bg-muted font-medium py-2 px-4 rounded-md text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                                    onClick={handleCancelEdit}
+                                >
+                                    <Icon name="close" size={15} /> Cancel
                                 </button>
                             </div>
                         </form>

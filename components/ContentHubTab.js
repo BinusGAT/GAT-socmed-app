@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Icon from './Icon';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import DiscardChangesModal from './DiscardChangesModal';
@@ -269,7 +270,7 @@ export default function ContentHubTab() {
                 references: updatedDraft.references
             });
             setDraftRecovered(false);
-            showAlert('💾 Storyboard draft updated!', 'success');
+            showAlert('Storyboard draft updated.', 'success');
         }
     };
 
@@ -310,10 +311,10 @@ export default function ContentHubTab() {
 
         navigator.clipboard.writeText(textToCopy)
             .then(() => {
-                showAlert('📋 Copywriting copied to clipboard!', 'success');
+                showAlert('Copywriting copied to clipboard.', 'success');
             })
             .catch(err => {
-                showAlert('❌ Failed to copy text: ' + err.message, 'error');
+				showAlert('Failed to copy text: ' + err.message, 'error');
             });
     };
 
@@ -328,20 +329,20 @@ export default function ContentHubTab() {
     return (
         <div className="space-y-4">
             {/* Top Toolbar */}
-            <div className="flex justify-between items-center bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <span className="text-xs font-semibold text-on-surface uppercase tracking-wider">Posts Library</span>
-                    <span className="px-2.5 py-0.5 bg-surface-container-highest/50 border border-outline-variant/30 text-on-surface-variant rounded-md font-mono text-[11px]">
+            <div className="flex justify-between items-center bg-surface border border-border rounded-lg p-3 sm:p-4 shadow-xs">
+                <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Posts Library</span>
+                    <span className="px-2 py-0.5 bg-muted border border-border text-muted-foreground rounded-md font-mono text-[11px]">
                         {filteredDrafts.length} visible of {(draftsData || []).length} drafts
                     </span>
                 </div>
                 {isUnlocked && userRole !== 'Creator' && (
                     <button
                         type="button"
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm micro-interaction"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-1.5 px-3 rounded-md text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
                         onClick={handleCreateDraft}
                     >
-                        <span className="material-symbols-outlined text-[16px]">add</span> New Draft
+                        <Icon name="add" size={15} /> New Draft
                     </button>
                 )}
             </div>
@@ -350,16 +351,16 @@ export default function ContentHubTab() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter items-start">
 
                 {/* Left Side: Idea Backlog (col-span-1) */}
-                <div className="glass-panel border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
-                    <div className="flex items-center justify-between border-b border-outline-variant/20 pb-2">
-                        <h4 className="font-bold text-body-sm text-on-surface uppercase tracking-wider">Idea Backlog</h4>
+                <div className="border border-border rounded-lg p-3.5 shadow-xs space-y-3 bg-surface">
+                    <div className="flex items-center justify-between border-b border-border pb-2">
+                        <h4 className="font-semibold text-xs text-foreground uppercase tracking-wider">Idea Backlog</h4>
 
                         {userRole !== 'Creator' && (
                             <div>
                                 <select
                                     value={picFilter}
                                     onChange={(e) => setPicFilter(e.target.value)}
-                                    className="bg-surface-container-low border border-outline-variant/30 text-on-surface-variant rounded px-2 py-1 text-[11px] font-bold uppercase focus:outline-none"
+                                    className="bg-background border border-border text-foreground rounded px-2 py-1 text-[11px] font-medium uppercase focus:outline-none focus:border-primary transition-colors"
                                 >
                                     <option value="">All PICs</option>
                                     {memberListData.map(m => (
@@ -371,10 +372,10 @@ export default function ContentHubTab() {
                     </div>
 
                     {/* Category quick selectors */}
-                    <div className="flex flex-wrap gap-1.5 border-b border-outline-variant/15 pb-2.5" aria-label="Filter drafts by category">
+                    <div className="flex flex-wrap gap-1.5 border-b border-border pb-2" aria-label="Filter drafts by category">
                         <button
                             type="button"
-                            className={`min-w-14 flex-1 font-bold py-1.5 px-2 rounded text-[11px] uppercase transition-colors cursor-pointer text-center ${categoryFilter === '' ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'
+                            className={`min-w-12 flex-1 font-medium py-1 px-2 rounded-md text-[11px] uppercase transition-colors cursor-pointer text-center ${categoryFilter === '' ? 'bg-primary text-primary-foreground' : 'bg-muted/40 border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
                                 }`}
                             onClick={() => setCategoryFilter('')}
                         >
@@ -384,7 +385,7 @@ export default function ContentHubTab() {
                             <button
                                 key={category.name}
                                 type="button"
-                                className={`min-w-fit flex-1 font-bold py-1.5 px-2 rounded text-[11px] uppercase transition-colors cursor-pointer text-center ${categoryFilter === category.name ? 'bg-primary text-on-primary' : 'bg-surface-container-high border border-outline-variant/25 text-on-surface-variant hover:text-on-surface'}`}
+                                className={`min-w-fit flex-1 font-medium py-1 px-2 rounded-md text-[11px] uppercase transition-colors cursor-pointer text-center ${categoryFilter === category.name ? 'bg-primary text-primary-foreground' : 'bg-muted/40 border border-border text-muted-foreground hover:bg-muted hover:text-foreground'}`}
                                 onClick={() => setCategoryFilter(category.name)}
                             >
                                 {category.name}
@@ -394,12 +395,12 @@ export default function ContentHubTab() {
 
                     {/* Search query input */}
                     <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/70 flex items-center">
-                            <span className="material-symbols-outlined text-[18px]">search</span>
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground flex items-center pointer-events-none">
+                            <Icon name="search" size={14} />
                         </span>
                         <input
                             type="text"
-                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded pl-9 pr-3 py-1.5 text-body-sm text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-all"
+                            className="w-full bg-background border border-border rounded-md pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                             placeholder="Search backlog drafts..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -407,10 +408,10 @@ export default function ContentHubTab() {
                     </div>
 
                     {/* Draft backlog items list */}
-                    <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
                         {filteredDrafts.length === 0 ? (
-                            <div className="py-12 text-center text-on-surface-variant/50 text-[12px] space-y-2">
-                                <span className="material-symbols-outlined text-[32px] text-on-surface-variant/30">find_in_page</span>
+                            <div className="py-12 text-center text-muted-foreground text-xs space-y-2">
+                                <Icon name="find_in_page" size={28} className="text-muted-foreground/35 mx-auto" />
                                 <p>No storyboard drafts found</p>
                             </div>
                         ) : (
@@ -423,11 +424,11 @@ export default function ContentHubTab() {
                                     displayStatus = 'Uploaded';
                                 }
 
-                                let badgeClass = 'bg-sky-500/10 text-sky-400 border border-sky-500/20'; // Idea
+                                let badgeClass = 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20'; // Idea
                                 if (displayStatus === 'Scripting') {
-                                    badgeClass = 'bg-amber-500/10 text-amber-400 border border-amber-500/20'; // Scripting
+                                    badgeClass = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'; // Scripting
                                 } else if (displayStatus === 'Uploaded') {
-                                    badgeClass = 'bg-emerald-500/15 text-primary border border-primary/25'; // Uploaded
+                                    badgeClass = 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'; // Uploaded
                                 }
 
                                 return (
@@ -443,27 +444,27 @@ export default function ContentHubTab() {
                                                 }
                                             }, 50);
                                         }}
-                                        className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer flex flex-col gap-2 relative ${isSelected
-                                                ? 'bg-surface-container-high border-2 border-primary'
-                                                : 'bg-surface-container-low border-outline-variant/15 hover:bg-surface-container'
+                                        className={`w-full text-left p-2.5 rounded-md border transition-all cursor-pointer flex flex-col gap-1.5 relative ${isSelected
+                                                ? 'bg-primary/5 border-primary ring-1 ring-primary'
+                                                : 'bg-muted/20 border-border hover:bg-muted/40'
                                             }`}
                                     >
-                                        <p className="font-semibold text-on-surface text-body-sm leading-snug">{d.title || 'Untitled Draft'}</p>
+                                        <p className="font-medium text-foreground text-xs leading-snug">{d.title || 'Untitled Draft'}</p>
 
                                         <div className="flex justify-between items-center gap-2 mt-0.5">
                                             <div className="flex items-center gap-1.5">
-                                                <span className="flex items-center gap-1 text-[10px] font-bold text-on-surface-variant/80 uppercase">
+                                                <span className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground uppercase">
                                                     <span className={`w-1.5 h-1.5 rounded-full ${d.category === 'Motion' ? 'bg-primary' : 'bg-emerald-400'
                                                         }`}></span>
                                                     {d.category}
                                                 </span>
                                                 {sched && (
-                                                    <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold uppercase ${getPicBadgeClasses(sched.pic)}`}>
+                                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium uppercase ${getPicBadgeClasses(sched.pic)}`}>
                                                         {getPicDisplayName(sched.pic)}
                                                     </span>
                                                 )}
                                             </div>
-                                            <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-bold uppercase ${badgeClass}`}>
+                                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium uppercase ${badgeClass}`}>
                                                 {displayStatus}
                                             </span>
                                         </div>
@@ -475,28 +476,33 @@ export default function ContentHubTab() {
                 </div>
 
                 {/* Right Side: Creative Editor Panel (col-span-2) */}
-                <div className="creative-editor lg:col-span-2 glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl min-h-[400px]">
+                <div className="creative-editor lg:col-span-2 bg-surface border border-border rounded-lg p-5 min-h-[400px]">
                     {!selectedDraftTitle ? (
-                        <div className="h-full flex flex-col justify-center items-center text-center p-12 space-y-4">
-                            <span className="material-symbols-outlined text-[64px] text-on-surface-variant/30">edit_note</span>
+                        <div className="h-full flex flex-col justify-center items-center text-center p-12 space-y-3">
+                            <Icon name="edit_note" size={48} className="text-muted-foreground/30 mx-auto" />
                             <div className="space-y-1">
-                                <h3 className="font-bold text-body-sm text-on-surface uppercase tracking-wider">No Draft Selected</h3>
-                                <p className="text-[12px] text-on-surface-variant/80 max-w-xs">Select a draft script from the idea backlog sidebar or create a new draft to begin writing.</p>
+                                <h3 className="font-semibold text-xs text-foreground uppercase tracking-wider">No Draft Selected</h3>
+                                <p className="text-xs text-muted-foreground max-w-xs">Select a draft script from the idea backlog sidebar or create a new draft to begin writing.</p>
                             </div>
                         </div>
                     ) : (
-                        <form onSubmit={handleFormSubmit} className="space-y-5" autoComplete="off">
-                            {draftRecovered && <p role="status" className="draft-recovery-note"><span className="material-symbols-outlined" aria-hidden="true">restore</span>Recovered unsaved storyboard changes from this browser.</p>}
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-outline-variant/20 pb-3 gap-3">
+                        <form onSubmit={handleFormSubmit} className="space-y-4" autoComplete="off">
+                            {draftRecovered && (
+                                <p role="status" className="flex items-center gap-1.5 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-md">
+                                    <Icon name="restore" size={14} aria-hidden="true" />
+                                    Recovered unsaved storyboard changes from this browser.
+                                </p>
+                            )}
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border pb-3 gap-3">
                                 <div>
-                                    <h4 className="font-bold text-body-md text-on-surface">Storyboard Script Editor</h4>
+                                    <h4 className="font-semibold text-sm text-foreground">Storyboard Script Editor</h4>
                                     {schedule ? (
-                                        <p className="text-[11px] text-on-surface-variant/80 mt-1">
-                                            Mapped to schedule: <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${getPicBadgeClasses(schedule.pic)}`}>{schedule.pic}</span> on {schedule.date}
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                            Mapped to schedule: <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium uppercase ${getPicBadgeClasses(schedule.pic)}`}>{schedule.pic}</span> on {schedule.date}
                                         </p>
                                     ) : (
-                                        <p className="text-[11px] text-error flex items-center gap-1 mt-1 font-semibold">
-                                            <span className="material-symbols-outlined text-[14px]">warning</span> Draft is not currently mapped to any Scheduled Task.
+                                        <p className="text-xs text-rose-500 flex items-center gap-1 mt-0.5 font-medium">
+                                            <Icon name="warning" size={14} /> Draft is not currently mapped to any Scheduled Task.
                                         </p>
                                     )}
                                 </div>
@@ -504,28 +510,28 @@ export default function ContentHubTab() {
                                     {isUnlocked && userRole !== 'Creator' && (
                                         <button
                                             type="button"
-                                            className="bg-error-container/20 text-error border border-error/25 hover:bg-error-container/30 font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer"
+                                            className="bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/20 font-medium py-1.5 px-3 rounded-md text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer"
                                             onClick={handleDeleteDraft}
                                         >
-                                            <span className="material-symbols-outlined text-[15px]">delete</span> Delete
+                                            <Icon name="delete" size={14} /> Delete
                                         </button>
                                     )}
                                     <button
                                         type="button"
-                                        className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center gap-1 cursor-pointer"
+                                        className="bg-surface border border-border text-foreground hover:bg-muted font-medium py-1.5 px-3 rounded-md text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer"
                                         onClick={() => requestDraftSelection(null)}
                                     >
-                                        <span className="material-symbols-outlined text-[15px]">close</span> Close
+                                        <Icon name="close" size={14} /> Close
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-3.5">
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Draft Title <span className="text-error">*</span></label>
+                                    <label className="text-xs font-medium text-muted-foreground">Draft Title <span className="text-rose-500">*</span></label>
                                     <input
                                         type="text"
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface-variant/70 focus:outline-none cursor-not-allowed opacity-75"
+                                        className="w-full bg-muted/40 border border-border rounded-md px-3 py-2 text-xs text-muted-foreground focus:outline-none cursor-not-allowed"
                                         value={formTitle}
                                         onChange={(e) => setFormTitle(e.target.value)}
                                         required
@@ -535,9 +541,9 @@ export default function ContentHubTab() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Category <span className="text-error">*</span></label>
+                                    <label className="text-xs font-medium text-muted-foreground">Category <span className="text-rose-500">*</span></label>
                                     <select
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface-variant/70 focus:outline-none cursor-not-allowed opacity-75"
+                                        className="w-full bg-muted/40 border border-border rounded-md px-2.5 py-2 text-xs text-muted-foreground focus:outline-none cursor-not-allowed"
                                         value={formCategory}
                                         onChange={(e) => setFormCategory(e.target.value)}
                                         disabled={true}
@@ -550,10 +556,10 @@ export default function ContentHubTab() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Viral Hook Template / Caption Hook</label>
+                                    <label className="text-xs font-medium text-muted-foreground">Viral Hook Template / Caption Hook</label>
                                     <input
                                         type="text"
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                        className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                                         placeholder="e.g. Stop doing X, do this instead..."
                                         value={formHook}
                                         onChange={(e) => setFormHook(e.target.value)}
@@ -562,9 +568,9 @@ export default function ContentHubTab() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Script Voiceover / Audio Directions</label>
+                                    <label className="text-xs font-medium text-muted-foreground">Script Voiceover / Audio Directions</label>
                                     <textarea
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary font-mono"
+                                        className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors font-mono"
                                         rows={6}
                                         placeholder="Write video dialogue, voiceover cues, or visual notes here..."
                                         value={formScript}
@@ -574,10 +580,10 @@ export default function ContentHubTab() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Hashtags <span className="text-error">*</span></label>
+                                    <label className="text-xs font-medium text-muted-foreground">Hashtags <span className="text-rose-500">*</span></label>
                                     <input
                                         type="text"
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                        className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors font-mono"
                                         placeholder="e.g. #technology #learning #tutorial"
                                         value={formHashtags}
                                         onChange={(e) => setFormHashtags(e.target.value)}
@@ -587,9 +593,9 @@ export default function ContentHubTab() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Caption / Post Description</label>
+                                    <label className="text-xs font-medium text-muted-foreground">Caption / Post Description</label>
                                     <textarea
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                        className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                                         rows={3}
                                         placeholder="Write the accompanying caption, description copy, or call to actions..."
                                         value={formCaption}
@@ -599,9 +605,9 @@ export default function ContentHubTab() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Reference Links (comma separated)</label>
+                                    <label className="text-xs font-medium text-muted-foreground">Reference Links (comma separated)</label>
                                     <textarea
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary font-mono"
+                                        className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors font-mono"
                                         rows={2}
                                         placeholder="e.g. https://instagram.com/reel/123, https://youtube.com/watch?v=abc"
                                         value={formReferences}
@@ -615,12 +621,21 @@ export default function ContentHubTab() {
                             {/* Save Draft & Copy Copywriting Actions */}
                             <div className="flex flex-col sm:flex-row gap-3 pt-2">
                                 {isUnlocked && (
-                                    <button type="submit" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="flex-1 bg-primary text-on-primary hover:opacity-90 font-bold py-2.5 px-4 rounded-lg text-body-sm transition-opacity flex items-center justify-center gap-1.5 cursor-pointer micro-interaction shadow-sm disabled:cursor-wait disabled:opacity-70">
-                                        <span className={`material-symbols-outlined text-[18px] ${isMutating ? 'animate-spin' : ''}`}>{isMutating ? 'progress_activity' : 'save'}</span> {isMutating ? 'Saving…' : 'Save Script Draft'}
+                                    <button
+                                        type="submit"
+                                        disabled={isMutating}
+                                        aria-busy={isMutating ? 'true' : 'false'}
+                                        className="flex-1 bg-primary text-primary-foreground hover:opacity-90 font-medium py-2 px-4 rounded-md text-xs transition-opacity flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-wait disabled:opacity-60"
+                                    >
+                                        <Icon name={isMutating ? 'progress_activity' : 'save'} size={15} className={isMutating ? 'animate-spin' : ''} /> {isMutating ? 'Saving...' : 'Save Script Draft'}
                                     </button>
                                 )}
-                                <button type="button" className="flex-1 bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest font-bold py-2.5 px-4 rounded-lg text-body-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer micro-interaction" onClick={handleCopyCopywriting}>
-                                    <span className="material-symbols-outlined text-[18px]">content_copy</span> Copy Copywriting
+                                <button
+                                    type="button"
+                                    className="flex-1 bg-surface border border-border text-foreground hover:bg-muted font-medium py-2 px-4 rounded-md text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                    onClick={handleCopyCopywriting}
+                                >
+                                    <Icon name="content_copy" size={15} /> Copy Copywriting
                                 </button>
                             </div>
                         </form>
