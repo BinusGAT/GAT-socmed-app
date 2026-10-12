@@ -151,7 +151,9 @@ export function DashboardProvider({ children }) {
 
         // Dark Mode
         const localDarkSetting = localStorage.getItem('darkMode');
-        const savedDarkMode = localDarkSetting === null ? true : localDarkSetting === 'true';
+        const savedDarkMode = localDarkSetting === null
+            ? (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+            : localDarkSetting === 'true';
         setDarkMode(savedDarkMode);
         if (savedDarkMode) {
             document.body.classList.add('dark-mode', 'dark');

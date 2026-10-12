@@ -1,19 +1,8 @@
 import Script from 'next/script';
 import { headers } from 'next/headers';
-import { Inter, Hanken_Grotesk } from 'next/font/google';
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-});
-
-const hankenGrotesk = Hanken_Grotesk({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-hanken',
-});
 
 export const metadata = {
   title: "GAT App - Media & Social Dashboard",
@@ -29,7 +18,7 @@ export default async function RootLayout({ children }) {
   const nonce = (await headers()).get('x-nonce') || undefined;
 
   return (
-    <html lang="en" className={`${inter.variable} ${hankenGrotesk.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -41,8 +30,16 @@ export default async function RootLayout({ children }) {
             (function () {
               try {
                 const localDark = localStorage.getItem('darkMode');
-                if (localDark === null || localDark === 'true') {
+                let isDark = false;
+                if (localDark === null) {
+                  isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                } else {
+                  isDark = localDark === 'true';
+                }
+                if (isDark) {
                   document.documentElement.classList.add('dark-mode', 'dark');
+                } else {
+                  document.documentElement.classList.remove('dark-mode', 'dark');
                 }
               } catch (e) {}
             })();
@@ -55,8 +52,16 @@ export default async function RootLayout({ children }) {
             (function () {
               try {
                 const localDark = localStorage.getItem('darkMode');
-                if (localDark === null || localDark === 'true') {
+                let isDark = false;
+                if (localDark === null) {
+                  isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                } else {
+                  isDark = localDark === 'true';
+                }
+                if (isDark) {
                   document.body.classList.add('dark-mode', 'dark');
+                } else {
+                  document.body.classList.remove('dark-mode', 'dark');
                 }
                 if (sessionStorage.getItem('cud_unlocked') !== 'true') {
                   document.body.classList.add('cud-locked');
