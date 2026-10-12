@@ -645,6 +645,49 @@ export function DashboardProvider({ children }) {
         }
     };
 
+    // Automatic silent database refresh whenever the app/tab regains active focus
+    useEffect(() => {
+        if (!isUnlocked || typeof window === 'undefined') return;
+
+        let lastFocusRefresh = Date.now();
+        const COOLDOWN_MS = 20000; // 20s cooldown to protect server rate limits
+
+        const handleFocusRefresh = () => {
+            if (document.visibilityState !== 'visible') return;
+
+            const now = Date.now();
+            if (now - lastFocusRefresh < COOLDOWN_MS) return;
+
+            // Skip if offline
+            if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+
+            // Skip if in the middle of a mutation to avoid race conditions
+            if (loadingPhase === 'mutation') return;
+
+            // Skip if an edit form drawer or modal dialog is currently open
+            if (isNewPostDrawerOpen || document.querySelector('[role="dialog"], .modal-container')) {
+                return;
+            }
+
+            lastFocusRefresh = now;
+            loadFromGoogleSheets(true); // Silent background refresh
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                handleFocusRefresh();
+            }
+        };
+
+        window.addEventListener('focus', handleFocusRefresh);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('focus', handleFocusRefresh);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [isUnlocked, isNewPostDrawerOpen, loadingPhase]);
+
     // Check lockdown conditions
     const getLockdownTimeRemaining = () => {
         const lockUntil = Number.parseInt(localStorage.getItem('login_lock_until') || '0', 10);
