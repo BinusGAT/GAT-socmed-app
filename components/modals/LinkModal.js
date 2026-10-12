@@ -19,14 +19,14 @@ export default function LinkModal({ isOpen, onClose, onConfirm }) {
 
   return createPortal(
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
-      <div className="w-full max-w-[400px] bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl space-y-4">
-        <h3 className="text-body-lg font-bold text-on-surface">Insert Link</h3>
+      <div className="w-full max-w-[400px] bg-surface border border-border rounded-[10px] p-6 shadow-none space-y-4">
+        <h3 className="text-base font-semibold text-foreground tracking-tight">Insert Link</h3>
         <form onSubmit={submit} className="space-y-4">
-          <label htmlFor="rich-text-link-url" className="text-label-md text-on-surface-variant uppercase tracking-widest block font-bold">Link URL</label>
-          <input id="rich-text-link-url" type="url" className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com" required autoFocus />
+          <label htmlFor="rich-text-link-url" className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block font-medium">Link URL</label>
+          <input id="rich-text-link-url" type="url" className="w-full bg-background border border-border rounded-[8px] px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors font-mono" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com" required autoFocus />
           <div className="flex gap-3 justify-end pt-2">
-            <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction" onClick={close}>Cancel</button>
-            <button type="submit" className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction">Insert</button>
+            <button type="button" className="bg-secondary text-secondary-foreground hover:bg-muted font-medium py-2 px-4 rounded-[8px] text-xs transition-colors" onClick={close}>Cancel</button>
+            <button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-2 px-4 rounded-[8px] text-xs transition-colors">Insert</button>
           </div>
         </form>
       </div>

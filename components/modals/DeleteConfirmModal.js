@@ -28,17 +28,17 @@ export default function DeleteConfirmModal({
 
   return createPortal(
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]" onMouseDown={(event) => event.target === event.currentTarget && !isPending && closeDialog?.()}>
-      <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} className="w-full max-w-[420px] bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl flex flex-col items-center gap-4 text-center">
-        <Icon name="warning" size={36} className="text-error" aria-hidden="true" />
-        <h3 id={titleId} className="text-headline-md font-bold text-on-surface">{title}</h3>
-        <p id={descriptionId} className="text-body-sm text-on-surface-variant/80 leading-relaxed">{message || 'This action cannot be undone.'}</p>
+      <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} className="w-full max-w-[420px] bg-surface border border-border rounded-[10px] p-6 shadow-none flex flex-col items-center gap-4 text-center">
+        <Icon name="warning" size={36} className="text-destructive" aria-hidden="true" />
+        <h3 id={titleId} className="text-base font-semibold text-foreground tracking-tight">{title}</h3>
+        <p id={descriptionId} className="text-xs text-muted-foreground leading-relaxed">{message || 'This action cannot be undone.'}</p>
         
         {seriesOptions?.isSeries && (
-          <div className="w-full p-3 bg-primary/10 border border-primary/20 rounded-lg text-xs text-on-surface text-left space-y-1">
-            <p className="font-bold flex items-center gap-1 text-primary">
-              <span className="material-symbols-outlined text-[15px]">repeat</span> Part of a recurring series
+          <div className="w-full p-3 bg-primary/10 border border-primary/20 rounded-[8px] text-xs text-foreground text-left space-y-1">
+            <p className="font-semibold flex items-center gap-1.5 text-primary">
+              <Icon name="repeat" size={15} /> Part of a recurring series
             </p>
-            <p className="text-on-surface-variant">Choose how you want to apply this deletion:</p>
+            <p className="text-muted-foreground">Choose how you want to apply this deletion:</p>
           </div>
         )}
 
@@ -48,7 +48,7 @@ export default function DeleteConfirmModal({
               <button 
                 type="button" 
                 disabled={isPending}
-                className="w-full bg-error/20 hover:bg-error/30 text-error border border-error/30 font-semibold py-2 px-3 rounded-lg text-body-sm transition-colors cursor-pointer"
+                className="w-full bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/20 font-medium py-2 px-3 rounded-[8px] text-xs transition-colors cursor-pointer"
                 onClick={() => onConfirm('single')}
               >
                 Delete this task only
@@ -56,7 +56,7 @@ export default function DeleteConfirmModal({
               <button 
                 type="button" 
                 disabled={isPending}
-                className="w-full bg-error/85 hover:bg-error text-on-error font-semibold py-2 px-3 rounded-lg text-body-sm transition-colors cursor-pointer"
+                className="w-full bg-destructive/80 hover:bg-destructive text-destructive-foreground font-medium py-2 px-3 rounded-[8px] text-xs transition-colors cursor-pointer"
                 onClick={() => onConfirm('future')}
               >
                 Delete this &amp; all future tasks
@@ -64,17 +64,17 @@ export default function DeleteConfirmModal({
               <button 
                 type="button" 
                 disabled={isPending}
-                className="w-full bg-error text-on-error hover:opacity-90 font-semibold py-2 px-3 rounded-lg text-body-sm transition-opacity cursor-pointer"
+                className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium py-2 px-3 rounded-[8px] text-xs transition-colors cursor-pointer"
                 onClick={() => onConfirm('all')}
               >
                 Delete entire series
               </button>
-              <button ref={cancelButtonRef} type="button" disabled={isPending} className="w-full bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded-lg text-body-sm transition-all micro-interaction disabled:opacity-60" onClick={closeDialog}>Cancel</button>
+              <button ref={cancelButtonRef} type="button" disabled={isPending} className="w-full bg-secondary text-secondary-foreground hover:bg-muted font-medium py-2 px-4 rounded-[8px] text-xs transition-colors disabled:opacity-60" onClick={closeDialog}>Cancel</button>
             </>
           ) : (
             <>
-              <button ref={cancelButtonRef} type="button" disabled={isPending} className="flex-1 bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction disabled:opacity-60" onClick={closeDialog}>Cancel</button>
-              <button type="button" disabled={isPending} aria-busy={isPending ? 'true' : 'false'} className="flex-1 bg-error-container/20 text-error border border-error/20 hover:bg-error-container/30 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction disabled:cursor-wait disabled:opacity-60" onClick={() => onConfirm('single')}>{isPending ? 'Deleting…' : 'Delete'}</button>
+              <button ref={cancelButtonRef} type="button" disabled={isPending} className="flex-1 bg-secondary text-secondary-foreground hover:bg-muted font-medium py-2.5 px-4 rounded-[8px] text-xs transition-colors disabled:opacity-60" onClick={closeDialog}>Cancel</button>
+              <button type="button" disabled={isPending} aria-busy={isPending ? 'true' : 'false'} className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium py-2.5 px-4 rounded-[8px] text-xs transition-colors disabled:cursor-wait disabled:opacity-60" onClick={() => onConfirm('single')}>{isPending ? 'Deleting...' : 'Delete'}</button>
             </>
           )}
         </div>

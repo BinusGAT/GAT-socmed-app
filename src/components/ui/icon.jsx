@@ -129,6 +129,7 @@ const ICON_MAP = {
     light_mode: 'Sun',
     dark_mode: 'Moon',
     visibility: 'Eye',
+    visibility_off: 'EyeSlash',
     handshake: 'Handshake'
 };
 
