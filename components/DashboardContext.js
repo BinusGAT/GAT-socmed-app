@@ -71,6 +71,35 @@ export function DashboardProvider({ children }) {
     const [globalAlert, setGlobalAlert] = useState(null); // { message, type }
     const [darkMode, setDarkMode] = useState(true);
     const [isNewPostDrawerOpen, setIsNewPostDrawerOpen] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsedState] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return localStorage.getItem('gat_sidebar_collapsed') === 'true';
+    });
+
+    const toggleSidebar = () => {
+        setSidebarCollapsedState(prev => {
+            const next = !prev;
+            if (typeof window !== 'undefined') {
+                try {
+                    localStorage.setItem('gat_sidebar_collapsed', String(next));
+                } catch {
+                    // Ignore storage access error
+                }
+            }
+            return next;
+        });
+    };
+
+    const setSidebarCollapsed = (value) => {
+        setSidebarCollapsedState(Boolean(value));
+        if (typeof window !== 'undefined') {
+            try {
+                localStorage.setItem('gat_sidebar_collapsed', String(Boolean(value)));
+            } catch {
+                // Ignore storage access error
+            }
+        }
+    };
 
     // Filter States
     const [dateRange, setDateRange] = useState({ start: '', end: '', mode: 'auto' });
@@ -1541,6 +1570,7 @@ export function DashboardProvider({ children }) {
             selectedTaskId, setSelectedTaskId,
             selectedPostId, setSelectedPostId,
             isNewPostDrawerOpen, setIsNewPostDrawerOpen,
+            sidebarCollapsed, toggleSidebar, setSidebarCollapsed,
 
             // Filters
             dateRange, setDateRange,

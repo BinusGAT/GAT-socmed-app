@@ -62,7 +62,8 @@ function DashboardAppContent() {
         dateRange,
         currentData,
         setSelectedMeetingId,
-        appSettingsData
+        appSettingsData,
+        sidebarCollapsed
     } = useDashboard();
 
     // Layout states
@@ -291,7 +292,13 @@ function DashboardAppContent() {
             <Sidebar />
 
             {/* Main Content Area */}
-            <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 flex flex-col min-h-screen lg:pl-[280px] pt-16 pb-20 lg:pb-0">
+            <main
+                id="main-content"
+                tabIndex={-1}
+                className={`min-w-0 flex-1 flex flex-col min-h-screen transition-all duration-200 pt-14 pb-20 lg:pb-0 ${
+                    sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-[232px]'
+                }`}
+            >
                 <Topbar
                     openUnlockModal={() => setUnlockOpen(true)}
                     openDateRangeModal={() => setDateRangeOpen(true)}
@@ -315,13 +322,18 @@ function DashboardAppContent() {
 
                 {/* Global Alert Notification Banner */}
                 {globalAlert && (
-                    <div role={globalAlert.type === 'error' ? 'alert' : 'status'} aria-live={globalAlert.type === 'error' ? 'assertive' : 'polite'} className={`fixed top-6 right-6 z-[10000] flex items-center gap-3 py-3.5 px-5 rounded-xl shadow-2xl animate-slide-in text-body-sm font-semibold border ${globalAlert.type === 'error'
-                            ? 'bg-error/10 border-error/25 text-error shadow-[0_4px_20px_rgba(186,26,26,0.12)]'
-                            : globalAlert.type === 'warning'
-                                ? 'bg-amber-500/10 border-amber-500/25 text-amber-500 shadow-[0_4px_20px_rgba(245,158,11,0.12)]'
-                                : 'bg-primary/10 border-primary/25 text-primary shadow-[0_4px_20px_rgba(16,185,129,0.12)]'
-                        }`}>
-                        <Icon name={globalAlert.type === 'error' ? 'error' : globalAlert.type === 'warning' ? 'warning' : 'check_circle'} size={20} />
+                    <div
+                        role={globalAlert.type === 'error' ? 'alert' : 'status'}
+                        aria-live={globalAlert.type === 'error' ? 'assertive' : 'polite'}
+                        className={`fixed top-4 right-4 z-[10000] flex items-center gap-2.5 py-2.5 px-4 rounded-lg shadow-md animate-slide-in text-xs font-medium border ${
+                            globalAlert.type === 'error'
+                                ? 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400'
+                                : globalAlert.type === 'warning'
+                                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+                                    : 'bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400'
+                        }`}
+                    >
+                        <Icon name={globalAlert.type === 'error' ? 'error' : globalAlert.type === 'warning' ? 'warning' : 'check_circle'} size={16} />
                         <span className="text-pretty">{globalAlert.message}</span>
                     </div>
                 )}
@@ -330,13 +342,6 @@ function DashboardAppContent() {
                 <div className="flex-1 p-3 sm:p-6 relative" aria-busy={isLoading ? 'true' : 'false'}>
                     {isInitialLoading && currentView !== 'my-work' ? <DashboardSkeleton /> : renderActiveTab()}
                 </div>
-
-                {/* Footer copyright */}
-                <footer className="hidden w-full items-center justify-between border-t border-outline-variant/10 bg-surface-container-lowest px-6 py-4 text-xs text-on-surface-variant sm:flex">
-                    <div>
-                        <span>&copy; {new Date().getFullYear()} {appSettingsData?.app_full_name || appSettingsData?.app_name || 'GAT'}. All rights reserved.</span>
-                    </div>
-                </footer>
             </main>
 
             <MobileNavigation currentView={currentView} userRole={userRole} isUnlocked={isUnlocked} onNavigate={handleMobileNavClick} onOpenHelp={() => setHelpOpen(true)} />
