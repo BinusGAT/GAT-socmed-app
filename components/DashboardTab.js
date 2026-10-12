@@ -18,6 +18,7 @@ import {
 } from '../utils/helpers';
 import PlatformBadge from './PlatformBadge.jsx';
 import SortableTableHeader from './SortableTableHeader';
+import Icon from './Icon';
 
 const parseCleanInt = (val) => {
     if (val === undefined || val === null || val === '') return 0;
@@ -397,6 +398,17 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
 
         return counts;
     }, [currentData]);
+
+    const platformDistribution = React.useMemo(() => {
+        const total = (platformStats.Instagram.views + platformStats.TikTok.views + platformStats.YouTube.views) || 0;
+        if (total === 0) {
+            return { total: 0, igPct: 33, ttPct: 33, ytPct: 34 };
+        }
+        const igPct = Math.round((platformStats.Instagram.views / total) * 100);
+        const ttPct = Math.round((platformStats.TikTok.views / total) * 100);
+        const ytPct = Math.max(0, 100 - igPct - ttPct);
+        return { total, igPct, ttPct, ytPct };
+    }, [platformStats]);
 
     const getKpiBadgeClass = (score) => {
         const kpi = parseCleanInt(score);
@@ -910,142 +922,194 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
             {/* ========================================================
                1. DESKTOP VIEW LAYOUT (hidden on screens <= 1024px)
                ======================================================== */}
-            <div className="hidden lg:grid grid-cols-4 gap-gutter items-start">
+            <div className="hidden lg:grid grid-cols-4 gap-6 items-start">
                 {/* Left/Center 3 Columns */}
                 <div className="col-span-3 space-y-6">
-                    {/* Performance Overview header strip */}
-                    {/* Stats Bento Grid - Equal 5 Column Box Sizes */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-                        {/* Stat Card 1 - Titles */}
-                        <div className="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 border border-outline-variant/30 hover:border-outline/50 transition-all duration-150 shadow-xs">
-                            <div className="flex justify-between items-start">
-                                <span className="text-[11px] sm:text-xs text-on-surface-variant font-medium">Active Titles</span>
-                                <span className="material-symbols-outlined text-indigo-400 text-[18px]">tag</span>
+                    {/* Card-less KPI Band */}
+                    <div className="border border-border bg-surface rounded-xl overflow-hidden divide-y sm:divide-y-0 sm:divide-x divide-border grid grid-cols-2 lg:grid-cols-5">
+                        {/* Stat 1 - Lead: Total Views */}
+                        <div className="col-span-2 sm:col-span-1 lg:col-span-1 p-4 lg:p-5 flex flex-col justify-between bg-orange-500/[0.03]">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Views</span>
+                                <Icon name="trending_up" size={16} className="text-primary" />
                             </div>
-                            <div>
-                                <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-on-surface font-tabular tracking-tight">{stats.contentTitlesSize}</h4>
-                                <p className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5">Active campaigns</p>
-                            </div>
-                        </div>
-                        {/* Stat Card 2 - Total Views */}
-                        <div className="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 border border-outline-variant/30 hover:border-outline/50 transition-all duration-150 shadow-xs">
-                            <div className="flex justify-between items-start">
-                                <span className="text-[11px] sm:text-xs text-on-surface-variant font-medium">Total Views</span>
-                                <span className="material-symbols-outlined text-indigo-400 text-[18px]">trending_up</span>
-                            </div>
-                            <div>
-                                <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-on-surface font-tabular tracking-tight">{formatNumber(stats.totalViews)}</h4>
-                                <p className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5">Across all platforms</p>
+                            <div className="mt-3">
+                                <h4 className="text-2xl lg:text-3xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
+                                    {formatNumber(stats.totalViews)}
+                                </h4>
+                                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Across all platforms</p>
                             </div>
                         </div>
-                        {/* Stat Card 3 - Total Reach */}
-                        <div className="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 border border-outline-variant/30 hover:border-outline/50 transition-all duration-150 shadow-xs">
-                            <div className="flex justify-between items-start">
-                                <span className="text-[11px] sm:text-xs text-on-surface-variant font-medium">Total Reach</span>
-                                <span className="material-symbols-outlined text-indigo-400 text-[18px]">public</span>
+
+                        {/* Stat 2 - Active Titles */}
+                        <div className="p-4 lg:p-5 flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Active Titles</span>
+                                <Icon name="tag" size={16} className="text-zinc-400" />
                             </div>
-                            <div>
-                                <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-on-surface font-tabular tracking-tight">{formatNumber(stats.totalReach)}</h4>
-                                <p className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5">Unique accounts</p>
-                            </div>
-                        </div>
-                        {/* Stat Card 4 - Engagement */}
-                        <div className="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 border border-outline-variant/30 hover:border-outline/50 transition-all duration-150 shadow-xs">
-                            <div className="flex justify-between items-start">
-                                <span className="text-[11px] sm:text-xs text-on-surface-variant font-medium">Total Engagement</span>
-                                <span className="material-symbols-outlined text-indigo-400 text-[18px]">favorite</span>
-                            </div>
-                            <div>
-                                <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-on-surface font-tabular tracking-tight">{formatNumber(stats.totalEngagement)}</h4>
-                                <p className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5">Likes, comments, shares</p>
+                            <div className="mt-3">
+                                <h4 className="text-xl lg:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
+                                    {stats.contentTitlesSize}
+                                </h4>
+                                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Active campaigns</p>
                             </div>
                         </div>
-                        {/* Stat Card 5 - Eng. Rate */}
-                        <div className="bg-surface-container p-4 rounded-xl flex flex-col justify-between gap-3 border border-outline-variant/30 hover:border-outline/50 transition-all duration-150 shadow-xs">
-                            <div className="flex justify-between items-start">
-                                <span className="text-[11px] sm:text-xs text-on-surface-variant font-medium">Engagement Rate</span>
-                                <span className="material-symbols-outlined text-indigo-400 text-[18px]">percent</span>
+
+                        {/* Stat 3 - Total Reach */}
+                        <div className="p-4 lg:p-5 flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Reach</span>
+                                <Icon name="public" size={16} className="text-zinc-400" />
                             </div>
-                            <div>
-                                <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-on-surface font-tabular tracking-tight">{stats.avgEngagementRate}</h4>
-                                <p className="text-[10px] sm:text-[11px] text-on-surface-variant/70 mt-0.5">Avg. engagement ratio</p>
+                            <div className="mt-3">
+                                <h4 className="text-xl lg:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
+                                    {formatNumber(stats.totalReach)}
+                                </h4>
+                                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Unique accounts</p>
+                            </div>
+                        </div>
+
+                        {/* Stat 4 - Total Engagement */}
+                        <div className="p-4 lg:p-5 flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Engagement</span>
+                                <Icon name="favorite" size={16} className="text-zinc-400" />
+                            </div>
+                            <div className="mt-3">
+                                <h4 className="text-xl lg:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
+                                    {formatNumber(stats.totalEngagement)}
+                                </h4>
+                                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Likes, comments, shares</p>
+                            </div>
+                        </div>
+
+                        {/* Stat 5 - Engagement Rate */}
+                        <div className="p-4 lg:p-5 flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Engagement Rate</span>
+                                <Icon name="percent" size={16} className="text-zinc-400" />
+                            </div>
+                            <div className="mt-3">
+                                <h4 className="text-xl lg:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
+                                    {stats.avgEngagementRate}
+                                </h4>
+                                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Avg. engagement ratio</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Promo Banner and traffic channels */}
-                    <div className="grid grid-cols-3 gap-gutter">
-                        <div className="col-span-2 bg-surface-container border border-outline-variant/30 rounded-xl p-5 flex items-center gap-5 relative overflow-hidden shadow-xs">
-                            <span className="absolute top-2 left-4 text-[72px] leading-none font-serif text-on-surface-variant/15 select-none pointer-events-none">&ldquo;</span>
-                            <div className="z-10 flex flex-col gap-3 pl-4">
-                                <p className="text-body-md font-medium text-on-surface/80 italic leading-relaxed tracking-wide text-pretty">
-                                    "Consistency is the foundation of trust — and trust is what turns viewers into community."
-                                </p>
-                                <span className="text-[10px] text-primary font-bold uppercase tracking-widest font-mono">— GAT Content Team</span>
+                    {/* Platform Performance & Growth Performance Row */}
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+                        {/* Platform Distribution Card */}
+                        <div className="xl:col-span-5 border border-border bg-surface rounded-xl p-4 sm:p-5 flex flex-col justify-between space-y-4">
+                            <div className="flex justify-between items-center pb-2 border-b border-border">
+                                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Platform Performance</span>
+                                <span className="text-[10px] text-primary font-semibold uppercase tracking-wider font-mono">Views</span>
+                            </div>
+
+                            {/* Proportional Segmented Bar */}
+                            <div className="space-y-2">
+                                <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
+                                    <div
+                                        style={{ width: `${platformDistribution.igPct}%` }}
+                                        className="bg-[#E1306C] h-full transition-all duration-300"
+                                        title={`Instagram: ${platformDistribution.igPct}%`}
+                                    />
+                                    <div
+                                        style={{ width: `${platformDistribution.ttPct}%` }}
+                                        className="bg-[#00F2FE] h-full transition-all duration-300"
+                                        title={`TikTok: ${platformDistribution.ttPct}%`}
+                                    />
+                                    <div
+                                        style={{ width: `${platformDistribution.ytPct}%` }}
+                                        className="bg-[#FF0000] h-full transition-all duration-300"
+                                        title={`YouTube: ${platformDistribution.ytPct}%`}
+                                    />
+                                </div>
+                                <div className="flex justify-between text-[10px] text-zinc-400 font-mono">
+                                    <span>Instagram {platformDistribution.igPct}%</span>
+                                    <span>TikTok {platformDistribution.ttPct}%</span>
+                                    <span>YouTube {platformDistribution.ytPct}%</span>
+                                </div>
+                            </div>
+
+                            {/* Platform Cards */}
+                            <div className="grid grid-cols-3 gap-2.5">
+                                {/* Instagram */}
+                                <div className="border border-border/70 rounded-lg p-2.5 flex flex-col items-center justify-center gap-1.5 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                    <Image src="/img/icons/instagram-logo.png" width={18} height={18} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
+                                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">IG</span>
+                                    <span className="text-xs font-bold font-mono text-zinc-900 dark:text-zinc-100">{formatNumber(platformStats.Instagram.views)}</span>
+                                </div>
+
+                                {/* TikTok */}
+                                <div className="border border-border/70 rounded-lg p-2.5 flex flex-col items-center justify-center gap-1.5 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                    <Image src="/img/icons/tiktok-logo.png" width={17} height={17} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
+                                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">TT</span>
+                                    <span className="text-xs font-bold font-mono text-zinc-900 dark:text-zinc-100">{formatNumber(platformStats.TikTok.views)}</span>
+                                </div>
+
+                                {/* YouTube */}
+                                <div className="border border-border/70 rounded-lg p-2.5 flex flex-col items-center justify-center gap-1.5 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                    <Image src="/img/icons/youtube-logo.webp" width={18} height={18} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
+                                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">YT</span>
+                                    <span className="text-xs font-bold font-mono text-zinc-900 dark:text-zinc-100">{formatNumber(platformStats.YouTube.views)}</span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Traffic stats */}
-                        <div className="glass-panel p-4 rounded-xl border border-outline-variant/30 flex flex-col justify-between shadow-sm relative overflow-hidden">
-                            <div className="flex justify-between items-center border-b border-outline-variant/15 pb-2.5 mb-2.5">
-                                <span className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">Platform Performance</span>
-                                <span className="text-[10px] text-primary font-bold uppercase tracking-wider font-mono">Views</span>
+                        {/* Growth Performance Chart */}
+                        <div className="xl:col-span-7 border border-border bg-surface rounded-xl p-4 sm:p-5 flex flex-col justify-between space-y-3">
+                            <div className="flex justify-between items-center pb-2 border-b border-border">
+                                <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Growth Performance</h3>
+                                <div className="flex border border-border rounded-lg p-0.5 text-[10px] font-medium font-mono">
+                                    {['Followers', 'Engagement', 'Reach'].map(tab => (
+                                        <button
+                                            key={tab}
+                                            className={`px-2.5 py-0.5 rounded cursor-pointer transition-colors ${
+                                                activeChartTab === tab
+                                                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold'
+                                                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
+                                            }`}
+                                            onClick={() => setActiveChartTab(tab)}
+                                        >
+                                            {tab}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="grid grid-cols-3 gap-3 mt-1 z-10">
-                                {/* Instagram Box */}
-                                <div className="bg-surface-container-low border border-outline-variant/15 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:bg-surface-container hover:border-primary/20 hover:scale-[1.03] hover:shadow-sm group">
-                                    <div className="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                                        <Image src="/img/icons/instagram-logo.png" width={18} height={18} alt="" aria-hidden="true" className="h-[18px] w-[18px] object-contain" />
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="text-[9px] text-on-surface-variant/80 uppercase tracking-widest font-bold font-mono">Instagram</p>
-                                        <p className="text-body-sm font-bold text-on-surface mt-1 font-tabular">{formatNumber(platformStats.Instagram.views)}</p>
-                                    </div>
-                                </div>
 
-                                {/* TikTok Box */}
-                                <div className="bg-surface-container-low border border-outline-variant/15 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:bg-surface-container hover:border-primary/20 hover:scale-[1.03] hover:shadow-sm group">
-                                    <div className="w-8 h-8 rounded-full bg-teal-500/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                                        <Image src="/img/icons/tiktok-logo.png" width={17} height={17} alt="" aria-hidden="true" className="h-[17px] w-[17px] object-contain" />
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="text-[9px] text-on-surface-variant/80 uppercase tracking-widest font-bold font-mono">TikTok</p>
-                                        <p className="text-body-sm font-bold text-on-surface mt-1 font-tabular">{formatNumber(platformStats.TikTok.views)}</p>
-                                    </div>
-                                </div>
+                            <div className="h-44 w-full relative">
+                                <canvas ref={activityCanvasRef} role="img" aria-label={`${activeChartTab} performance by platform`} aria-describedby="dashboard-chart-summary" />
+                                <p id="dashboard-chart-summary" className="sr-only">Platform views: Instagram {formatNumber(platformStats.Instagram.views)}; TikTok {formatNumber(platformStats.TikTok.views)}; YouTube {formatNumber(platformStats.YouTube.views)}.</p>
+                            </div>
 
-                                {/* YouTube Box */}
-                                <div className="bg-surface-container-low border border-outline-variant/15 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:bg-surface-container hover:border-primary/20 hover:scale-[1.03] hover:shadow-sm group">
-                                    <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                                        <Image src="/img/icons/youtube-logo.webp" width={18} height={18} alt="" aria-hidden="true" className="h-[18px] w-[18px] object-contain" />
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="text-[9px] text-on-surface-variant/80 uppercase tracking-widest font-bold font-mono">YouTube</p>
-                                        <p className="text-body-sm font-bold text-on-surface mt-1 font-tabular">{formatNumber(platformStats.YouTube.views)}</p>
-                                    </div>
-                                </div>
+                            <div className="flex justify-center gap-4 text-[11px] text-zinc-500 font-mono">
+                                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#E1306C' }} /> Instagram</span>
+                                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#00F2FE' }} /> TikTok</span>
+                                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#FF0000' }} /> YouTube</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Content Table section */}
-                    <div className="glass-panel rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
-                        <div className="px-5 py-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low">
-                            <h5 className="font-headline-md text-body-sm font-bold text-on-surface uppercase tracking-wider relative pl-3 before:absolute before:left-0 before:top-0.5 before:w-1 before:h-[90%] before:bg-primary before:rounded-full">Content Table</h5>
+                    <div className="border border-border bg-surface rounded-xl overflow-hidden shadow-xs">
+                        <div className="px-5 py-4 border-b border-border flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-900/50">
+                            <h5 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">Content Table</h5>
                             <div className="flex items-center gap-3">
                                 {isUnlocked && userRole === 'Admin' && selectedRows.length > 0 && (
                                     <div className="flex items-center gap-1.5 animate-fade-up">
                                         {isDeleteConfirming ? (
                                             <>
-                                                <span className="text-[10px] text-error font-semibold uppercase tracking-wider">Delete {selectedRows.length} items?</span>
+                                                <span className="text-[10px] text-red-500 font-semibold uppercase tracking-wider">Delete {selectedRows.length} items?</span>
                                                 <button
-                                                    className="bg-error text-on-error hover:opacity-90 px-3 py-1 rounded-lg text-[11px] font-bold uppercase transition-all cursor-pointer"
+                                                    className="bg-red-600 text-white hover:opacity-90 px-2.5 py-1 rounded text-xs font-medium transition-all cursor-pointer"
                                                     onClick={handleDeleteSelected}
                                                 >
                                                     Confirm
                                                 </button>
                                                 <button
-                                                    className="bg-surface-container border border-outline-variant/30 text-on-surface hover:bg-surface-container-high px-2 py-1 rounded-lg text-[11px] font-bold uppercase transition-all cursor-pointer"
+                                                    className="border border-border text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-2.5 py-1 rounded text-xs font-medium transition-all cursor-pointer"
                                                     onClick={() => setIsDeleteConfirming(false)}
                                                 >
                                                     Cancel
@@ -1053,29 +1117,29 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                             </>
                                         ) : (
                                             <button
-                                                className="bg-error-container/20 text-error border border-error/25 hover:bg-error-container/30 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase transition-all micro-interaction cursor-pointer flex items-center gap-1.5"
+                                                className="bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500/20 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5"
                                                 onClick={() => setIsDeleteConfirming(true)}
                                             >
-                                                <span className="material-symbols-outlined text-[14px]">delete</span> Delete ({selectedRows.length})
+                                                <Icon name="delete" size={13} /> Delete ({selectedRows.length})
                                             </button>
                                         )}
                                     </div>
                                 )}
                                 <div className="flex items-center gap-1.5">
                                     <button
-                                        className={`bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest px-3 py-1.5 rounded text-[11px] font-bold uppercase transition-all flex items-center gap-1.5 micro-interaction cursor-pointer ${tableFilterDate ? 'border-primary text-primary' : ''}`}
+                                        className={`border border-border bg-surface text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${tableFilterDate ? 'border-primary text-primary' : ''}`}
                                         onClick={handleTableDatePickerClick}
                                     >
-                                        <span className="material-symbols-outlined text-[14px]">calendar_month</span>
+                                        <Icon name="calendar_month" size={13} />
                                         {tableFilterDate ? formatDisplayDate(tableFilterDate) : 'Choose Date'}
                                     </button>
                                     {tableFilterDate && (
                                         <button
-                                            className="bg-surface-container-high border border-outline-variant/30 text-on-surface hover:bg-surface-container-highest px-2 py-1.5 rounded text-[11px] font-bold uppercase transition-colors cursor-pointer"
+                                            className="border border-border bg-surface text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 p-1 rounded-md text-xs transition-colors cursor-pointer"
                                             onClick={() => setTableFilterDate('')}
                                             title="Clear date filter"
                                         >
-                                            <span className="material-symbols-outlined text-[14px]">clear</span>
+                                            <Icon name="clear" size={13} />
                                         </button>
                                     )}
                                 </div>
@@ -1085,117 +1149,111 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                         <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
                             {processedData.length === 0 ? (
                                 <div className="p-12 text-center space-y-3">
-                                    <span className="material-symbols-outlined text-[48px] text-on-surface-variant/40">inbox</span>
-                                    <h3 className="font-bold text-body-sm text-on-surface">No data available</h3>
-                                    <p className="text-[12px] text-on-surface-variant/70">Create new posts or adjust filters to populate table records.</p>
+                                    <Icon name="inbox" size={36} className="text-zinc-400 mx-auto" />
+                                    <h3 className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">No data available</h3>
+                                    <p className="text-xs text-zinc-500">Create new posts or adjust filters to populate table records.</p>
                                 </div>
                             ) : (
-                                <table className="w-full text-left border-collapse text-body-sm">
+                                <table className="w-full text-left border-collapse text-xs">
                                     <caption className="sr-only">Content performance records. Activate a sortable column heading to change the sort order.</caption>
-                                    <thead className="bg-surface-container-lowest text-on-surface-variant uppercase text-[10px] tracking-wider border-b border-outline-variant/20">
+                                    <thead className="bg-zinc-50/70 dark:bg-zinc-900/70 text-zinc-500 dark:text-zinc-400 uppercase text-[10px] tracking-wider border-b border-border sticky top-0 z-10">
                                         <tr>
                                             {isUnlocked && userRole === 'Admin' && (
-                                                <th className="px-4 py-3.5 w-10 text-center">
+                                                <th className="px-4 py-3 w-10 text-center">
                                                     <input
                                                         type="checkbox"
                                                         aria-label="Select all visible content records"
-                                                        className="rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
+                                                        className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                                                         checked={visibleTableData.length > 0 && visibleTableData.every(row => selectedRows.includes(row.ID))}
                                                         onChange={toggleSelectAll}
                                                     />
                                                 </th>
                                             )}
-                                            <th className="px-3 py-3.5 w-12 text-center">No</th>
+                                            <th className="px-3 py-3 w-12 text-center font-mono">No</th>
                                             <SortableTableHeader column="Date" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5">Date</SortableTableHeader>
                                             <SortableTableHeader column="Content Title" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5">Content title</SortableTableHeader>
-                                            <th className="px-4 py-3.5">Platform</th>
-                                            <SortableTableHeader column="Views" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 text-right" align="right">Views</SortableTableHeader>
-                                            <SortableTableHeader column="Total Engagement" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 text-right" align="right">Engagement</SortableTableHeader>
-                                            <SortableTableHeader column="KPI Summary" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 text-center" align="center">Summary</SortableTableHeader>
-                                            <th className="px-4 py-3.5 text-center">Link</th>
-                                            {isUnlocked && userRole === 'Admin' && <th className="px-4 py-3.5 text-center">Edit</th>}
+                                            <th className="px-4 py-3">Platform</th>
+                                            <SortableTableHeader column="Views" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 text-right font-mono" align="right">Views</SortableTableHeader>
+                                            <SortableTableHeader column="Total Engagement" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 text-right font-mono" align="right">Engagement</SortableTableHeader>
+                                            <SortableTableHeader column="KPI Summary" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 text-center font-mono" align="center">Summary</SortableTableHeader>
+                                            <th className="px-4 py-3 text-center">Link</th>
+                                            {isUnlocked && userRole === 'Admin' && <th className="px-4 py-3 text-center">Edit</th>}
                                         </tr>
                                     </thead>
-                                    <tbody className="">
+                                    <tbody className="divide-y divide-border">
                                         {visibleTableData.map((row, idx) => {
                                             const isRowSelected = selectedRows.includes(row.ID);
                                             const rowSpan = rowspans[idx] || { Date: 1, ID: 1, ContentTitle: 1, PIC: 1, Category: 1, KPISummary: 1 };
-                                            const isNewGroup = rowSpan.ContentTitle > 0;
-                                            const rowBorderClass = (idx === 0)
-                                                ? ''
-                                                : isNewGroup
-                                                    ? 'border-t-[2.5px] border-outline-variant/75'
-                                                    : 'border-t border-outline-variant/15';
 
                                             return (
-                                                <tr key={`${row.ID}-${idx}`} className={`hover:bg-surface-container/20 transition-colors ${isRowSelected ? 'bg-primary-container/5' : ''} ${rowBorderClass}`}>
+                                                <tr key={`${row.ID}-${idx}`} className={`hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40 transition-colors ${isRowSelected ? 'bg-orange-500/5' : ''}`}>
                                                     {isUnlocked && userRole === 'Admin' && (
-                                                        <td className="px-4 py-3 w-10 text-center">
+                                                        <td className="px-4 py-2.5 w-10 text-center">
                                                             <input
                                                                 type="checkbox"
                                                                 aria-label={`Select ${row['Content Title'] || `content record ${idx + 1}`}`}
-                                                                className="rounded border-outline-variant bg-surface-container-low text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
+                                                                className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                                                                 checked={isRowSelected}
                                                                 onChange={() => toggleSelectRow(row.ID)}
                                                             />
                                                         </td>
                                                     )}
                                                     {rowSpan.ContentTitle > 0 && (
-                                                        <td rowSpan={rowSpan.ContentTitle} className="px-3 py-3 w-12 text-center text-on-surface-variant/70 text-[12px]">
+                                                        <td rowSpan={rowSpan.ContentTitle} className="px-3 py-2.5 w-12 text-center text-zinc-400 text-xs font-mono">
                                                             {contentGroupNumbers[idx]}
                                                         </td>
                                                     )}
                                                     {rowSpan.Date > 0 && (
-                                                        <td rowSpan={rowSpan.Date} className="px-4 py-3 text-[12px] font-semibold text-on-surface-variant">
+                                                        <td rowSpan={rowSpan.Date} className="px-4 py-2.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 font-mono">
                                                             {formatDisplayDate(row.Date)}
                                                         </td>
                                                     )}
                                                     {rowSpan.ContentTitle > 0 && (
-                                                        <td rowSpan={rowSpan.ContentTitle} className="px-4 py-3">
-                                                            <div className="space-y-0.5 max-w-[220px]">
-                                                                <p className="font-semibold text-on-surface leading-snug line-clamp-2" title={row['Content Title']}>
+                                                        <td rowSpan={rowSpan.ContentTitle} className="px-4 py-2.5">
+                                                            <div className="space-y-0.5 max-w-[240px]">
+                                                                <p className="font-semibold text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2" title={row['Content Title']}>
                                                                     {row['Content Title'] || 'Untitled'}
                                                                 </p>
-                                                                <p className="text-[11px] text-on-surface-variant/80">
-                                                                    {row.Category} · PIC: <span className="font-bold text-primary">{getPicDisplayName(row.PIC)}</span>
+                                                                <p className="text-[11px] text-zinc-500">
+                                                                    {row.Category} &middot; PIC: <span className="font-semibold text-primary">{getPicDisplayName(row.PIC)}</span>
                                                                 </p>
                                                             </div>
                                                         </td>
                                                     )}
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-4 py-2.5">
                                                         <PlatformBadge platform={row.Platform} />
                                                     </td>
-                                                    <td className="px-4 py-3 text-right font-bold text-on-surface font-tabular">
+                                                    <td className="px-4 py-2.5 text-right font-bold text-zinc-900 dark:text-zinc-100 font-mono">
                                                         {formatNumber(row.Views)}
                                                     </td>
-                                                    <td className="px-4 py-3 text-right text-on-surface-variant font-tabular">
+                                                    <td className="px-4 py-2.5 text-right text-zinc-600 dark:text-zinc-400 font-mono">
                                                         {formatNumber(row['Total Engagement'])}
                                                     </td>
                                                     {rowSpan.KPISummary > 0 && (
-                                                        <td rowSpan={rowSpan.KPISummary} className="px-4 py-3 text-center">
-                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getKpiBadgeClass(row['KPI Summary'])}`}>
+                                                        <td rowSpan={rowSpan.KPISummary} className="px-4 py-2.5 text-center">
+                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider ${getKpiBadgeClass(row['KPI Summary'])}`}>
                                                                 KPI: {row['KPI Summary'] || '3'}
                                                             </span>
                                                         </td>
                                                     )}
-                                                    <td className="px-4 py-3 text-center">
+                                                    <td className="px-4 py-2.5 text-center">
                                                         {row.URL ? (
-                                                            <a href={row.URL} target="_blank" rel="noopener noreferrer" className="inline-flex p-1 text-on-surface-variant hover:text-primary transition-colors cursor-pointer" title="Open post URL">
-                                                                <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                                                            <a href={row.URL} target="_blank" rel="noopener noreferrer" className="inline-flex p-1 text-zinc-400 hover:text-primary transition-colors cursor-pointer" title="Open post URL">
+                                                                <Icon name="open_in_new" size={15} />
                                                             </a>
                                                         ) : (
-                                                            <span className="text-on-surface-variant/40">—</span>
+                                                            <span className="text-zinc-300 dark:text-zinc-700">-</span>
                                                         )}
                                                     </td>
                                                     {isUnlocked && userRole === 'Admin' && (
-                                                        <td className="px-4 py-3 text-center">
+                                                        <td className="px-4 py-2.5 text-center">
                                                             <button
                                                                 type="button"
-                                                                className="p-1 text-on-surface-variant hover:text-primary transition-colors cursor-pointer micro-interaction"
+                                                                className="p-1 text-zinc-400 hover:text-primary transition-colors cursor-pointer"
                                                                 onClick={() => loadRowForEdit(row, currentData.indexOf(row))}
                                                                 title="Edit metrics"
                                                             >
-                                                                <span className="material-symbols-outlined text-[16px]">edit</span>
+                                                                <Icon name="edit" size={15} />
                                                             </button>
                                                         </td>
                                                     )}
@@ -1207,25 +1265,25 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                             )}
                         </div>
                         {tablePages.length > 1 && (
-                            <nav className="flex items-center justify-between gap-4 border-t border-outline-variant/20 bg-surface-container-low px-5 py-3" aria-label="Content table pagination">
-                                <p className="text-[11px] text-on-surface-variant">
-                                    Showing {activeTablePage.start + 1}–{activeTablePage.start + visibleTableData.length} of {processedData.length}
+                            <nav className="flex items-center justify-between gap-4 border-t border-border bg-zinc-50/50 dark:bg-zinc-900/50 px-5 py-3" aria-label="Content table pagination">
+                                <p className="text-xs text-zinc-500 font-mono">
+                                    Showing {activeTablePage.start + 1} - {activeTablePage.start + visibleTableData.length} of {processedData.length}
                                 </p>
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
-                                        className="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-[11px] font-semibold text-on-surface disabled:cursor-not-allowed disabled:opacity-40"
+                                        className="rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-zinc-700 dark:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
                                         disabled={tablePage === 1}
                                         onClick={() => setTablePage(page => Math.max(1, page - 1))}
                                     >
                                         Previous
                                     </button>
-                                    <span className="text-[11px] font-semibold text-on-surface" aria-live="polite">
+                                    <span className="text-xs font-mono text-zinc-600 dark:text-zinc-400" aria-live="polite">
                                         Page {tablePage} of {tablePages.length}
                                     </span>
                                     <button
                                         type="button"
-                                        className="rounded-lg border border-outline-variant/30 px-3 py-1.5 text-[11px] font-semibold text-on-surface disabled:cursor-not-allowed disabled:opacity-40"
+                                        className="rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-zinc-700 dark:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
                                         disabled={tablePage === tablePages.length}
                                         onClick={() => setTablePage(page => Math.min(tablePages.length, page + 1))}
                                     >
@@ -1240,48 +1298,49 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                 {/* Right 1 Column Sidebar */}
                 <div className="space-y-6">
                     {userRole !== 'Viewer' && (
-                        <section aria-labelledby="dashboard-priority-heading" className="rounded-xl border border-outline-variant/30 bg-surface-container p-3 shadow-xs">
+                        <section aria-labelledby="dashboard-priority-heading" className="rounded-xl border border-border bg-surface p-4 shadow-xs">
                             <div className="flex items-center justify-between gap-3">
-                                <h2 id="dashboard-priority-heading" className="text-xs font-bold text-on-surface">What needs attention</h2>
+                                <h2 id="dashboard-priority-heading" className="text-xs font-bold text-zinc-900 dark:text-zinc-100">What needs attention</h2>
                                 <button type="button" onClick={openTaskDirectory} className="text-[11px] font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">View all tasks</button>
                             </div>
-                            <div className="mt-2 grid grid-cols-2 divide-x divide-outline-variant/25 rounded-lg bg-surface-container-low">
-                                <button type="button" onClick={() => taskOverview.overdue[0] ? openTask(taskOverview.overdue[0].id) : openTaskDirectory()} className="flex items-center justify-between gap-2 rounded-l-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                                    <span className="text-[11px] font-medium text-on-surface-variant">Overdue</span>
-                                    <span className={`font-tabular text-base font-bold ${taskOverview.overdue.length ? 'text-error' : 'text-on-surface'}`}>{taskOverview.overdue.length}</span>
+                            <div className="mt-3 grid grid-cols-2 divide-x divide-border rounded-lg border border-border bg-zinc-50/50 dark:bg-zinc-900/50">
+                                <button type="button" onClick={() => taskOverview.overdue[0] ? openTask(taskOverview.overdue[0].id) : openTaskDirectory()} className="flex items-center justify-between gap-2 rounded-l-lg px-3 py-2.5 text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                                    <span className="text-xs font-medium text-zinc-500">Overdue</span>
+                                    <span className={`font-mono text-base font-bold ${taskOverview.overdue.length ? 'text-red-500' : 'text-zinc-900 dark:text-zinc-100'}`}>{taskOverview.overdue.length}</span>
                                 </button>
-                                <button type="button" onClick={() => taskOverview.dueToday[0] ? openTask(taskOverview.dueToday[0].id) : openPlanner()} className="flex items-center justify-between gap-2 rounded-r-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                                    <span className="text-[11px] font-medium text-on-surface-variant">Due today</span>
-                                    <span className="font-tabular text-base font-bold text-on-surface">{taskOverview.dueToday.length}</span>
+                                <button type="button" onClick={() => taskOverview.dueToday[0] ? openTask(taskOverview.dueToday[0].id) : openPlanner()} className="flex items-center justify-between gap-2 rounded-r-lg px-3 py-2.5 text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                                    <span className="text-xs font-medium text-zinc-500">Due today</span>
+                                    <span className="font-mono text-base font-bold text-zinc-900 dark:text-zinc-100">{taskOverview.dueToday.length}</span>
                                 </button>
                             </div>
-                            <div className="mt-2 border-t border-outline-variant/20 pt-2">
+                            <div className="mt-3 border-t border-border pt-2.5">
                                 <div className="flex items-center justify-between gap-3">
-                                    <h3 className="text-[10px] font-semibold text-on-surface-variant">Next deadline</h3>
+                                    <h3 className="text-[10px] font-semibold text-zinc-400 uppercase font-mono tracking-wider">Next deadline</h3>
                                     <button type="button" onClick={openPlanner} className="text-[10px] font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Planner</button>
                                 </div>
                                 {taskOverview.upcoming[0] ? (
-                                    <button type="button" onClick={() => openTask(taskOverview.upcoming[0].id)} className="mt-1 flex w-full min-w-0 items-center gap-2 rounded-md px-1 py-1 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`Open task ${taskOverview.upcoming[0].contentTitle || 'Untitled'}`}>
-                                        <span className="shrink-0 text-[10px] font-bold text-primary">{formatDisplayDate(taskOverview.upcoming[0].date)}</span>
-                                        <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-on-surface">{taskOverview.upcoming[0].contentTitle || 'Untitled'}</span>
-                                        <span className="material-symbols-outlined shrink-0 text-[14px] text-on-surface-variant" aria-hidden="true">chevron_right</span>
+                                    <button type="button" onClick={() => openTask(taskOverview.upcoming[0].id)} className="mt-1.5 flex w-full min-w-0 items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`Open task ${taskOverview.upcoming[0].contentTitle || 'Untitled'}`}>
+                                        <span className="shrink-0 text-[10px] font-mono font-bold text-primary">{formatDisplayDate(taskOverview.upcoming[0].date)}</span>
+                                        <span className="min-w-0 flex-1 truncate text-xs font-semibold text-zinc-800 dark:text-zinc-200">{taskOverview.upcoming[0].contentTitle || 'Untitled'}</span>
+                                        <Icon name="chevron_right" size={13} className="text-zinc-400 shrink-0" aria-hidden="true" />
                                     </button>
-                                ) : <p className="mt-1 text-[11px] text-on-surface-variant">Nothing scheduled next.</p>}
+                                ) : <p className="mt-1.5 text-xs text-zinc-400">Nothing scheduled next.</p>}
                             </div>
                         </section>
                     )}
+
                     {/* Monthly Calendar Widget */}
-                    <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl">
-                        <div className="flex justify-between items-center pb-2 mb-3 border-b border-outline-variant/20">
-                            <button className="text-on-surface hover:text-primary cursor-pointer p-1" onClick={handlePrevMonth}>
-                                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                    <div className="border border-border bg-surface rounded-xl p-4 shadow-xs">
+                        <div className="flex justify-between items-center pb-2.5 mb-3 border-b border-border">
+                            <button className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={handlePrevMonth} aria-label="Previous month">
+                                <Icon name="chevron_left" size={15} />
                             </button>
-                            <span className="font-semibold text-body-sm text-on-surface">{monthNames[currentMonth]} {currentYear}</span>
-                            <button className="text-on-surface hover:text-primary cursor-pointer p-1" onClick={handleNextMonth}>
-                                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                            <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">{monthNames[currentMonth]} {currentYear}</span>
+                            <button className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={handleNextMonth} aria-label="Next month">
+                                <Icon name="chevron_right" size={15} />
                             </button>
                         </div>
-                        <div className="grid grid-cols-7 text-center text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2 py-1">
+                        <div className="grid grid-cols-7 text-center text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-wider mb-2">
                             <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                         </div>
                         <div className="grid grid-cols-7 gap-1">
@@ -1290,7 +1349,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
 
                                 let hasTask = false;
                                 let uploadedClass = '';
-                                let statusColor = 'text-on-surface hover:bg-surface-container-high';
+                                let statusColor = 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800';
 
                                 if (day.dateStr && !day.isDummy) {
                                     const dayTasks = combinedTasks.filter(t => t.date === day.dateStr);
@@ -1301,13 +1360,13 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                         const allDone = dayTasks.every(t => t.calculatedStatus === 'Done');
 
                                         if (allDone) {
-                                            statusColor = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                                            statusColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
                                         } else if (hasOverdue) {
-                                            statusColor = 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
+                                            statusColor = 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20';
                                         } else if (hasToday) {
-                                            statusColor = 'bg-sky-500/10 text-sky-400 border border-sky-500/20';
+                                            statusColor = 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20';
                                         } else {
-                                            statusColor = 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
+                                            statusColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
                                         }
 
                                         const isFullyUploaded = dayTasks.every(task => !task.isFromDashboard || task.status);
@@ -1324,10 +1383,10 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                         aria-hidden={day.isDummy ? 'true' : undefined}
                                         aria-label={day.isDummy ? undefined : `Show schedule for ${formatDisplayDate(day.dateStr)}`}
                                         tabIndex={day.isDummy ? -1 : undefined}
-                                        className={`h-8 w-full border-none rounded text-body-sm cursor-pointer flex items-center justify-center transition-all micro-interaction ${day.isDummy
+                                        className={`h-7 w-full border-none rounded text-xs font-mono cursor-pointer flex items-center justify-center transition-colors ${day.isDummy
                                                 ? 'bg-transparent text-transparent pointer-events-none'
                                                 : isSelected
-                                                    ? 'bg-primary text-on-primary font-bold shadow'
+                                                    ? 'bg-primary text-on-primary font-bold shadow-xs'
                                                     : statusColor
                                             } ${uploadedClass}`}
                                         onClick={() => !day.isDummy && setSelectedDate(day.dateStr)}
@@ -1341,70 +1400,44 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                     </div>
 
                     {/* Scheduled timeline card */}
-                    <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
-                        <div className="flex justify-between items-center pb-2 border-b border-outline-variant/20">
-                            <h3 className="text-[11px] sm:text-xs font-bold text-on-surface-variant uppercase tracking-wider">Scheduled for this day</h3>
+                    <div className="border border-border bg-surface rounded-xl p-4 shadow-xs space-y-3">
+                        <div className="flex justify-between items-center pb-2.5 border-b border-border">
+                            <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">Scheduled for this day</h3>
                             {userRole === 'Admin' && (
                                 <button
-                                    className="w-7 h-7 flex items-center justify-center bg-primary-container text-on-primary-container rounded-lg hover:opacity-90 cursor-pointer transition-opacity"
+                                    className="w-6 h-6 flex items-center justify-center bg-primary text-on-primary rounded hover:opacity-90 cursor-pointer transition-opacity"
                                     onClick={() => setIsNewPostDrawerOpen(true)}
+                                    title="Add scheduled post"
+                                    aria-label="Add scheduled post"
                                 >
-                                    <span className="material-symbols-outlined text-[16px]">add</span>
+                                    <Icon name="add" size={14} weight="bold" />
                                 </button>
                             )}
                         </div>
 
-                        <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1" tabIndex={0} aria-label="Scheduled uploads for the selected date">
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1" tabIndex={0} aria-label="Scheduled uploads for the selected date">
                             {scheduledTimeline.length === 0 ? (
-                                <div className="py-8 text-center text-on-surface-variant/60 text-body-sm space-y-2">
-                                    <span className="material-symbols-outlined text-[36px]">check_circle</span>
+                                <div className="py-6 text-center text-zinc-400 text-xs space-y-1.5">
+                                    <Icon name="check_circle" size={24} className="mx-auto text-zinc-400" />
                                     <p>No uploads scheduled for this date.</p>
                                 </div>
                             ) : (
                                 scheduledTimeline.map((task) => (
-                                    <div key={task.ID} className="flex gap-3 items-start relative group">
-                                        <div className="flex flex-col items-center pt-1.5">
-                                            <span className="w-2.5 h-2.5 rounded-full bg-primary"></span>
-                                            <span className="w-[1.5px] bg-outline-variant/30 flex-1 my-1 min-h-[40px]"></span>
+                                    <div key={task.ID} className="flex gap-2.5 items-start relative group">
+                                        <div className="flex flex-col items-center pt-1">
+                                            <span className="w-2 h-2 rounded-full bg-primary" />
+                                            <span className="w-px bg-border flex-1 my-1 min-h-[36px]" />
                                         </div>
-                                        <div className="flex-1 bg-surface-container-low border border-outline-variant/20 rounded-lg p-2.5 space-y-1">
-                                            <p className="text-[9.5px] text-primary uppercase font-bold tracking-wider">Upload: {task.Category}</p>
-                                            <p className="text-xs font-semibold text-on-surface leading-snug line-clamp-2">{task['Content Title']}</p>
-                                            <p className="text-[10px] text-on-surface-variant/80">
-                                                PIC: <span className="font-semibold">{getPicDisplayName(task.PIC)}</span> | {task.Status ? 'Published' : 'Pending'}
+                                        <div className="flex-1 border border-border/80 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-lg p-2.5 space-y-1">
+                                            <p className="text-[10px] text-primary uppercase font-bold tracking-wider font-mono">Upload: {task.Category}</p>
+                                            <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2">{task['Content Title']}</p>
+                                            <p className="text-[11px] text-zinc-500 font-mono">
+                                                PIC: <span className="font-semibold text-zinc-700 dark:text-zinc-300">{getPicDisplayName(task.PIC)}</span> | {task.Status ? 'Published' : 'Pending'}
                                             </p>
                                         </div>
                                     </div>
                                 ))
                             )}
-                        </div>
-                    </div>
-
-                    {/* Chart Container Card */}
-                    <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-4 shadow-xl space-y-4">
-                        <div className="flex justify-between items-center pb-2 border-b border-outline-variant/20">
-                            <h3 className="text-[11px] sm:text-xs font-bold text-on-surface-variant uppercase tracking-wider">Growth Performance</h3>
-                            <div className="flex bg-surface-container-low border border-outline-variant/20 rounded p-0.5 text-[9px] font-bold uppercase tracking-wider">
-                                {['Followers', 'Engagement', 'Reach'].map(tab => (
-                                    <button
-                                        key={tab}
-                                        className={`px-2.5 py-1 rounded cursor-pointer transition-all ${activeChartTab === tab ? 'bg-surface text-primary shadow' : 'text-on-surface-variant hover:text-on-surface'
-                                            }`}
-                                        onClick={() => setActiveChartTab(tab)}
-                                    >
-                                        {tab}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="h-52 w-full relative">
-                            <canvas ref={activityCanvasRef} role="img" aria-label={`${activeChartTab} performance by platform`} aria-describedby="dashboard-chart-summary"></canvas>
-                            <p id="dashboard-chart-summary" className="sr-only">Platform views: Instagram {formatNumber(platformStats.Instagram.views)}; TikTok {formatNumber(platformStats.TikTok.views)}; YouTube {formatNumber(platformStats.YouTube.views)}.</p>
-                        </div>
-                        <div className="flex flex-wrap justify-center gap-4 text-[11px] text-on-surface-variant/80 font-semibold">
-                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#E1306C' }}></span> Instagram</span>
-                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#00F2FE' }}></span> TikTok</span>
-                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#FF0000' }}></span> YouTube</span>
                         </div>
                     </div>
                 </div>
@@ -1414,89 +1447,102 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                2. MOBILE VIEW LAYOUT (hidden on screens > 1024px)
                ======================================================== */}
             <div className="lg:hidden space-y-6 max-w-md mx-auto pb-20">
-                {userRole !== 'Viewer' && <section aria-labelledby="mobile-priority-heading" className="rounded-2xl border border-outline-variant/30 bg-surface-container p-5">
-                    <p className="text-xs font-semibold text-primary">Work overview</p>
-                    <h2 id="mobile-priority-heading" className="mt-1 text-headline-md font-bold tracking-tight text-on-surface">What needs attention</h2>
-                    <p className="mt-1 text-body-sm leading-relaxed text-on-surface-variant">Your closest deadlines and publishing work.</p>
-                    <div className="mt-5 grid grid-cols-2 gap-3">
-                        <button type="button" onClick={() => taskOverview.overdue[0] ? openTask(taskOverview.overdue[0].id) : openTaskDirectory()} className="rounded-xl bg-surface-container-low p-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                            <span className="text-xs font-semibold text-on-surface-variant">Overdue</span>
-                            <span className={`mt-1 block text-2xl font-bold font-tabular ${taskOverview.overdue.length ? 'text-error' : 'text-on-surface'}`}>{taskOverview.overdue.length}</span>
-                        </button>
-                        <button type="button" onClick={() => taskOverview.dueToday[0] ? openTask(taskOverview.dueToday[0].id) : openPlanner()} className="rounded-xl bg-surface-container-low p-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                            <span className="text-xs font-semibold text-on-surface-variant">Due today</span>
-                            <span className="mt-1 block text-2xl font-bold font-tabular text-on-surface">{taskOverview.dueToday.length}</span>
-                        </button>
-                    </div>
-                    <button type="button" onClick={openTaskDirectory} className="mt-4 w-full rounded-lg bg-primary px-4 py-3 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">View all tasks</button>
-                </section>}
+                {userRole !== 'Viewer' && (
+                    <section aria-labelledby="mobile-priority-heading" className="rounded-xl border border-border bg-surface p-4 shadow-xs">
+                        <p className="text-xs font-semibold text-primary">Work overview</p>
+                        <h2 id="mobile-priority-heading" className="mt-1 text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-100">What needs attention</h2>
+                        <p className="mt-1 text-xs leading-relaxed text-zinc-500">Your closest deadlines and publishing work.</p>
+                        <div className="mt-3.5 grid grid-cols-2 gap-2.5">
+                            <button type="button" onClick={() => taskOverview.overdue[0] ? openTask(taskOverview.overdue[0].id) : openTaskDirectory()} className="rounded-lg border border-border bg-zinc-50/50 dark:bg-zinc-900/50 p-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                                <span className="text-xs font-medium text-zinc-500">Overdue</span>
+                                <span className={`mt-1 block text-xl font-bold font-mono ${taskOverview.overdue.length ? 'text-red-500' : 'text-zinc-900 dark:text-zinc-100'}`}>{taskOverview.overdue.length}</span>
+                            </button>
+                            <button type="button" onClick={() => taskOverview.dueToday[0] ? openTask(taskOverview.dueToday[0].id) : openPlanner()} className="rounded-lg border border-border bg-zinc-50/50 dark:bg-zinc-900/50 p-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                                <span className="text-xs font-medium text-zinc-500">Due today</span>
+                                <span className="mt-1 block text-xl font-bold font-mono text-zinc-900 dark:text-zinc-100">{taskOverview.dueToday.length}</span>
+                            </button>
+                        </div>
+                        <button type="button" onClick={openTaskDirectory} className="mt-3.5 w-full rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-on-primary transition-opacity hover:opacity-90 cursor-pointer">View all tasks</button>
+                    </section>
+                )}
 
                 {/* Upcoming Posts */}
-                {userRole !== 'Viewer' && <section className="space-y-3">
-                    <div className="flex items-end justify-between gap-3 px-1">
-                        <div>
-                            <p className="text-xs font-semibold text-primary">Next up</p>
-                            <h2 className="text-body-lg font-bold text-on-surface">Upcoming deadlines</h2>
+                {userRole !== 'Viewer' && (
+                    <section className="space-y-2.5">
+                        <div className="flex items-end justify-between gap-3 px-1">
+                            <div>
+                                <p className="text-xs font-semibold text-primary">Next up</p>
+                                <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Upcoming deadlines</h2>
+                            </div>
+                            <button type="button" onClick={openPlanner} className="text-xs font-semibold text-primary cursor-pointer">Planner</button>
                         </div>
-                        <button type="button" onClick={openPlanner} className="text-xs font-semibold text-primary">Planner</button>
-                    </div>
-                    {taskOverview.upcoming.length === 0 ? (
-                        <div className="rounded-xl border border-outline-variant/25 bg-surface-container-low p-5 text-body-sm text-on-surface-variant">Nothing is scheduled next. Open the planner to add work.</div>
-                    ) : (
-                        <div className="space-y-2">
-                            {taskOverview.upcoming.slice(0, 3).map(task => (
-                                <button key={task.id} type="button" onClick={() => openTask(task.id)} className="flex w-full items-center gap-3 rounded-xl border border-outline-variant/25 bg-surface-container-low p-3 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`Open task ${task.contentTitle || 'Untitled'}`}>
-                                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><span className="material-symbols-outlined" aria-hidden="true">calendar_month</span></span>
-                                    <span className="min-w-0 flex-1"><span className="block text-xs font-bold text-primary">{formatDisplayDate(task.date)}</span><span className="block truncate text-body-sm font-semibold text-on-surface">{task.contentTitle || 'Untitled'}</span><span className="block truncate text-xs text-on-surface-variant">{task.category} · {getPicDisplayName(task.pic)}</span></span>
-                                    <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">chevron_right</span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </section>}
+                        {taskOverview.upcoming.length === 0 ? (
+                            <div className="rounded-xl border border-border bg-surface p-4 text-xs text-zinc-500">Nothing is scheduled next. Open the planner to add work.</div>
+                        ) : (
+                            <div className="space-y-2">
+                                {taskOverview.upcoming.slice(0, 3).map(task => (
+                                    <button key={task.id} type="button" onClick={() => openTask(task.id)} className="flex w-full items-center gap-3 rounded-xl border border-border bg-surface p-3 text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40 cursor-pointer" aria-label={`Open task ${task.contentTitle || 'Untitled'}`}>
+                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-500/10 text-primary border border-orange-500/20">
+                                            <Icon name="calendar_month" size={16} aria-hidden="true" />
+                                        </span>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block text-[11px] font-bold font-mono text-primary">{formatDisplayDate(task.date)}</span>
+                                            <span className="block truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">{task.contentTitle || 'Untitled'}</span>
+                                            <span className="block truncate text-[11px] text-zinc-500">{task.category} &middot; {getPicDisplayName(task.pic)}</span>
+                                        </span>
+                                        <Icon name="chevron_right" size={15} className="text-zinc-400" aria-hidden="true" />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+                )}
 
                 {/* Metrics Stack */}
-                <section className="space-y-3">
-                    <div className="flex items-center justify-between px-1"><h2 className="text-body-md font-bold text-on-surface">Performance snapshot</h2><button type="button" onClick={openAnalytics} className="text-xs font-semibold text-primary">Full analytics</button></div>
+                <section className="space-y-2.5">
+                    <div className="flex items-center justify-between px-1">
+                        <h2 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Performance snapshot</h2>
+                        <button type="button" onClick={openAnalytics} className="text-xs font-semibold text-primary cursor-pointer">Full analytics</button>
+                    </div>
                     {/* Metric Card 1: Views */}
-                    <button type="button" onClick={openAnalytics} className="w-full bg-surface-container p-4 rounded-xl border border-outline-variant/30 flex items-center justify-between text-left micro-interaction cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                        <div className="flex items-center gap-4">
-                            <div className="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-primary border border-outline-variant/20">
-                                <span className="material-symbols-outlined">visibility</span>
+                    <button type="button" onClick={openAnalytics} className="w-full bg-surface p-3.5 rounded-xl border border-border flex items-center justify-between text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40 cursor-pointer">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-orange-500/10 text-primary border border-orange-500/20 flex items-center justify-center">
+                                <Icon name="visibility" size={16} />
                             </div>
                             <div>
-                                <p className="text-body-sm text-on-surface-variant font-semibold">Total Views</p>
-                                <p className="text-headline-md font-bold text-on-surface leading-tight">{formatNumber(stats.totalViews)}</p>
+                                <p className="text-xs text-zinc-500 font-medium">Total Views</p>
+                                <p className="text-lg font-bold font-mono text-zinc-900 dark:text-zinc-100 leading-tight">{formatNumber(stats.totalViews)}</p>
                             </div>
                         </div>
-                        <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">chevron_right</span>
+                        <Icon name="chevron_right" size={15} className="text-zinc-400" aria-hidden="true" />
                     </button>
                     {/* Metric Card 2: Reach */}
-                    <button type="button" onClick={openAnalytics} className="w-full bg-surface-container p-4 rounded-xl border border-outline-variant/30 flex items-center justify-between text-left micro-interaction cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                        <div className="flex items-center gap-4">
-                            <div className="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary border border-outline-variant/20">
-                                <span className="material-symbols-outlined">public</span>
+                    <button type="button" onClick={openAnalytics} className="w-full bg-surface p-3.5 rounded-xl border border-border flex items-center justify-between text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40 cursor-pointer">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-border flex items-center justify-center">
+                                <Icon name="public" size={16} />
                             </div>
                             <div>
-                                <p className="text-body-sm text-on-surface-variant font-semibold">Total Reach</p>
-                                <p className="text-headline-md font-bold text-on-surface leading-tight">{formatNumber(stats.totalReach)}</p>
+                                <p className="text-xs text-zinc-500 font-medium">Total Reach</p>
+                                <p className="text-lg font-bold font-mono text-zinc-900 dark:text-zinc-100 leading-tight">{formatNumber(stats.totalReach)}</p>
                             </div>
                         </div>
-                        <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">chevron_right</span>
+                        <Icon name="chevron_right" size={15} className="text-zinc-400" aria-hidden="true" />
                     </button>
                     {/* Metric Card 3: Engagement */}
-                    <button type="button" onClick={openAnalytics} className="w-full bg-surface-container p-4 rounded-xl border border-outline-variant/30 flex items-center justify-between text-left micro-interaction cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                        <div className="flex items-center gap-4">
-                            <div className="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary border border-outline-variant/20">
-                                <span className="material-symbols-outlined">favorite</span>
+                    <button type="button" onClick={openAnalytics} className="w-full bg-surface p-3.5 rounded-xl border border-border flex items-center justify-between text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40 cursor-pointer">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-border flex items-center justify-center">
+                                <Icon name="favorite" size={16} />
                             </div>
                             <div>
-                                <p className="text-body-sm text-on-surface-variant font-semibold">Engagements</p>
-                                <p className="text-headline-md font-bold text-on-surface leading-tight">{formatNumber(stats.totalEngagement)}</p>
+                                <p className="text-xs text-zinc-500 font-medium">Engagements</p>
+                                <p className="text-lg font-bold font-mono text-zinc-900 dark:text-zinc-100 leading-tight">{formatNumber(stats.totalEngagement)}</p>
                             </div>
                         </div>
                         <div className="text-right">
-                            <span className="text-tertiary font-bold text-body-sm">{stats.avgEngagementRate}</span>
+                            <span className="font-mono font-bold text-xs text-primary">{stats.avgEngagementRate}</span>
                         </div>
                     </button>
                 </section>
@@ -1506,10 +1552,10 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                     <button
                         type="button"
                         aria-label="New Post"
-                        className="fixed right-6 bottom-24 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 z-40"
+                        className="fixed right-5 bottom-20 w-12 h-12 bg-primary text-on-primary rounded-full shadow-md flex items-center justify-center cursor-pointer transition-transform duration-150 active:scale-95 z-40"
                         onClick={() => setIsNewPostDrawerOpen(true)}
                     >
-                        <span className="material-symbols-outlined text-[28px]">add</span>
+                        <Icon name="add" size={22} weight="bold" />
                     </button>
                 )}
             </div>
@@ -1517,30 +1563,30 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
             {/* ========================================================
                3. SLIDE-OVER FORM DRAWER (shared by desktop and mobile)
                ======================================================== */}
-            <div className={`fixed inset-y-0 right-0 z-[100] w-full sm:w-[450px] bg-surface-container border-l border-outline-variant/30 flex flex-col justify-between shadow-2xl transition-transform duration-300 ${isNewPostDrawerOpen ? 'translate-x-0' : 'translate-x-full'
+            <div className={`fixed inset-y-0 right-0 z-[100] w-full sm:w-[460px] bg-surface border-l border-border flex flex-col justify-between shadow-2xl transition-transform duration-200 ${isNewPostDrawerOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}>
                 {isNewPostDrawerOpen && (
-                    <div className="fixed inset-0 bg-background/50 z-[-1]" onClick={resetForm}></div>
+                    <div className="fixed inset-0 bg-background/50 backdrop-blur-xs z-[-1]" onClick={resetForm}></div>
                 )}
 
                 {/* Header */}
-                <div className="px-5 py-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
-                    <h2 className="text-body-lg font-bold text-on-surface flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary text-[22px]">add_box</span>
+                <div className="px-5 py-4 border-b border-border flex justify-between items-center bg-surface">
+                    <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <Icon name="add_box" size={18} className="text-primary" />
                         {editIndex !== null ? 'Edit Post Metrics' : 'Add New Post'}
                     </h2>
-                    <button className="text-on-surface-variant hover:text-on-surface p-1 cursor-pointer" onClick={resetForm}>
-                        <span className="material-symbols-outlined text-[20px]">close</span>
+                    <button type="button" className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted transition-colors cursor-pointer" onClick={resetForm} aria-label="Close">
+                        <Icon name="close" size={16} />
                     </button>
                 </div>
 
                 {/* Scrollable Form Body */}
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
                     {/* Tabs switcher */}
-                    <div className="flex border-b border-outline-variant/25 pb-0.5">
+                    <div className="flex border-b border-border pb-0.5">
                         <button
                             type="button"
-                            className={`flex-1 pb-2 text-center text-body-sm font-bold uppercase tracking-wider cursor-pointer border-b-2 transition-all ${formTab === 'basic' ? 'border-primary text-on-surface' : 'border-transparent text-on-surface-variant'
+                            className={`flex-1 pb-2 text-center text-xs font-semibold uppercase tracking-wider cursor-pointer border-b-2 transition-all ${formTab === 'basic' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
                                 }`}
                             onClick={() => setFormTab('basic')}
                         >
@@ -1548,8 +1594,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                         </button>
                         <button
                             type="button"
-                            className={`flex-1 pb-2 text-center text-body-sm font-bold uppercase tracking-wider cursor-pointer border-b-2 transition-all ${formTab === 'additional' ? 'border-transparent border-b-2 border-transparent text-on-surface-variant' : ''
-                                } ${formTab === 'additional' ? 'border-primary text-on-surface' : ''
+                            className={`flex-1 pb-2 text-center text-xs font-semibold uppercase tracking-wider cursor-pointer border-b-2 transition-all ${formTab === 'additional' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
                                 }`}
                             onClick={() => setFormTab('additional')}
                         >
@@ -1561,12 +1606,12 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                         {formTab === 'basic' && (
                             <div className="space-y-4">
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant flex items-center gap-1">
-                                        Date <span className="text-error">*</span>
+                                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                                        Date <span className="text-rose-500">*</span>
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer"
+                                        className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary cursor-pointer transition-colors"
                                         placeholder="YYYY-MM-DD"
                                         value={formDate}
                                         onClick={handleDatePickerClick}
@@ -1577,12 +1622,12 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">
+                                    <label className="text-xs font-medium text-muted-foreground">
                                         Content Title
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                        className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                                         placeholder="Enter title (optional)"
                                         value={formTitle}
                                         onChange={(e) => setFormTitle(e.target.value)}
@@ -1592,12 +1637,12 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
-                                        <label htmlFor="dashboard-pic" className="text-body-sm font-semibold text-on-surface-variant">
-                                            PIC <span className="text-error">*</span>
+                                        <label htmlFor="dashboard-pic" className="text-xs font-medium text-muted-foreground">
+                                            PIC <span className="text-rose-500">*</span>
                                         </label>
                                         <select
                                             id="dashboard-pic"
-                                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                            className="w-full bg-background border border-border rounded-md px-2.5 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
                                             value={formPic}
                                             onChange={(e) => setFormPic(e.target.value)}
                                             disabled={editIndex !== null}
@@ -1610,12 +1655,12 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                         </select>
                                     </div>
                                     <div className="space-y-1">
-                                        <label htmlFor="dashboard-category" className="text-body-sm font-semibold text-on-surface-variant">
-                                            Category <span className="text-error">*</span>
+                                        <label htmlFor="dashboard-category" className="text-xs font-medium text-muted-foreground">
+                                            Category <span className="text-rose-500">*</span>
                                         </label>
                                         <select
                                             id="dashboard-category"
-                                            className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                            className="w-full bg-background border border-border rounded-md px-2.5 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
                                             value={formCategory}
                                             onChange={(e) => setFormCategory(e.target.value)}
                                             disabled={editIndex !== null}
@@ -1630,13 +1675,13 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                 </div>
 
                                 {editIndex !== null && (
-                                    <div className="space-y-4 pt-2 border-t border-outline-variant/15">
+                                    <div className="space-y-4 pt-2 border-t border-border">
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="space-y-1">
-                                                <label htmlFor="dashboard-platform" className="text-body-sm font-semibold text-on-surface-variant">Platform</label>
+                                                <label htmlFor="dashboard-platform" className="text-xs font-medium text-muted-foreground">Platform</label>
                                                 <select
                                                     id="dashboard-platform"
-                                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                                    className="w-full bg-background border border-border rounded-md px-2.5 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
                                                     value={formPlatform}
                                                     onChange={(e) => setFormPlatform(e.target.value)}
                                                     disabled={true}
@@ -1647,10 +1692,10 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                                 </select>
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-body-sm font-semibold text-on-surface-variant">Views</label>
+                                                <label className="text-xs font-medium text-muted-foreground">Views</label>
                                                 <input
                                                     type="number"
-                                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors font-mono"
                                                     placeholder="0"
                                                     value={formViews}
                                                     onChange={(e) => setFormViews(e.target.value)}
@@ -1660,10 +1705,10 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                         </div>
 
                                         <div className="space-y-1">
-                                            <label className="text-body-sm font-semibold text-on-surface-variant">Account Reach</label>
+                                            <label className="text-xs font-medium text-muted-foreground">Account Reach</label>
                                             <input
                                                 type="number"
-                                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                                className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors font-mono"
                                                 placeholder="0"
                                                 value={formReach}
                                                 onChange={(e) => setFormReach(e.target.value)}
@@ -1672,20 +1717,20 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
 
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="space-y-1">
-                                                <label className="text-body-sm font-semibold text-on-surface-variant">Likes</label>
+                                                <label className="text-xs font-medium text-muted-foreground">Likes</label>
                                                 <input
                                                     type="number"
-                                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors font-mono"
                                                     placeholder="0"
                                                     value={formLikes}
                                                     onChange={(e) => setFormLikes(e.target.value)}
                                                 />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-body-sm font-semibold text-on-surface-variant">Comments</label>
+                                                <label className="text-xs font-medium text-muted-foreground">Comments</label>
                                                 <input
                                                     type="number"
-                                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors font-mono"
                                                     placeholder="0"
                                                     value={formComments}
                                                     onChange={(e) => setFormComments(e.target.value)}
@@ -1695,20 +1740,20 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
 
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="space-y-1">
-                                                <label className="text-body-sm font-semibold text-on-surface-variant">Followers Gained</label>
+                                                <label className="text-xs font-medium text-muted-foreground">Followers Gained</label>
                                                 <input
                                                     type="number"
-                                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors font-mono"
                                                     placeholder="0"
                                                     value={formFollows}
                                                     onChange={(e) => setFormFollows(e.target.value)}
                                                 />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-body-sm font-semibold text-on-surface-variant">Reposts</label>
+                                                <label className="text-xs font-medium text-muted-foreground">Reposts</label>
                                                 <input
                                                     type="number"
-                                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors font-mono"
                                                     placeholder="0"
                                                     value={formRepost}
                                                     onChange={(e) => setFormRepost(e.target.value)}
@@ -1717,25 +1762,25 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                         </div>
 
                                         <div className="space-y-1">
-                                            <label className="text-body-sm font-semibold text-on-surface-variant">Shares</label>
+                                            <label className="text-xs font-medium text-muted-foreground">Shares</label>
                                             <input
                                                 type="number"
-                                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                                className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors font-mono"
                                                 placeholder="0"
                                                 value={formShares}
                                                 onChange={(e) => setFormShares(e.target.value)}
                                             />
                                         </div>
 
-                                        <div className="bg-surface-container-low border border-outline-variant/30 rounded p-3 text-body-sm space-y-2">
-                                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                                                <span className="material-symbols-outlined text-[16px]">monitoring</span> Live Calculation
+                                        <div className="bg-muted/40 border border-border rounded-md p-3 text-xs space-y-2">
+                                            <span className="text-[10px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                                                <Icon name="monitoring" size={14} /> Live Calculation
                                             </span>
-                                            <div className="grid grid-cols-2 gap-2 text-[12px] text-on-surface-variant leading-relaxed">
-                                                <div>Engagement: <span className="font-bold text-on-surface">{formCalculated.totalEngagement}</span></div>
-                                                <div>Eng. Rate: <span className="font-bold text-on-surface">{formCalculated.engagementRate}%</span></div>
-                                                <div>KPI Score: <span className="font-bold text-on-surface">{formCalculated.kpiScore}</span></div>
-                                                <div>KPI Summary: <span className="font-bold text-on-surface">{formCalculated.kpiSummary}</span></div>
+                                            <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground leading-relaxed">
+                                                <div>Engagement: <span className="font-semibold font-mono text-foreground">{formCalculated.totalEngagement}</span></div>
+                                                <div>Eng. Rate: <span className="font-semibold font-mono text-foreground">{formCalculated.engagementRate}%</span></div>
+                                                <div>KPI Score: <span className="font-semibold font-mono text-foreground">{formCalculated.kpiScore}</span></div>
+                                                <div>KPI Summary: <span className="font-semibold text-foreground">{formCalculated.kpiSummary}</span></div>
                                             </div>
                                         </div>
                                     </div>
@@ -1746,19 +1791,19 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                         {formTab === 'additional' && (
                             <div className="space-y-4">
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Post URL</label>
+                                    <label className="text-xs font-medium text-muted-foreground">Post URL</label>
                                     <input
                                         type="url"
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                        className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                                         placeholder="https://published-link.com/post/123"
                                         value={formUrl}
                                         onChange={(e) => setFormUrl(e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-body-sm font-semibold text-on-surface-variant">Comment Notes</label>
+                                    <label className="text-xs font-medium text-muted-foreground">Comment Notes</label>
                                     <textarea
-                                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                        className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                                         rows="5"
                                         placeholder="Enter any comments or post details"
                                         value={formCommentText}
@@ -1771,12 +1816,13 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                 </div>
 
                 {/* Footer */}
-                <div className="px-5 py-4 border-t border-outline-variant/20 flex gap-3 justify-end bg-surface-container-lowest">
-                    <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction cursor-pointer" onClick={resetForm}>
+                <div className="px-5 py-4 border-t border-border flex gap-2.5 justify-end bg-surface">
+                    <button type="button" className="bg-muted hover:bg-muted/80 text-foreground font-medium py-2 px-3.5 rounded-md text-xs transition-colors cursor-pointer" onClick={resetForm}>
                         Cancel
                     </button>
-                    <button type="submit" form="drawerForm" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2.5 px-4 rounded-lg text-body-sm transition-all micro-interaction cursor-pointer flex items-center gap-1.5 disabled:cursor-wait disabled:opacity-70">
-                        <span className={`material-symbols-outlined text-[18px] ${isMutating ? 'animate-spin' : ''}`}>{isMutating ? 'progress_activity' : 'save'}</span> {isMutating ? 'Saving…' : 'Save Changes'}
+                    <button type="submit" form="drawerForm" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-2 px-3.5 rounded-md text-xs transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5 disabled:cursor-wait disabled:opacity-70">
+                        <Icon name={isMutating ? 'progress_activity' : 'save'} size={15} className={isMutating ? 'animate-spin' : ''} />
+                        {isMutating ? 'Saving…' : 'Save Changes'}
                     </button>
                 </div>
             </div>
