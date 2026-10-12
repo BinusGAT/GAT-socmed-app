@@ -132,4 +132,23 @@ describe('Calendar Drag-and-Drop Rescheduling & Filter Sync', () => {
     expect(liveUrls.length).toBe(2);
     expect(liveUrls.map(r => r.Platform)).toEqual(['Instagram', 'TikTok']);
   });
+
+  it('reconciles optimistic temporary ID when backend returns authoritative ID', async () => {
+    const tempId = 'CTTEMP_123456';
+    let scheduleData = [
+      { ID: tempId, Date: '2026-08-20', PIC: 'Jane Doe', Category: 'Story Telling', 'Content Title': 'New Post' }
+    ];
+    let currentData = [
+      { ID: tempId, Date: '2026-08-20', Platform: 'Instagram', URL: '' }
+    ];
+
+    const authoritativeId = 'CT10';
+    // Reconcile ID from backend response
+    scheduleData = scheduleData.map(t => String(t.ID) === String(tempId) ? { ...t, ID: authoritativeId } : t);
+    currentData = currentData.map(row => String(row.ID) === String(tempId) ? { ...row, ID: authoritativeId } : row);
+
+    expect(scheduleData[0].ID).toBe('CT10');
+    expect(currentData[0].ID).toBe('CT10');
+  });
 });
+

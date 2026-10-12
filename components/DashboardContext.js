@@ -883,6 +883,10 @@ export function DashboardProvider({ children }) {
                 if (!result || !result.success) {
                     throw new Error(result?.error || 'Failed to save task');
                 }
+                if (result.id && String(result.id) !== String(normalizedTask.ID)) {
+                    setScheduleData((prev) => prev.map(t => String(t.ID) === String(normalizedTask.ID) ? { ...t, ID: result.id } : t));
+                    setCurrentData((prev) => prev.map(row => String(row.ID) === String(normalizedTask.ID) ? { ...row, ID: result.id } : row));
+                }
             } catch (error) {
                 setScheduleData(prevSchedule);
                 setCurrentData(prevCurrentData);

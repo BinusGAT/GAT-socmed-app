@@ -1106,23 +1106,32 @@ export async function POST(request) {
         let taskId = id;
         let previousAssignedUserId = '';
 
-        if (auth.role === 'Creator' && !id) {
-          return NextResponse.json({ success: false, error: 'Forbidden: creators cannot create scheduled tasks' }, { status: 403 });
-        }
+        let isExisting = false;
+        let oldTitle = '';
+        let existingRow = null;
 
         if (id) {
-          // Get the old title to update the corresponding script title if needed
-          const oldRow = await db.execute({
+          const checkRes = await db.execute({
             sql: `SELECT "Content Title", AssignedUserId, PIC, Category FROM laporan WHERE ID = ? LIMIT 1`,
             args: [id]
           });
-          const oldTitle = oldRow.rows[0]?.["Content Title"] || '';
-          previousAssignedUserId = String(oldRow.rows[0]?.AssignedUserId || '');
+          if (checkRes.rows.length > 0) {
+            isExisting = true;
+            existingRow = checkRes.rows[0];
+            oldTitle = existingRow["Content Title"] || '';
+            previousAssignedUserId = String(existingRow.AssignedUserId || '');
+          }
+        }
+
+        if (auth.role === 'Creator' && !isExisting) {
+          return NextResponse.json({ success: false, error: 'Forbidden: creators cannot create scheduled tasks' }, { status: 403 });
+        }
+
+        if (isExisting) {
           if (auth.role === 'Creator') {
-            const existing = oldRow.rows[0];
-            const existingPic = String(existing?.PIC || '').trim().toLowerCase();
+            const existingPic = String(existingRow?.PIC || '').trim().toLowerCase();
             const authName = String(auth.name || '').trim().toLowerCase();
-            const isAssigned = existing && (
+            const isAssigned = existingRow && (
               (previousAssignedUserId && previousAssignedUserId === String(auth.userId || '')) ||
               (existingPic && authName && (
                 existingPic === authName ||
@@ -1183,7 +1192,19 @@ export async function POST(request) {
             }
           }
         } else {
-          const newId = await getNextId();
+          let newId = '';
+          if (id && /^CT\d+$/i.test(id)) {
+            const checkSched = await db.execute({
+              sql: `SELECT 1 FROM schedule WHERE ID = ? LIMIT 1`,
+              args: [id]
+            });
+            if (checkSched.rows.length === 0) {
+              newId = id;
+            }
+          }
+          if (!newId) {
+            newId = await getNextId();
+          }
           taskId = newId;
           const platforms = ['Instagram', 'TikTok', 'Youtube'];
           const insertQueries = platforms.map(plat => ({
@@ -1224,10 +1245,10 @@ export async function POST(request) {
             args: [`assignment-${taskId}-${assignedUserId}`, `New assignment: ${title}`, Date.now(), auth.userName || auth.role, assignedUserId, taskId]
           });
         }
-        await writeAudit(db, auth, id ? 'updated' : 'created', 'task', taskId, {
+        await writeAudit(db, auth, isExisting ? 'updated' : 'created', 'task', taskId, {
           title, date: dateStr, assignedUserId, assigneeName: pic
         });
-        result = { success: true, message: id ? 'Schedule updated successfully' : 'Schedule created successfully' };
+        result = { success: true, id: taskId, message: isExisting ? 'Schedule updated successfully' : 'Schedule created successfully' };
         break;
       }
 
