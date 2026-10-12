@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from '../DashboardContext';
 import { getPicBadgeClasses, getPicDisplayName } from '../../utils/helpers';
+import Icon from '../Icon';
 
 export default function TaskLinksModal({ isOpen, onClose, task }) {
   const { currentData, setCurrentView, setSelectedPostId, showAlert } = useDashboard();
@@ -39,7 +40,7 @@ export default function TaskLinksModal({ isOpen, onClose, task }) {
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="material-symbols-outlined text-primary text-[22px]">link</span>
+            <Icon name="link" size={22} className="text-primary" />
             <div className="min-w-0">
               <h3 className="text-body-md font-bold text-on-surface font-display truncate">
                 Content Links &amp; Status
@@ -54,7 +55,7 @@ export default function TaskLinksModal({ isOpen, onClose, task }) {
             className="text-on-surface-variant hover:text-on-surface p-1 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer"
             onClick={onClose}
           >
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <Icon name="close" size={20} />
           </button>
         </div>
 
@@ -92,7 +93,7 @@ export default function TaskLinksModal({ isOpen, onClose, task }) {
 
             {platformRows.length === 0 || platformRows.every(r => !r.URL || !String(r.URL).trim()) ? (
               <div className="py-6 px-4 text-center rounded-xl bg-surface-container-low border border-dashed border-outline-variant/30 space-y-2">
-                <span className="material-symbols-outlined text-[28px] text-on-surface-variant/40">link_off</span>
+                <Icon name="link_off" size={28} className="text-on-surface-variant/40 mx-auto" />
                 <p className="text-body-sm text-on-surface-variant">No live links attached to this task yet.</p>
                 <p className="text-[11px] text-on-surface-variant/70">Open in Dashboard to enter platform URLs and metrics.</p>
               </div>
@@ -134,9 +135,7 @@ export default function TaskLinksModal({ isOpen, onClose, task }) {
                           className="p-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
                           title="Copy Link"
                         >
-                          <span className="material-symbols-outlined text-[16px]">
-                            {isCopied ? 'check' : 'content_copy'}
-                          </span>
+                          <Icon name={isCopied ? 'check' : 'content_copy'} size={16} />
                         </button>
                         <a
                           href={row.URL}
@@ -145,7 +144,7 @@ export default function TaskLinksModal({ isOpen, onClose, task }) {
                           className="p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors cursor-pointer"
                           title="Open URL in New Tab"
                         >
-                          <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                          <Icon name="open_in_new" size={16} />
                         </a>
                       </div>
                     </div>
@@ -169,7 +168,7 @@ export default function TaskLinksModal({ isOpen, onClose, task }) {
             className="bg-primary text-on-primary hover:opacity-90 font-semibold py-1.5 px-4 rounded-lg text-body-sm transition-opacity flex items-center gap-1.5 cursor-pointer shadow-xs"
             onClick={handleOpenInDashboard}
           >
-            <span className="material-symbols-outlined text-[16px]">dashboard_customize</span>
+            <Icon name="dashboard_customize" size={16} />
             Open in Dashboard
           </button>
         </div>

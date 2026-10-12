@@ -3,6 +3,7 @@
 import React from 'react';
 import { useDashboard } from './DashboardContext';
 import { canAccessView } from '../utils/rolePermissions';
+import Icon from './Icon';
 
 export default function Sidebar() {
     const {
@@ -98,10 +99,10 @@ export default function Sidebar() {
                 {userRole === 'Admin' && (
                     <div className="px-4 mb-5">
                         <button
-                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 shadow-xs transition-all duration-150 cursor-pointer text-sm"
+                            className="w-full bg-primary hover:opacity-90 text-on-primary font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 shadow-xs transition-all duration-150 cursor-pointer text-sm"
                             onClick={handleNewPostClick}
                         >
-                            <span className="material-symbols-outlined text-[18px]">add</span>
+                            <Icon name="add" size={18} weight="bold" />
                             <span>New Post</span>
                         </button>
                     </div>
@@ -127,9 +128,12 @@ export default function Sidebar() {
                                                     : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/40 dark:hover:text-zinc-200'
                                                 }`}
                                         >
-                                            <span className="material-symbols-outlined text-[19px] transition-transform duration-150 text-zinc-500 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-200" style={isActive ? { color: 'var(--primary)', fontVariationSettings: item.fillActive ? "'FILL' 1" : undefined } : undefined}>
-                                                {item.icon}
-                                            </span>
+                                            <Icon
+                                                name={item.icon}
+                                                size={20}
+                                                weight={isActive && item.fillActive ? 'fill' : 'regular'}
+                                                className={`transition-colors duration-150 ${isActive ? 'text-primary' : 'text-zinc-500 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-200'}`}
+                                            />
                                             <span>{item.label}</span>
                                         </button>
                                     );
@@ -151,9 +155,7 @@ export default function Sidebar() {
                         onClick={() => handleNavClick('settings')}
                         title="Workspace Settings"
                     >
-                        <span className="material-symbols-outlined text-[20px]" style={currentView === 'settings' ? { fontVariationSettings: "'FILL' 1" } : undefined}>
-                            settings
-                        </span>
+                        <Icon name="settings" size={20} weight={currentView === 'settings' ? 'fill' : 'regular'} />
                         <span className="text-body-sm font-medium">Settings</span>
                     </button>
                 )}
@@ -166,9 +168,7 @@ export default function Sidebar() {
                     disabled={!isUnlocked}
                     title={isUnlocked ? "Lock Workspace" : "Workspace Locked"}
                 >
-                    <span className="material-symbols-outlined text-[20px]">
-                        {isUnlocked ? 'lock_open' : 'lock'}
-                    </span>
+                    <Icon name={isUnlocked ? 'lock_open' : 'lock'} size={20} />
                     <span className="text-body-sm font-medium">{isUnlocked ? 'Lock Workspace' : 'Locked'}</span>
                 </button>
             </div>

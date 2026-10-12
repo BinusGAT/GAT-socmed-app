@@ -1,5 +1,7 @@
 'use client';
 
+import Icon from './Icon';
+
 export default function SortableTableHeader({
     column,
     activeColumn,
@@ -23,9 +25,12 @@ export default function SortableTableHeader({
                 aria-label={`${children}. Activate to sort ${nextDirection}.`}
             >
                 <span>{children}</span>
-                <span className="material-symbols-outlined text-base" aria-hidden="true">
-                    {isActive ? (direction === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more'}
-                </span>
+                <Icon
+                    name={isActive ? (direction === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more'}
+                    size={16}
+                    aria-hidden="true"
+                    className="opacity-70 group-hover:opacity-100 transition-opacity"
+                />
             </button>
         </th>
     );

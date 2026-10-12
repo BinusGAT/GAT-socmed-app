@@ -1,8 +1,7 @@
-'use client';
-
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDialogFocus } from '../../utils/useDialogFocus';
+import Icon from '../Icon';
 
 export default function DeleteConfirmModal({ 
   isOpen, 
@@ -30,7 +29,7 @@ export default function DeleteConfirmModal({
   return createPortal(
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]" onMouseDown={(event) => event.target === event.currentTarget && !isPending && closeDialog?.()}>
       <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} className="w-full max-w-[420px] bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl flex flex-col items-center gap-4 text-center">
-        <span className="material-symbols-outlined text-error text-[32px]" aria-hidden="true">warning</span>
+        <Icon name="warning" size={36} className="text-error" aria-hidden="true" />
         <h3 id={titleId} className="text-headline-md font-bold text-on-surface">{title}</h3>
         <p id={descriptionId} className="text-body-sm text-on-surface-variant/80 leading-relaxed">{message || 'This action cannot be undone.'}</p>
         

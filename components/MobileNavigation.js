@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { canAccessView } from '../utils/rolePermissions';
+import Icon from './Icon';
 
 const PRIMARY_ITEMS = [
     { id: 'dashboard', label: 'Home', icon: 'dashboard' },
@@ -86,15 +87,15 @@ export default function MobileNavigation({ currentView, userRole, isUnlocked, on
                                 <p className="text-xs text-on-surface-variant">Open secondary workspace areas.</p>
                             </div>
                             <button type="button" onClick={() => { setIsMoreOpen(false); moreButtonRef.current?.focus(); }} className="rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" aria-label="Close more menu">
-                                <span className="material-symbols-outlined text-[22px]" aria-hidden="true">close</span>
+                                <Icon name="close" size={22} aria-hidden="true" />
                             </button>
                         </div>
                         <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                             {secondaryItems.map((item) => {
                                 const isActive = currentView === item.id;
                                 return (
-                                    <button key={item.id} type="button" onClick={() => navigate(item.id)} aria-current={isActive ? 'page' : undefined} className={`flex min-h-14 items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${isActive ? 'bg-primary/12 text-primary' : 'text-on-surface hover:bg-surface-container-high'}`}>
-                                        <span className="material-symbols-outlined text-[22px]" aria-hidden="true" style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}>{item.icon}</span>
+                                    <button key={item.id} type="button" onClick={() => navigate(item.id)} aria-current={isActive ? 'page' : undefined} className={`flex min-h-14 items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${isActive ? 'bg-primary/12 text-primary font-semibold' : 'text-on-surface hover:bg-surface-container-high'}`}>
+                                        <Icon name={item.icon} size={22} weight={isActive ? 'fill' : 'regular'} aria-hidden="true" />
                                         <span>
                                             <span className="block text-sm font-semibold">{item.label}</span>
                                             <span className="block text-xs text-on-surface-variant">{item.description}</span>
@@ -119,14 +120,14 @@ export default function MobileNavigation({ currentView, userRole, isUnlocked, on
                 {primaryItems.map((item) => {
                     const isActive = currentView === item.id;
                     return (
-                        <button type="button" key={item.id} onClick={() => navigate(item.id)} aria-current={isActive ? 'page' : undefined} className={`flex min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg px-1 transition-colors micro-interaction ${isActive ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
-                            <span className="material-symbols-outlined pointer-events-none text-[23px]" aria-hidden="true" style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}>{item.icon}</span>
+                        <button type="button" key={item.id} onClick={() => navigate(item.id)} aria-current={isActive ? 'page' : undefined} className={`flex min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg px-1 transition-colors micro-interaction ${isActive ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}`}>
+                            <Icon name={item.icon} size={22} weight={isActive ? 'fill' : 'regular'} className="pointer-events-none" aria-hidden="true" />
                             <span className="pointer-events-none max-w-full truncate text-xs font-semibold">{item.label}</span>
                         </button>
                     );
                 })}
-                <button ref={moreButtonRef} type="button" onClick={() => setIsMoreOpen(true)} aria-expanded={isMoreOpen} aria-controls="mobile-more-menu" aria-current={isSecondaryView ? 'page' : undefined} className={`flex min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg px-1 transition-colors micro-interaction ${isSecondaryView || isMoreOpen ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
-                    <span className="material-symbols-outlined pointer-events-none text-[23px]" aria-hidden="true">more_horiz</span>
+                <button ref={moreButtonRef} type="button" onClick={() => setIsMoreOpen(true)} aria-expanded={isMoreOpen} aria-controls="mobile-more-menu" aria-current={isSecondaryView ? 'page' : undefined} className={`flex min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg px-1 transition-colors micro-interaction ${isSecondaryView || isMoreOpen ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}`}>
+                    <Icon name="more_horiz" size={22} className="pointer-events-none" aria-hidden="true" />
                     <span className="pointer-events-none text-xs font-semibold">More</span>
                 </button>
             </nav>

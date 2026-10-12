@@ -10,6 +10,7 @@ import { formatDisplayDate } from '../../utils/helpers';
 import LockScreen from '../../components/LockScreen';
 import { BackgroundActivity, DashboardSkeleton } from '../../components/LoadingStates';
 import MobileNavigation from '../../components/MobileNavigation';
+import Icon from '../../components/Icon';
 import { canAccessView, getDefaultView, isKnownView } from '../../utils/rolePermissions';
 
 const viewLoadingFallback = () => <DashboardSkeleton />;
@@ -196,7 +197,7 @@ function DashboardAppContent() {
         if (!isKnownView(view)) {
             return (
                 <section className="mx-auto flex min-h-[55vh] max-w-xl flex-col items-start justify-center px-3 py-10" role="alert" aria-labelledby="invalid-view-title">
-                    <span className="material-symbols-outlined mb-5 text-4xl text-on-surface-variant" aria-hidden="true">wrong_location</span>
+                    <Icon name="wrong_location" size={36} className="mb-5 text-on-surface-variant" aria-hidden="true" />
                     <p className="text-xs font-semibold text-primary">Navigation error</p>
                     <h2 id="invalid-view-title" className="mt-2 text-headline-lg font-bold tracking-tight text-on-surface">This workspace view does not exist</h2>
                     <p className="mt-3 max-w-md text-body-md leading-relaxed text-on-surface-variant">The link may be outdated or incomplete. Return home to continue working without losing your session.</p>
@@ -261,9 +262,7 @@ function DashboardAppContent() {
                                 ? 'bg-amber-500/10 border-amber-500/25 text-amber-500 shadow-[0_4px_20px_rgba(245,158,11,0.12)]'
                                 : 'bg-primary/10 border-primary/25 text-primary shadow-[0_4px_20px_rgba(16,185,129,0.12)]'
                         }`}>
-                        <span className="material-symbols-outlined text-[20px]">
-                            {globalAlert.type === 'error' ? 'error' : globalAlert.type === 'warning' ? 'warning' : 'check_circle'}
-                        </span>
+                        <Icon name={globalAlert.type === 'error' ? 'error' : globalAlert.type === 'warning' ? 'warning' : 'check_circle'} size={20} />
                         <span className="text-pretty">{globalAlert.message}</span>
                     </div>
                 )}
@@ -308,7 +307,7 @@ function DashboardAppContent() {
 
                 {connectionState !== 'online' && (
                     <div role="status" className="connection-banner">
-                        <span className="material-symbols-outlined" aria-hidden="true">{connectionState === 'offline' ? 'cloud_off' : 'cloud_sync'}</span>
+                        <Icon name={connectionState === 'offline' ? 'cloud_off' : 'cloud_sync'} size={18} aria-hidden="true" />
                         <span>{connectionState === 'offline' ? 'You are offline. Showing the latest saved workspace data.' : 'Workspace data may be out of date.'}</span>
                         <button type="button" onClick={retryConnection} disabled={isLoading}>Retry sync</button>
                     </div>
@@ -322,9 +321,7 @@ function DashboardAppContent() {
                                 ? 'bg-amber-500/10 border-amber-500/25 text-amber-500 shadow-[0_4px_20px_rgba(245,158,11,0.12)]'
                                 : 'bg-primary/10 border-primary/25 text-primary shadow-[0_4px_20px_rgba(16,185,129,0.12)]'
                         }`}>
-                        <span className="material-symbols-outlined text-[20px]">
-                            {globalAlert.type === 'error' ? 'error' : globalAlert.type === 'warning' ? 'warning' : 'check_circle'}
-                        </span>
+                        <Icon name={globalAlert.type === 'error' ? 'error' : globalAlert.type === 'warning' ? 'warning' : 'check_circle'} size={20} />
                         <span className="text-pretty">{globalAlert.message}</span>
                     </div>
                 )}

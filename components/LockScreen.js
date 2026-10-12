@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useDashboard } from './DashboardContext';
+import Icon from './Icon';
 
 export default function LockScreen({ sectionName = 'Socmed Apps' }) {
     const { unlockWorkspace, getLockdownTimeRemaining, appSettingsData } = useDashboard();
@@ -76,8 +77,8 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
             <div className="relative w-full max-w-md bg-surface-container/70 backdrop-blur-2xl border border-outline-variant/30 rounded-2xl p-stack-lg shadow-2xl space-y-6 z-10 animate-fade-up">
                 {/* Header */}
                 <div className="flex items-center gap-4 border-b border-outline-variant/20 pb-4">
-                    <div className="w-11 h-11 bg-primary-container/20 border border-primary/20 rounded-xl flex items-center justify-center text-primary shadow-sm">
-                        <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">lock</span>
+                    <div className="w-11 h-11 bg-primary/10 border border-primary/25 rounded-xl flex items-center justify-center text-primary shadow-xs">
+                        <Icon name="lock" size={24} weight="fill" aria-hidden="true" />
                     </div>
                     <div>
                         <h1 className="font-headline-md text-headline-md font-bold text-on-surface leading-tight text-pretty">
@@ -93,14 +94,14 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                     {/* Alerts */}
                     {lockdownTimeText && (
                         <div className="flex items-center gap-3 p-3 bg-error-container/20 border border-error/30 rounded-xl text-error text-body-sm animate-fade-up" role="alert" aria-live="assertive">
-                            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">warning</span>
+                            <Icon name="warning" size={20} aria-hidden="true" />
                             <span className="font-medium text-pretty">{lockdownTimeText}</span>
                         </div>
                     )}
 
                     {errorMsg && !lockdownTimeText && (
                         <div className="flex items-center gap-3 p-3 bg-error-container/10 border border-error/20 rounded-xl text-error text-body-sm animate-fade-up" role="alert" aria-live="assertive">
-                            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">error</span>
+                            <Icon name="error" size={20} aria-hidden="true" />
                             <span className="font-medium text-pretty">{errorMsg}</span>
                         </div>
                     )}
@@ -159,7 +160,7 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                         </button>
                         <button 
                             type="submit" 
-                            className="flex-1 bg-[#4f46e5] text-white hover:bg-[#4338ca] font-semibold py-3 px-4 rounded-xl text-body-sm transition-all duration-200 micro-interaction text-center disabled:opacity-50 shimmer-button"
+                            className="flex-1 bg-primary text-on-primary hover:opacity-90 font-semibold py-3 px-4 rounded-xl text-body-sm transition-all duration-200 micro-interaction text-center disabled:opacity-50 shimmer-button"
                             disabled={!!lockdownTimeText}
                         >
                             Login
