@@ -76,7 +76,7 @@ export default function LockScreen() {
     const appTitle = appSettingsData?.app_full_name || appSettingsData?.app_name || 'GAT';
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background text-zinc-900 dark:text-zinc-100 overflow-y-auto relative selection:bg-orange-500/20">
+        <div className="relative w-full min-h-screen flex items-center justify-center p-4 sm:p-6 bg-background text-zinc-900 dark:text-zinc-100 overflow-hidden selection:bg-orange-500/20">
             {/* Soft Ambient Warmth Background Accents */}
             <div
                 className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-orange-500/10 dark:bg-orange-500/5 blur-3xl"
@@ -88,36 +88,36 @@ export default function LockScreen() {
             />
 
             {/* Subtle Corner Theme Toggle */}
-            <div className="absolute top-4 right-4 z-20">
+            <div className="absolute top-5 right-5 z-20">
                 <button
                     type="button"
                     onClick={toggleDarkMode}
                     aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
                     title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                    className="w-8 h-8 rounded-lg border border-border bg-surface hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center transition-colors cursor-pointer"
+                    className="w-9 h-9 rounded-lg border border-border bg-surface hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center transition-colors cursor-pointer"
                 >
-                    <Icon name={darkMode ? 'light_mode' : 'dark_mode'} size={15} />
+                    <Icon name={darkMode ? 'light_mode' : 'dark_mode'} size={16} />
                 </button>
             </div>
 
-            {/* Minimal Centered Card */}
-            <div className="w-full max-w-[380px] sm:max-w-[400px] rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-xs relative z-10 space-y-6">
+            {/* Clean Centered Card */}
+            <div className="w-full max-w-[420px] sm:max-w-[440px] rounded-2xl border border-border bg-surface p-7 sm:p-9 shadow-xs relative z-10 space-y-6">
                 {/* Heading */}
-                <div className="text-center space-y-1">
-                    <h2 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                <div className="text-center space-y-1.5">
+                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
                         CC Internal Gate
                     </h2>
-                    <p className="text-xs text-zinc-600 dark:text-zinc-400 font-mono">
+                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-mono">
                         {appSettingsData?.company_name || 'Internal Content Team'}
                     </p>
                 </div>
 
                 {/* Unlock Form */}
-                <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
+                <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4 sm:space-y-5">
                     {/* Alerts */}
                     {lockdownTimeText && (
                         <div
-                            className="flex items-start gap-2.5 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 dark:text-red-400 text-xs font-medium animate-fade-up"
+                            className="flex items-start gap-2.5 p-3.5 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 dark:text-red-400 text-xs sm:text-sm font-medium animate-fade-up"
                             role="alert"
                             aria-live="assertive"
                         >
@@ -128,7 +128,7 @@ export default function LockScreen() {
 
                     {errorMsg && !lockdownTimeText && (
                         <div
-                            className="flex items-start gap-2.5 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 dark:text-red-400 text-xs font-medium animate-fade-up"
+                            className="flex items-start gap-2.5 p-3.5 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 dark:text-red-400 text-xs sm:text-sm font-medium animate-fade-up"
                             role="alert"
                             aria-live="assertive"
                         >
@@ -141,14 +141,14 @@ export default function LockScreen() {
                     <div className="space-y-1.5">
                         <label
                             htmlFor="lockScreenEmail"
-                            className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block"
+                            className="text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 block"
                         >
                             Email Address <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="email"
                             id="lockScreenEmail"
-                            className="w-full bg-zinc-50 dark:bg-zinc-900/50 border border-border rounded-lg px-3.5 py-2.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                            className="h-11 w-full bg-zinc-50 dark:bg-zinc-900/50 border border-border rounded-lg px-3.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                             placeholder="user@domain.com"
                             required
                             autoFocus
@@ -166,14 +166,14 @@ export default function LockScreen() {
                     <div className="space-y-1.5">
                         <label
                             htmlFor="lockScreenNim"
-                            className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block"
+                            className="text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 block"
                         >
                             Password (NIM) <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="password"
                             id="lockScreenNim"
-                            className="w-full bg-zinc-50 dark:bg-zinc-900/50 border border-border rounded-lg px-3.5 py-2.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                            className="h-11 w-full bg-zinc-50 dark:bg-zinc-900/50 border border-border rounded-lg px-3.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                             placeholder="Enter your credential"
                             required
                             autoComplete="current-password"
@@ -187,17 +187,17 @@ export default function LockScreen() {
                     </div>
 
                     {/* Actions: Clear and Login buttons */}
-                    <div className="flex gap-2.5 pt-2">
+                    <div className="flex gap-3 pt-2">
                         <button
                             type="button"
-                            className="flex-1 border border-border bg-surface hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 font-medium py-2.5 px-4 rounded-lg text-xs transition-colors cursor-pointer text-center"
+                            className="h-11 flex-1 border border-border bg-surface hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 font-medium px-4 rounded-lg text-sm transition-colors cursor-pointer text-center"
                             onClick={handleClear}
                         >
                             Clear
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-orange-500 dark:text-zinc-950 dark:hover:bg-orange-400 font-medium py-2.5 px-4 rounded-lg text-xs transition-all cursor-pointer text-center disabled:opacity-50 active:scale-[0.98]"
+                            className="h-11 flex-1 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-orange-500 dark:text-zinc-950 dark:hover:bg-orange-400 font-medium px-4 rounded-lg text-sm transition-all cursor-pointer text-center disabled:opacity-50 active:scale-[0.98]"
                             disabled={!!lockdownTimeText}
                         >
                             Login
@@ -206,7 +206,7 @@ export default function LockScreen() {
                 </form>
 
                 {/* Footer Brand */}
-                <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 font-mono">
+                <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400 font-mono">
                     <span>{appTitle}</span>
                     <span>v0.1.0-alpha</span>
                 </div>
