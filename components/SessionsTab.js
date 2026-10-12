@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Icon from './Icon';
 import { useDashboard } from './DashboardContext';
 
 function deviceLabel(userAgent) {
@@ -36,28 +37,47 @@ export default function SessionsTab() {
     };
 
     return (
-        <section className="space-y-6 max-w-4xl mx-auto">
+        <section className="space-y-5 max-w-4xl mx-auto">
             <header>
-                <p className="text-body-sm text-primary font-semibold">Security</p>
-                <h2 className="text-headline-md font-bold text-on-surface">Session Management</h2>
-                <p className="text-body-sm text-on-surface-variant mt-1">Review browsers currently signed in to your account.</p>
+                <p className="text-xs font-mono font-medium text-primary uppercase tracking-wider">Security</p>
+                <h2 className="text-lg font-semibold text-foreground tracking-tight mt-0.5">Session Management</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Review browsers currently signed in to your account.</p>
             </header>
-            <div className="glass-panel rounded-xl divide-y divide-outline-variant/15">
+            <div className="bg-surface border border-border rounded-lg divide-y divide-border">
                 {loading ? (
-                    <div className="p-8 text-center text-on-surface-variant">Loading sessions...</div>
+                    <div className="p-8 text-center text-xs text-muted-foreground">Loading sessions...</div>
                 ) : sessions.length === 0 ? (
-                    <div className="p-8 text-center text-on-surface-variant">No active sessions found.</div>
+                    <div className="p-8 text-center text-xs text-muted-foreground">No active sessions found.</div>
                 ) : sessions.map((session) => (
-                    <div key={session.sessionId} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div key={session.sessionId} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-start gap-3">
-                            <span className="material-symbols-outlined text-primary mt-0.5">devices</span>
+                            <Icon name="devices" size={18} className="text-primary mt-0.5 shrink-0" />
                             <div>
-                                <p className="font-semibold text-on-surface">{deviceLabel(session.userAgent)} {session.current && <span className="text-[10px] text-primary ml-2">Current</span>}</p>
-                                <p className="text-[11px] text-on-surface-variant mt-1">Last active {new Date(Number(session.lastSeenAt || session.createdAt)).toLocaleString()}</p>
-                                <p className="text-[10px] text-on-surface-variant/70">Expires {new Date(Number(session.expiresAt)).toLocaleString()}</p>
+                                <p className="font-medium text-xs text-foreground flex items-center">
+                                    {deviceLabel(session.userAgent)}
+                                    {session.current && (
+                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-medium uppercase font-mono bg-primary/10 text-primary border border-primary/20 ml-2">
+                                            Current
+                                        </span>
+                                    )}
+                                </p>
+                                <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
+                                    Last active {new Date(Number(session.lastSeenAt || session.createdAt)).toLocaleString()}
+                                </p>
+                                <p className="text-[10px] font-mono text-muted-foreground/70">
+                                    Expires {new Date(Number(session.expiresAt)).toLocaleString()}
+                                </p>
                             </div>
                         </div>
-                        {!session.current && <button type="button" onClick={() => handleRevoke(session.sessionId)} className="px-3 py-2 rounded-lg border border-error/25 text-error hover:bg-error/10 text-body-sm font-semibold">Revoke</button>}
+                        {!session.current && (
+                            <button
+                                type="button"
+                                onClick={() => handleRevoke(session.sessionId)}
+                                className="px-2.5 py-1.5 rounded-md border border-rose-500/25 text-rose-500 hover:bg-rose-500/10 text-xs font-medium uppercase tracking-wider transition-colors"
+                            >
+                                Revoke
+                            </button>
+                        )}
                     </div>
                 ))}
             </div>

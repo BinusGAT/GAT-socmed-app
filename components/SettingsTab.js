@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Icon from './Icon';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 import { DeleteConfirmModal } from './Modals';
@@ -212,14 +213,14 @@ export default function SettingsTab() {
         <div className="space-y-6">
 
             {/* Settings subnavigation */}
-            <div className="flex flex-wrap bg-surface-container-low border border-outline-variant/20 rounded-xl p-1 max-w-2xl">
+            <div className="flex flex-wrap bg-muted/40 border border-border rounded-lg p-1 max-w-2xl gap-1">
                 {settingsTabs.map(tab => (
                     <button
                         key={tab}
                         type="button"
                         onClick={() => setActiveSubTab(tab)}
-                        className={`flex-1 py-1.5 px-2 text-center text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
-                            activeSubTab === tab ? 'bg-primary text-on-primary shadow-xs' : 'text-on-surface-variant hover:text-on-surface'
+                        className={`flex-1 py-1.5 px-2 text-center text-[10px] sm:text-xs font-medium uppercase tracking-wider rounded-md transition-all cursor-pointer ${
+                            activeSubTab === tab ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
                         {tab === 'members' ? 'Interns' : tab === 'audit' ? 'Audit Log' : tab}
@@ -229,29 +230,29 @@ export default function SettingsTab() {
 
             {/* 1. GENERAL BRANDING TAB */}
             {userRole === 'Admin' && activeSubTab === 'general' && (
-                <div className="glass-panel border border-outline-variant/30 rounded-xl p-6 shadow-xl max-w-2xl space-y-6">
-                    <h4 className="font-bold text-headline-sm text-on-surface flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary">app_settings_alt</span> Branding & Metadata
+                <div className="bg-surface border border-border rounded-lg p-6 max-w-2xl space-y-5">
+                    <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
+                        <Icon name="app_settings_alt" size={16} className="text-primary" /> Branding & Metadata
                     </h4>
 
                     <form onSubmit={handleGeneralSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-body-sm font-semibold text-on-surface-variant">App Name</label>
+                                <label className="text-xs font-medium text-muted-foreground">App Name</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                                     value={appName}
                                     onChange={(e) => setAppName(e.target.value)}
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-body-sm font-semibold text-on-surface-variant">App Subtitle</label>
+                                <label className="text-xs font-medium text-muted-foreground">App Subtitle</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                                     value={appSubtitle}
                                     onChange={(e) => setAppSubtitle(e.target.value)}
                                 />
@@ -260,21 +261,21 @@ export default function SettingsTab() {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-body-sm font-semibold text-on-surface-variant">App Full Title</label>
+                                <label className="text-xs font-medium text-muted-foreground">App Full Title</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                                     value={appFullName}
                                     onChange={(e) => setAppFullName(e.target.value)}
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-body-sm font-semibold text-on-surface-variant">Company/Team Name</label>
+                                <label className="text-xs font-medium text-muted-foreground">Company/Team Name</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                                     value={companyName}
                                     onChange={(e) => setCompanyName(e.target.value)}
                                 />
@@ -283,14 +284,14 @@ export default function SettingsTab() {
 
                         <div className="space-y-1 max-w-xs">
                             <div className="flex items-center justify-between">
-                                <label className="text-body-sm font-semibold text-on-surface-variant">Version Label</label>
-                                <span className="text-[10px] text-on-surface-variant/60 font-mono">(System Controlled)</span>
+                                <label className="text-xs font-medium text-muted-foreground">Version Label</label>
+                                <span className="text-[10px] text-muted-foreground/60 font-mono">(System Controlled)</span>
                             </div>
                             <input
                                 type="text"
                                 readOnly
                                 disabled
-                                className="w-full bg-surface-container-high/40 border border-outline-variant/20 rounded px-3 py-2 text-body-sm text-on-surface-variant font-mono cursor-not-allowed select-none opacity-80"
+                                className="w-full bg-muted/40 border border-border rounded-md px-3 py-2 text-xs text-muted-foreground font-mono cursor-not-allowed select-none opacity-80"
                                 value={appVersion || 'v0.2.0-alpha'}
                             />
                         </div>
@@ -298,9 +299,9 @@ export default function SettingsTab() {
                         <div className="pt-2">
                             <button
                                 type="submit"
-                                className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-5 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center gap-1.5 shadow-md shadow-primary/10"
+                                className="bg-primary text-primary-foreground hover:opacity-90 font-medium py-2 px-4 rounded-md text-xs transition-opacity cursor-pointer flex items-center gap-1.5"
                             >
-                                <span className="material-symbols-outlined text-[18px]">save</span> Save Changes
+                                <Icon name="save" size={15} /> Save Changes
                             </button>
                         </div>
                     </form>
@@ -308,37 +309,38 @@ export default function SettingsTab() {
             )}
 
             {userRole === 'Admin' && activeSubTab === 'lecturers' && (
-                <div className="glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
-                    <h4 className="font-bold text-body-lg text-on-surface flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary">school</span> Lecturer Directory
+                <div className="bg-surface border border-border rounded-lg p-5 space-y-4">
+                    <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
+                        <Icon name="school" size={16} className="text-primary" /> Lecturer Directory
                     </h4>
-                    <div className="overflow-x-auto border border-outline-variant/20 rounded-xl">
-                        <table className="w-full text-left border-collapse text-body-sm">
-                            <thead className="bg-surface-container-low text-on-surface-variant uppercase text-[10px] tracking-wider border-b border-outline-variant/20">
+                    <div className="overflow-x-auto border border-border rounded-lg">
+                        <table className="w-full text-left border-collapse text-xs">
+                            <thead className="bg-muted/40 text-muted-foreground uppercase text-[10px] font-mono tracking-wider border-b border-border">
                                 <tr>
-                                    <th className="px-5 py-4">Name</th>
-                                    <th className="px-5 py-4">Role</th>
-                                    <th className="px-5 py-4 text-center">Show in app</th>
+                                    <th className="px-4 py-2.5 font-medium">Name</th>
+                                    <th className="px-4 py-2.5 font-medium">Role</th>
+                                    <th className="px-4 py-2.5 text-center font-medium">Show in app</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-outline-variant/10">
+                            <tbody className="divide-y divide-border">
                                 {lecturerListData.length === 0 ? (
                                     <tr>
-                                        <td colSpan="3" className="px-5 py-8 text-center text-on-surface-variant/60 italic">
+                                        <td colSpan="3" className="px-4 py-8 text-center text-muted-foreground italic">
                                             No users with the lecturer role were found.
                                         </td>
                                     </tr>
                                 ) : lecturerListData.map((lecturer) => (
-                                    <tr key={lecturer.id} className="hover:bg-surface-container-low/30 transition-colors">
-                                        <td className="px-5 py-4 font-semibold text-on-surface">{lecturer.name}</td>
-                                        <td className="px-5 py-4 text-on-surface-variant capitalize">{lecturer.role}</td>
-                                        <td className="px-5 py-4 text-center">
-                                            <label className="inline-flex items-center justify-center gap-2 cursor-pointer text-[11px] text-on-surface-variant">
+                                    <tr key={lecturer.id} className="hover:bg-muted/30 transition-colors">
+                                        <td className="px-4 py-3 font-medium text-foreground">{lecturer.name}</td>
+                                        <td className="px-4 py-3 text-muted-foreground capitalize">{lecturer.role}</td>
+                                        <td className="px-4 py-3 text-center">
+                                            <label className="inline-flex items-center justify-center gap-2 cursor-pointer text-xs text-muted-foreground">
                                                 <input
                                                     type="checkbox"
                                                     checked={lecturer.showInAttendees !== false}
                                                     onChange={(event) => setLecturerAttendeeVisibility(lecturer.id, event.target.checked)}
                                                     aria-label={`Show ${lecturer.name} in meeting attendees`}
+                                                    className="rounded border-border bg-background text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                                                 />
                                                 <span>{lecturer.showInAttendees !== false ? 'Shown' : 'Hidden'}</span>
                                             </label>
@@ -353,34 +355,34 @@ export default function SettingsTab() {
 
             {/* 2. READ-ONLY INTERN DIRECTORY */}
             {userRole === 'Admin' && activeSubTab === 'members' && (
-                <div className="glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4">
+                <div className="bg-surface border border-border rounded-lg p-5 space-y-4">
                     <div className="space-y-1">
-                        <h4 className="font-bold text-body-lg text-on-surface flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary">groups</span> Intern Directory
+                        <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
+                            <Icon name="groups" size={16} className="text-primary" /> Intern Directory
                         </h4>
                     </div>
 
-                    <div className="overflow-x-auto border border-outline-variant/20 rounded-xl">
-                        <table className="w-full text-left border-collapse text-body-sm">
-                            <thead className="bg-surface-container-low text-on-surface-variant uppercase text-[10px] tracking-wider border-b border-outline-variant/20">
+                    <div className="overflow-x-auto border border-border rounded-lg">
+                        <table className="w-full text-left border-collapse text-xs">
+                            <thead className="bg-muted/40 text-muted-foreground uppercase text-[10px] font-mono tracking-wider border-b border-border">
                                 <tr>
-                                    <th className="px-5 py-4">Full name</th>
-                                    <th className="px-5 py-4">Name</th>
-                                    <th className="px-5 py-4">Role</th>
+                                    <th className="px-4 py-2.5 font-medium">Full name</th>
+                                    <th className="px-4 py-2.5 font-medium">Name</th>
+                                    <th className="px-4 py-2.5 font-medium">Role</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-outline-variant/10">
+                            <tbody className="divide-y divide-border">
                                 {internListData.length === 0 ? (
                                     <tr>
-                                        <td colSpan="3" className="px-5 py-8 text-center text-on-surface-variant/60 italic">
+                                        <td colSpan="3" className="px-4 py-8 text-center text-muted-foreground italic">
                                             No users with the intern role were found.
                                         </td>
                                     </tr>
                                 ) : internListData.map((intern) => (
-                                    <tr key={intern.id} className="hover:bg-surface-container-low/30 transition-colors">
-                                        <td className="px-5 py-4 font-semibold text-on-surface">{intern.name}</td>
-                                        <td className="px-5 py-4 font-semibold text-on-surface">{intern.name.trim().split(/\s+/)[0]}</td>
-                                        <td className="px-5 py-4 text-on-surface-variant capitalize">{intern.role}</td>
+                                    <tr key={intern.id} className="hover:bg-muted/30 transition-colors">
+                                        <td className="px-4 py-3 font-medium text-foreground">{intern.name}</td>
+                                        <td className="px-4 py-3 font-medium text-foreground">{intern.name.trim().split(/\s+/)[0]}</td>
+                                        <td className="px-4 py-3 text-muted-foreground capitalize">{intern.role}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -391,84 +393,86 @@ export default function SettingsTab() {
 
             {/* 4. CATEGORIES TAB */}
             {userRole === 'Admin' && activeSubTab === 'categories' && (
-                <section className="glass-panel border border-outline-variant/30 rounded-xl p-5 shadow-xl space-y-4" aria-labelledby="content-categories-heading">
+                <section className="bg-surface border border-border rounded-lg p-5 space-y-4" aria-labelledby="content-categories-heading">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                         <div className="space-y-1">
-                            <h4 id="content-categories-heading" className="font-bold text-body-lg text-on-surface flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary">category</span> Content Categories
+                            <h4 id="content-categories-heading" className="font-semibold text-sm text-foreground flex items-center gap-2">
+                                <Icon name="category" size={16} className="text-primary" /> Content Categories
                             </h4>
-                            <p className="text-body-sm text-on-surface-variant max-w-2xl">
+                            <p className="text-xs text-muted-foreground max-w-2xl">
                                 Control which categories appear in the Post Library. Hiding a category does not delete its drafts.
                             </p>
                         </div>
                         <button
                             type="button"
                             onClick={() => openAddModal('category')}
-                            className="bg-primary text-on-primary hover:opacity-90 font-semibold py-1.5 px-3 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center gap-1"
+                            className="bg-primary text-primary-foreground hover:opacity-90 font-medium py-1.5 px-3 rounded-md text-xs transition-opacity cursor-pointer flex items-center gap-1.5"
                         >
-                            <span className="material-symbols-outlined text-[16px]">add</span> Add Category
+                            <Icon name="add" size={14} /> Add Category
                         </button>
                     </div>
 
-                    <div className="overflow-x-auto border border-outline-variant/20 rounded-xl">
-                        <table className="w-full text-left border-collapse text-body-sm">
-                            <thead className="bg-surface-container-low text-on-surface-variant uppercase text-[10px] tracking-wider border-b border-outline-variant/20">
+                    <div className="overflow-x-auto border border-border rounded-lg">
+                        <table className="w-full text-left border-collapse text-xs">
+                            <thead className="bg-muted/40 text-muted-foreground uppercase text-[10px] font-mono tracking-wider border-b border-border">
                                 <tr>
-                                    <th className="px-5 py-4">Category Name</th>
-                                    <th className="px-5 py-4">Preview Badge</th>
-                                    <th className="px-5 py-4">Color</th>
-                                    <th className="px-5 py-4 text-center">Post Library</th>
-                                    <th className="px-5 py-4 text-right">Actions</th>
+                                    <th className="px-4 py-2.5 font-medium">Category Name</th>
+                                    <th className="px-4 py-2.5 font-medium">Preview Badge</th>
+                                    <th className="px-4 py-2.5 font-medium">Color</th>
+                                    <th className="px-4 py-2.5 text-center font-medium">Post Library</th>
+                                    <th className="px-4 py-2.5 text-right font-medium">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-outline-variant/10">
+                            <tbody className="divide-y divide-border">
                                 {categoriesData.map((cat) => (
-                                    <tr key={cat.name} className="hover:bg-surface-container-low/30 transition-colors">
-                                        <td className="px-5 py-4 font-semibold text-on-surface">{cat.name}</td>
-                                        <td className="px-5 py-4">
-                                            <span className={`px-2 py-1 rounded text-[11px] font-semibold border ${cat.color_class}`}>
+                                    <tr key={cat.name} className="hover:bg-muted/30 transition-colors">
+                                        <td className="px-4 py-3 font-medium text-foreground">{cat.name}</td>
+                                        <td className="px-4 py-3">
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${cat.color_class}`}>
                                                 {cat.name}
                                             </span>
                                         </td>
-                                        <td className="px-5 py-4 text-on-surface-variant font-mono text-[11px]">{cat.color_class}</td>
-                                        <td className="px-5 py-4 text-center">
+                                        <td className="px-4 py-3 text-muted-foreground font-mono text-[11px]">{cat.color_class}</td>
+                                        <td className="px-4 py-3 text-center">
                                             <input
                                                 type="checkbox"
                                                 checked={!hiddenLibraryCategories.includes(cat.name)}
                                                 onChange={() => toggleLibraryCategory(cat.name)}
-                                                className="h-5 w-5 accent-primary cursor-pointer"
+                                                className="rounded border-border bg-background text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                                                 aria-label={`Show ${cat.name} in Post Library`}
                                             />
                                         </td>
-                                        <td className="px-5 py-4 text-right flex justify-end gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => openEditModal('category', cat)}
-                                                className="text-primary hover:bg-primary/15 p-1 rounded transition-colors cursor-pointer"
-                                                title="Edit category"
-                                            >
-                                                <span className="material-symbols-outlined text-[18px]">edit</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => triggerDelete('category', cat.name)}
-                                                className="text-error hover:bg-error/15 p-1 rounded transition-colors cursor-pointer"
-                                                title="Delete category"
-                                            >
-                                                <span className="material-symbols-outlined text-[18px]">delete</span>
-                                            </button>
+                                        <td className="px-4 py-3 text-right">
+                                            <div className="flex justify-end gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEditModal('category', cat)}
+                                                    className="text-primary hover:bg-primary/10 p-1 rounded-md transition-colors cursor-pointer"
+                                                    title="Edit category"
+                                                >
+                                                    <Icon name="edit" size={14} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => triggerDelete('category', cat.name)}
+                                                    className="text-rose-500 hover:bg-rose-500/10 p-1 rounded-md transition-colors cursor-pointer"
+                                                    title="Delete category"
+                                                >
+                                                    <Icon name="delete" size={14} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                    {categoryVisibilityError && <p role="alert" className="text-body-sm text-error">{categoryVisibilityError}</p>}
-                    <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant/15 pt-4">
-                        <button type="button" onClick={saveLibraryCategoryVisibility} className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-4 rounded-lg text-body-sm transition-opacity cursor-pointer">
+                    {categoryVisibilityError && <p role="alert" className="text-xs text-rose-500">{categoryVisibilityError}</p>}
+                    <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+                        <button type="button" onClick={saveLibraryCategoryVisibility} className="bg-primary text-primary-foreground hover:opacity-90 font-medium py-1.5 px-3 rounded-md text-xs transition-opacity cursor-pointer">
                             Save visibility
                         </button>
-                        <button type="button" onClick={() => { setHiddenLibraryCategories([]); setCategoryVisibilityError(''); }} className="text-on-surface-variant hover:text-on-surface font-semibold py-2 px-3 rounded-lg text-body-sm transition-colors cursor-pointer">
+                        <button type="button" onClick={() => { setHiddenLibraryCategories([]); setCategoryVisibilityError(''); }} className="text-muted-foreground hover:text-foreground font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer">
                             Show all categories
                         </button>
                     </div>
@@ -483,42 +487,42 @@ export default function SettingsTab() {
                ======================================================== */}
             {isFormModalOpen && (
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
-                    <div className="w-full max-w-md bg-surface-container border border-outline-variant/30 rounded-xl overflow-hidden shadow-2xl flex flex-col">
-                        <div className="px-5 py-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
-                            <h3 className="text-body-lg font-bold text-on-surface">
+                    <div className="w-full max-w-md bg-surface border border-border rounded-lg overflow-hidden shadow-xl flex flex-col">
+                        <div className="px-4 py-3 border-b border-border flex justify-between items-center bg-muted/20">
+                            <h3 className="text-xs font-semibold text-foreground">
                                 {isEdit ? 'Edit' : 'Add'} {modalMode === 'member' ? 'Member' : (modalMode === 'platform' ? 'Platform' : 'Category')}
                             </h3>
                             <button
                                 type="button"
-                                className="text-on-surface-variant hover:text-on-surface p-1 cursor-pointer"
+                                className="text-muted-foreground hover:text-foreground p-1 rounded-md cursor-pointer transition-colors"
                                 onClick={() => setIsFormModalOpen(false)}
                             >
-                                <span className="material-symbols-outlined text-[20px]">close</span>
+                                <Icon name="close" size={16} />
                             </button>
                         </div>
 
                         <form onSubmit={handleModalSubmit} className="flex-1 flex flex-col justify-between">
-                            <div className="p-5 space-y-4">
+                            <div className="p-4 space-y-3.5">
                                 {/* MEMBER FIELDS */}
                                 {modalMode === 'member' && (
                                     <>
                                         <div className="space-y-1">
-                                            <label className="text-body-sm font-semibold text-on-surface-variant">Member Name</label>
+                                            <label className="text-xs font-medium text-muted-foreground">Member Name</label>
                                             <input
                                                 type="text"
                                                 required
-                                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                                className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                                                 value={memberName}
                                                 onChange={(e) => setMemberName(e.target.value)}
                                                 placeholder="e.g. Charlie"
                                             />
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-body-sm font-semibold text-on-surface-variant">Role/Stream</label>
+                                            <label className="text-xs font-medium text-muted-foreground">Role/Stream</label>
                                             <input
                                                 type="text"
                                                 required
-                                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary"
+                                                className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                                                 value={memberStream}
                                                 onChange={(e) => setMemberStream(e.target.value)}
                                                 placeholder="e.g. Content Creator"
@@ -531,32 +535,32 @@ export default function SettingsTab() {
                                 {modalMode === 'platform' && (
                                     <>
                                         <div className="space-y-1">
-                                            <label className="text-body-sm font-semibold text-on-surface-variant">Platform Name</label>
+                                            <label className="text-xs font-medium text-muted-foreground">Platform Name</label>
                                             <input
                                                 type="text"
                                                 required
                                                 disabled={isEdit} // don't change key on edit
-                                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-50"
+                                                className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary disabled:opacity-50"
                                                 value={platformName}
                                                 onChange={(e) => setPlatformName(e.target.value)}
                                                 placeholder="e.g. LinkedIn"
                                             />
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-body-sm font-semibold text-on-surface-variant">Logo Icon URL (Optional)</label>
+                                            <label className="text-xs font-medium text-muted-foreground">Logo Icon URL (Optional)</label>
                                             <input
                                                 type="text"
-                                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary font-mono text-[12px]"
+                                                className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary font-mono transition-colors"
                                                 value={platformLogo}
                                                 onChange={(e) => setPlatformLogo(e.target.value)}
                                                 placeholder="e.g. /img/icons/linkedin.png"
                                             />
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-body-sm font-semibold text-on-surface-variant">CSS Class Name (Optional)</label>
+                                            <label className="text-xs font-medium text-muted-foreground">CSS Class Name (Optional)</label>
                                             <input
                                                 type="text"
-                                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary font-mono text-[12px]"
+                                                className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary font-mono transition-colors"
                                                 value={platformColor}
                                                 onChange={(e) => setPlatformColor(e.target.value)}
                                                 placeholder="e.g. badge-platform-linkedin"
@@ -569,23 +573,23 @@ export default function SettingsTab() {
                                 {modalMode === 'category' && (
                                     <>
                                         <div className="space-y-1">
-                                            <label className="text-body-sm font-semibold text-on-surface-variant">Category Name</label>
+                                            <label className="text-xs font-medium text-muted-foreground">Category Name</label>
                                             <input
                                                 type="text"
                                                 required
                                                 disabled={isEdit}
-                                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary disabled:opacity-50"
+                                                className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary disabled:opacity-50"
                                                 value={categoryName}
                                                 onChange={(e) => setCategoryName(e.target.value)}
                                                 placeholder="e.g. Vlog"
                                             />
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-body-sm font-semibold text-on-surface-variant">Color</label>
+                                            <label className="text-xs font-medium text-muted-foreground">Color</label>
                                             <input
                                                 type="text"
                                                 required
-                                                className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:border-primary font-mono text-[12px]"
+                                                className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary font-mono transition-colors"
                                                 value={categoryColor}
                                                 onChange={(e) => setCategoryColor(e.target.value)}
                                                 placeholder="e.g. bg-sky-500/10 text-sky-400 border border-sky-500/20"
@@ -595,19 +599,19 @@ export default function SettingsTab() {
                                 )}
                             </div>
 
-                            <div className="px-5 py-4 border-t border-outline-variant/20 flex justify-end gap-3 bg-surface-container-lowest">
+                            <div className="px-4 py-3 border-t border-border flex justify-end gap-2 bg-muted/20">
                                 <button
                                     type="button"
-                                    className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded-lg text-body-sm transition-colors cursor-pointer"
+                                    className="bg-surface border border-border text-foreground hover:bg-muted font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer"
                                     onClick={() => setIsFormModalOpen(false)}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-4 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center gap-1.5"
+                                    className="bg-primary text-primary-foreground hover:opacity-90 font-medium py-1.5 px-3 rounded-md text-xs transition-opacity cursor-pointer flex items-center gap-1.5"
                                 >
-                                    <span className="material-symbols-outlined text-[18px]">save</span> Save
+                                    <Icon name="save" size={15} /> Save
                                 </button>
                             </div>
                         </form>

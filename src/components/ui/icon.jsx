@@ -36,6 +36,7 @@ const ICON_MAP = {
     add_box: 'PlusSquare',
     edit: 'PencilSimple',
     edit_note: 'PencilSimple',
+    edit_off: 'PencilSlash',
     delete: 'Trash',
     delete_clock: 'TrashSimple',
     restore: 'ArrowCounterClockwise',
@@ -93,6 +94,7 @@ const ICON_MAP = {
     workspace_premium: 'Trophy',
     grade: 'Star',
     star: 'Star',
+    flag: 'Flag',
 
     // Content & Media
     videocam: 'VideoCamera',

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import Icon from './Icon';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
 
@@ -188,53 +189,51 @@ export default function WebAnalyticsTab() {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in pb-12">
+        <div className="space-y-6 pb-12">
             {canEdit && (
                 <div className="flex justify-end">
                     <button 
                         onClick={() => setIsManageMode(!isManageMode)}
-                        className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-body-sm font-semibold transition-all duration-200 shadow-sm micro-interaction ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-xs font-medium transition-all ${
                             isManageMode 
-                                ? 'bg-orange-500/10 border-orange-500/30 text-orange-500 hover:bg-orange-500/15'
-                                : 'bg-surface-container-high border-outline-variant/30 text-on-surface hover:bg-surface-container-highest'
+                                ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/15' 
+                                : 'bg-surface border-border text-foreground hover:bg-muted'
                         }`}
                     >
-                        <span className="material-symbols-outlined text-[18px]">
-                            {isManageMode ? 'edit_off' : 'edit'}
-                        </span>
+                        <Icon name={isManageMode ? 'edit_off' : 'edit'} size={14} />
                         <span>{isManageMode ? 'Exit Manage Mode' : 'Manage Data'}</span>
                     </button>
                 </div>
             )}
 
-            {/* Premium Bento Grid for Summary Metrics */}
-            <div className="bg-surface-container-lowest/40 border border-outline-variant/15 rounded-2xl p-6 space-y-6 shadow-md relative overflow-hidden">
-                <div className="flex justify-between items-center pb-2 border-b border-outline-variant/10">
-                    <h4 className="text-body-sm font-bold text-on-surface tracking-wide uppercase">Google Analytics last 3 month</h4>
+            {/* Bento Grid for Summary Metrics */}
+            <div className="bg-surface border border-border rounded-lg p-5 space-y-4 relative">
+                <div className="flex justify-between items-center pb-2 border-b border-border">
+                    <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">Google Analytics last 3 months</h4>
                     {canEdit && (
                         <button 
                             onClick={handleOpenSummaryModal}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 text-primary hover:bg-primary/15 rounded-lg text-[11px] font-bold transition-all micro-interaction"
+                            className="flex items-center gap-1.5 px-2.5 py-1 bg-surface border border-border text-foreground hover:bg-muted rounded-md text-[11px] font-medium transition-colors"
                         >
-                            <span className="material-symbols-outlined text-[16px]">settings</span>
-                            <span>EDIT METRICS</span>
+                            <Icon name="settings" size={13} />
+                            <span>Edit Metrics</span>
                         </button>
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
                     {/* Metric 1: Visitors */}
-                    <div className="bg-surface-container-low/50 border border-outline-variant/20 rounded-xl p-4 space-y-2 group hover:border-primary/20 transition-all duration-300">
-                        <div className="flex justify-between items-center text-on-surface-variant/70">
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Visitors</span>
-                            <span className="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">group</span>
+                    <div className="bg-muted/20 border border-border rounded-md p-3.5 space-y-1.5 group hover:border-primary/30 transition-colors">
+                        <div className="flex justify-between items-center text-muted-foreground">
+                            <span className="text-[10px] font-mono uppercase tracking-wider font-medium">Visitors</span>
+                            <Icon name="group" size={15} className="group-hover:text-primary transition-colors" />
                         </div>
                         <div className="space-y-1">
                             {isManageMode ? (
-                                <div className="flex items-center gap-1.5 border-b border-outline-variant/35 focus-within:border-primary transition-colors">
+                                <div className="flex items-center gap-1.5 border-b border-border focus-within:border-primary transition-colors">
                                     <input
                                         type="text"
-                                        className="bg-transparent text-headline-md font-bold text-on-surface tracking-tight font-mono w-full focus:outline-none py-0.5 select-all"
+                                        className="bg-transparent text-xl font-bold text-foreground tracking-tight font-mono w-full focus:outline-none py-0.5 select-all"
                                         value={tempSummary.visitors}
                                         onChange={(e) => setTempSummary({ ...tempSummary, visitors: e.target.value })}
                                         onKeyDown={(e) => {
@@ -245,32 +244,32 @@ export default function WebAnalyticsTab() {
                                         onBlur={(e) => handleInlineSaveSummary('visitors', e.target.value)}
                                     />
                                     {tempSummary.visitors !== gaSummaryData?.visitors && (
-                                        <span className="material-symbols-outlined text-[16px] text-primary animate-pulse select-none shrink-0" title="Saving on blur...">sync</span>
+                                        <Icon name="sync" size={14} className="text-primary animate-spin select-none shrink-0" title="Saving on blur..." />
                                     )}
                                 </div>
                             ) : (
-                                <h4 className="text-headline-md font-bold text-on-surface tracking-tight font-mono">
-                                    {gaSummaryData?.visitors || '—'}
+                                <h4 className="text-xl font-bold text-foreground tracking-tight font-mono">
+                                    {gaSummaryData?.visitors || '-'}
                                 </h4>
                             )}
-                            <p className="text-[10px] text-on-surface-variant/60 leading-normal">
+                            <p className="text-[10px] text-muted-foreground leading-normal">
                                 Angka ini menunjukan jumlah semua pengunjung di semua halaman.
                             </p>
                         </div>
                     </div>
 
                     {/* Metric 2: Pageviews */}
-                    <div className="bg-surface-container-low/50 border border-outline-variant/20 rounded-xl p-4 space-y-2 group hover:border-primary/20 transition-all duration-300">
-                        <div className="flex justify-between items-center text-on-surface-variant/70">
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Pageviews</span>
-                            <span className="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">visibility</span>
+                    <div className="bg-muted/20 border border-border rounded-md p-3.5 space-y-1.5 group hover:border-primary/30 transition-colors">
+                        <div className="flex justify-between items-center text-muted-foreground">
+                            <span className="text-[10px] font-mono uppercase tracking-wider font-medium">Pageviews</span>
+                            <Icon name="visibility" size={15} className="group-hover:text-primary transition-colors" />
                         </div>
                         <div className="space-y-1">
                             {isManageMode ? (
-                                <div className="flex items-center gap-1.5 border-b border-outline-variant/35 focus-within:border-primary transition-colors">
+                                <div className="flex items-center gap-1.5 border-b border-border focus-within:border-primary transition-colors">
                                     <input
                                         type="text"
-                                        className="bg-transparent text-headline-md font-bold text-on-surface tracking-tight font-mono w-full focus:outline-none py-0.5 select-all"
+                                        className="bg-transparent text-xl font-bold text-foreground tracking-tight font-mono w-full focus:outline-none py-0.5 select-all"
                                         value={tempSummary.pageviews}
                                         onChange={(e) => setTempSummary({ ...tempSummary, pageviews: e.target.value })}
                                         onKeyDown={(e) => {
@@ -281,32 +280,32 @@ export default function WebAnalyticsTab() {
                                         onBlur={(e) => handleInlineSaveSummary('pageviews', e.target.value)}
                                     />
                                     {tempSummary.pageviews !== gaSummaryData?.pageviews && (
-                                        <span className="material-symbols-outlined text-[16px] text-primary animate-pulse select-none shrink-0" title="Saving on blur...">sync</span>
+                                        <Icon name="sync" size={14} className="text-primary animate-spin select-none shrink-0" title="Saving on blur..." />
                                     )}
                                 </div>
                             ) : (
-                                <h4 className="text-headline-md font-bold text-on-surface tracking-tight font-mono">
-                                    {gaSummaryData?.pageviews || '—'}
+                                <h4 className="text-xl font-bold text-foreground tracking-tight font-mono">
+                                    {gaSummaryData?.pageviews || '-'}
                                 </h4>
                             )}
-                            <p className="text-[10px] text-on-surface-variant/60 leading-normal">
+                            <p className="text-[10px] text-muted-foreground leading-normal">
                                 Angka ini menunjukkan berapa banyak halaman yang telah dilihat oleh pengunjung.
                             </p>
                         </div>
                     </div>
 
                     {/* Metric 3: New Visits */}
-                    <div className="bg-surface-container-low/50 border border-outline-variant/20 rounded-xl p-4 space-y-2 group hover:border-primary/20 transition-all duration-300">
-                        <div className="flex justify-between items-center text-on-surface-variant/70">
-                            <span className="text-[10px] font-bold uppercase tracking-wider">New Visits</span>
-                            <span className="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">person_add</span>
+                    <div className="bg-muted/20 border border-border rounded-md p-3.5 space-y-1.5 group hover:border-primary/30 transition-colors">
+                        <div className="flex justify-between items-center text-muted-foreground">
+                            <span className="text-[10px] font-mono uppercase tracking-wider font-medium">New Visits</span>
+                            <Icon name="person_add" size={15} className="group-hover:text-primary transition-colors" />
                         </div>
                         <div className="space-y-1">
                             {isManageMode ? (
-                                <div className="flex items-center gap-1.5 border-b border-outline-variant/35 focus-within:border-primary transition-colors">
+                                <div className="flex items-center gap-1.5 border-b border-border focus-within:border-primary transition-colors">
                                     <input
                                         type="text"
-                                        className="bg-transparent text-headline-md font-bold text-on-surface tracking-tight font-mono w-full focus:outline-none py-0.5 select-all"
+                                        className="bg-transparent text-xl font-bold text-foreground tracking-tight font-mono w-full focus:outline-none py-0.5 select-all"
                                         value={tempSummary.new_visits}
                                         onChange={(e) => setTempSummary({ ...tempSummary, new_visits: e.target.value })}
                                         onKeyDown={(e) => {
@@ -317,32 +316,32 @@ export default function WebAnalyticsTab() {
                                         onBlur={(e) => handleInlineSaveSummary('new_visits', e.target.value)}
                                     />
                                     {tempSummary.new_visits !== gaSummaryData?.new_visits && (
-                                        <span className="material-symbols-outlined text-[16px] text-primary animate-pulse select-none shrink-0" title="Saving on blur...">sync</span>
+                                        <Icon name="sync" size={14} className="text-primary animate-spin select-none shrink-0" title="Saving on blur..." />
                                     )}
                                 </div>
                             ) : (
-                                <h4 className="text-headline-md font-bold text-on-surface tracking-tight font-mono">
-                                    {gaSummaryData?.new_visits || '—'}
+                                <h4 className="text-xl font-bold text-foreground tracking-tight font-mono">
+                                    {gaSummaryData?.new_visits || '-'}
                                 </h4>
                             )}
-                            <p className="text-[10px] text-on-surface-variant/60 leading-normal">
+                            <p className="text-[10px] text-muted-foreground leading-normal">
                                 Angka ini menunjukan jumlah yang dimungkinkan adalah pengunjung baru.
                             </p>
                         </div>
                     </div>
 
                     {/* Metric 4: Avg Time on Site */}
-                    <div className="bg-surface-container-low/50 border border-outline-variant/20 rounded-xl p-4 space-y-2 group hover:border-primary/20 transition-all duration-300">
-                        <div className="flex justify-between items-center text-on-surface-variant/70">
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Avg. Time on Site</span>
-                            <span className="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">schedule</span>
+                    <div className="bg-muted/20 border border-border rounded-md p-3.5 space-y-1.5 group hover:border-primary/30 transition-colors">
+                        <div className="flex justify-between items-center text-muted-foreground">
+                            <span className="text-[10px] font-mono uppercase tracking-wider font-medium">Avg. Time on Site</span>
+                            <Icon name="schedule" size={15} className="group-hover:text-primary transition-colors" />
                         </div>
                         <div className="space-y-1">
                             {isManageMode ? (
-                                <div className="flex items-center gap-1.5 border-b border-outline-variant/35 focus-within:border-primary transition-colors">
+                                <div className="flex items-center gap-1.5 border-b border-border focus-within:border-primary transition-colors">
                                     <input
                                         type="text"
-                                        className="bg-transparent text-headline-md font-bold text-on-surface tracking-tight font-mono w-full focus:outline-none py-0.5 select-all"
+                                        className="bg-transparent text-xl font-bold text-foreground tracking-tight font-mono w-full focus:outline-none py-0.5 select-all"
                                         value={tempSummary.avg_time_on_site}
                                         onChange={(e) => setTempSummary({ ...tempSummary, avg_time_on_site: e.target.value })}
                                         onKeyDown={(e) => {
@@ -353,32 +352,32 @@ export default function WebAnalyticsTab() {
                                         onBlur={(e) => handleInlineSaveSummary('avg_time_on_site', e.target.value)}
                                     />
                                     {tempSummary.avg_time_on_site !== gaSummaryData?.avg_time_on_site && (
-                                        <span className="material-symbols-outlined text-[16px] text-primary animate-pulse select-none shrink-0" title="Saving on blur...">sync</span>
+                                        <Icon name="sync" size={14} className="text-primary animate-spin select-none shrink-0" title="Saving on blur..." />
                                     )}
                                 </div>
                             ) : (
-                                <h4 className="text-headline-md font-bold text-on-surface tracking-tight font-mono">
-                                    {gaSummaryData?.avg_time_on_site || '—'}
+                                <h4 className="text-xl font-bold text-foreground tracking-tight font-mono">
+                                    {gaSummaryData?.avg_time_on_site || '-'}
                                 </h4>
                             )}
-                            <p className="text-[10px] text-on-surface-variant/60 leading-normal">
+                            <p className="text-[10px] text-muted-foreground leading-normal">
                                 Rata-rata waktu yang dihabiskan oleh pengunjung di situs web.
                             </p>
                         </div>
                     </div>
 
                     {/* Metric 5: Engagement Rate */}
-                    <div className="bg-surface-container-low/50 border border-outline-variant/20 rounded-xl p-4 space-y-2 group hover:border-primary/20 transition-all duration-300">
-                        <div className="flex justify-between items-center text-on-surface-variant/70">
-                            <span className="text-[10px] font-bold uppercase tracking-wider">% Engagement Rate</span>
-                            <span className="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">insights</span>
+                    <div className="bg-muted/20 border border-border rounded-md p-3.5 space-y-1.5 group hover:border-primary/30 transition-colors">
+                        <div className="flex justify-between items-center text-muted-foreground">
+                            <span className="text-[10px] font-mono uppercase tracking-wider font-medium">% Engagement Rate</span>
+                            <Icon name="insights" size={15} className="group-hover:text-primary transition-colors" />
                         </div>
                         <div className="space-y-1">
                             {isManageMode ? (
-                                <div className="flex items-center gap-1.5 border-b border-outline-variant/35 focus-within:border-primary transition-colors">
+                                <div className="flex items-center gap-1.5 border-b border-border focus-within:border-primary transition-colors">
                                     <input
                                         type="text"
-                                        className="bg-transparent text-headline-md font-bold text-on-surface tracking-tight font-mono w-full focus:outline-none py-0.5 select-all"
+                                        className="bg-transparent text-xl font-bold text-foreground tracking-tight font-mono w-full focus:outline-none py-0.5 select-all"
                                         value={tempSummary.engagement_rate}
                                         onChange={(e) => setTempSummary({ ...tempSummary, engagement_rate: e.target.value })}
                                         onKeyDown={(e) => {
@@ -389,15 +388,15 @@ export default function WebAnalyticsTab() {
                                         onBlur={(e) => handleInlineSaveSummary('engagement_rate', e.target.value)}
                                     />
                                     {tempSummary.engagement_rate !== gaSummaryData?.engagement_rate && (
-                                        <span className="material-symbols-outlined text-[16px] text-primary animate-pulse select-none shrink-0" title="Saving on blur...">sync</span>
+                                        <Icon name="sync" size={14} className="text-primary animate-spin select-none shrink-0" title="Saving on blur..." />
                                     )}
                                 </div>
                             ) : (
-                                <h4 className="text-headline-md font-bold text-on-surface tracking-tight font-mono">
-                                    {gaSummaryData?.engagement_rate || '—'}
+                                <h4 className="text-xl font-bold text-foreground tracking-tight font-mono">
+                                    {gaSummaryData?.engagement_rate || '-'}
                                 </h4>
                             )}
-                            <p className="text-[10px] text-on-surface-variant/60 leading-normal">
+                            <p className="text-[10px] text-muted-foreground leading-normal">
                                 Persentase metrik yang menunjukkan seberapa aktif pengguna berinteraksi dengan site.
                             </p>
                         </div>
@@ -406,9 +405,9 @@ export default function WebAnalyticsTab() {
             </div>
 
             {/* List Details Card */}
-            <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-6 shadow-xl space-y-6 relative">
+            <div className="bg-surface border border-border rounded-lg p-5 space-y-4 relative">
                 {/* Tab Navigation */}
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant/10 pb-1">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-1">
                     <div className="flex space-x-6 overflow-x-auto scrollbar-none">
                         {tabs.map((tab) => {
                             const isActive = activeTab === tab.id;
@@ -416,10 +415,10 @@ export default function WebAnalyticsTab() {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`pb-3 text-body-md font-semibold border-b-2 transition-all duration-200 outline-none whitespace-nowrap ${
+                                    className={`pb-2.5 text-xs font-medium border-b-2 transition-colors outline-none whitespace-nowrap cursor-pointer ${
                                         isActive
-                                            ? 'border-orange-500 text-orange-500 dark:text-orange-400 font-bold'
-                                            : 'border-transparent text-on-surface-variant/60 hover:text-on-surface hover:border-outline-variant/35'
+                                            ? 'border-primary text-primary'
+                                            : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                                     }`}
                                 >
                                     {tab.label}
@@ -430,45 +429,45 @@ export default function WebAnalyticsTab() {
                     {isManageMode && (
                         <button
                             onClick={handleOpenAddItemModal}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-primary text-on-primary hover:opacity-95 rounded-lg text-body-sm font-semibold transition-all shadow-md micro-interaction"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground hover:opacity-90 rounded-md text-xs font-medium transition-opacity cursor-pointer"
                         >
-                            <span className="material-symbols-outlined text-[18px]">add</span>
+                            <Icon name="add" size={14} />
                             <span>Add Item</span>
                         </button>
                     )}
                 </div>
 
                 {/* Items List Content */}
-                <div className="min-h-[250px] space-y-4">
+                <div className="min-h-[250px] space-y-2">
                     {filteredItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
-                            <span className="material-symbols-outlined text-[36px] text-on-surface-variant/30">analytics</span>
-                            <p className="text-on-surface-variant/60 text-body-sm">No statistics added for this tab yet.</p>
+                            <Icon name="analytics" size={32} className="text-muted-foreground/30 mx-auto" />
+                            <p className="text-muted-foreground text-xs">No statistics added for this tab yet.</p>
                             {isManageMode && (
                                 <button 
                                     onClick={handleOpenAddItemModal} 
-                                    className="text-primary hover:underline text-xs font-semibold"
+                                    className="text-primary hover:underline text-xs font-medium cursor-pointer"
                                 >
                                     Add the first item
                                 </button>
                             )}
                         </div>
                     ) : (
-                        <div className="divide-y divide-outline-variant/10 font-sans">
+                        <div className="divide-y divide-border font-sans">
                             {filteredItems.map((item, index) => {
                                 return (
                                     <div 
                                         key={item.id} 
-                                        className="flex items-center justify-between py-3.5 group hover:bg-surface-container-low/20 px-2 rounded-lg transition-colors duration-150"
+                                        className="flex items-center justify-between py-2.5 px-2 rounded-md hover:bg-muted/30 transition-colors"
                                     >
-                                        <div className="flex items-center space-x-4 min-w-0 pr-4">
+                                        <div className="flex items-center space-x-3.5 min-w-0 pr-4">
                                             {/* Rank Index */}
-                                            <span className="text-body-sm font-bold text-on-surface/80 w-6 shrink-0">
+                                            <span className="text-xs font-mono font-medium text-muted-foreground w-6 shrink-0">
                                                 {index + 1}.
                                             </span>
 
                                             {/* Value Capsule Badge */}
-                                            <span className="bg-zinc-850 dark:bg-zinc-700 text-zinc-100 dark:text-zinc-200 text-[11px] font-semibold px-2.5 py-1 rounded-md font-mono shrink-0 select-none shadow-sm min-w-[90px] text-center border border-zinc-750/50">
+                                            <span className="bg-muted text-foreground text-xs font-mono font-medium px-2 py-0.5 rounded border border-border shrink-0 select-none min-w-[80px] text-center">
                                                 {item.metric}
                                             </span>
 
@@ -478,12 +477,12 @@ export default function WebAnalyticsTab() {
                                                     href={getFullUrl(item.label)} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
-                                                    className="text-sky-600 dark:text-sky-400 hover:underline break-all text-body-sm font-medium"
+                                                    className="text-primary hover:underline break-all text-xs font-medium"
                                                 >
                                                     {item.label}
                                                 </a>
                                             ) : (
-                                                <span className="text-on-surface/90 break-all text-body-sm font-medium">
+                                                <span className="text-foreground break-all text-xs font-medium">
                                                     {item.label}
                                                 </span>
                                             )}
@@ -491,20 +490,20 @@ export default function WebAnalyticsTab() {
 
                                         {/* CRUD controls in Manage Mode */}
                                         {isManageMode && (
-                                            <div className="flex items-center space-x-1.5 shrink-0 opacity-100 lg:opacity-60 lg:group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center space-x-1 shrink-0">
                                                 <button
                                                     onClick={() => handleOpenEditItemModal(item)}
-                                                    className="w-8 h-8 rounded-lg flex items-center justify-center bg-surface-container-high hover:bg-primary/10 hover:text-primary text-on-surface-variant transition-colors micro-interaction"
+                                                    className="w-7 h-7 rounded-md flex items-center justify-center bg-surface border border-border hover:bg-primary/10 hover:text-primary text-muted-foreground transition-colors cursor-pointer"
                                                     title="Edit Item"
                                                 >
-                                                    <span className="material-symbols-outlined text-[16px]">edit</span>
+                                                    <Icon name="edit" size={13} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleOpenDeleteItemModal(item)}
-                                                    className="w-8 h-8 rounded-lg flex items-center justify-center bg-surface-container-high hover:bg-error/10 hover:text-error text-on-surface-variant transition-colors micro-interaction"
+                                                    className="w-7 h-7 rounded-md flex items-center justify-center bg-surface border border-border hover:bg-rose-500/10 hover:text-rose-500 text-muted-foreground transition-colors cursor-pointer"
                                                     title="Delete Item"
                                                 >
-                                                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                                                    <Icon name="delete" size={13} />
                                                 </button>
                                             </div>
                                         )}
@@ -519,21 +518,21 @@ export default function WebAnalyticsTab() {
             {/* Modal: Edit Summary Metrics */}
             {isSummaryModalOpen && createPortal(
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
-                    <div className="w-full max-w-md bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl space-y-6 animate-fade-in">
-                        <div className="flex items-center justify-between border-b border-outline-variant/20 pb-4">
-                            <h3 className="text-headline-sm font-bold text-on-surface">Edit Summary Metrics</h3>
-                            <button className="text-on-surface-variant hover:text-on-surface p-1 micro-interaction" onClick={() => setIsSummaryModalOpen(false)}>
-                                <span className="material-symbols-outlined text-[20px]">close</span>
+                    <div className="w-full max-w-md bg-surface border border-border rounded-lg p-5 shadow-2xl space-y-4 animate-fade-in">
+                        <div className="flex items-center justify-between border-b border-border pb-3">
+                            <h3 className="text-xs font-semibold text-foreground">Edit Summary Metrics</h3>
+                            <button className="text-muted-foreground hover:text-foreground p-1 rounded-md cursor-pointer transition-colors" onClick={() => setIsSummaryModalOpen(false)}>
+                                <Icon name="close" size={15} />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSaveSummary} className="space-y-4">
+                        <form onSubmit={handleSaveSummary} className="space-y-3.5">
                             <div className="space-y-1">
-                                <label className="text-[10px] text-on-surface-variant uppercase font-semibold">Visitors</label>
+                                <label className="text-[10px] font-mono text-muted-foreground uppercase font-medium">Visitors</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:border-primary focus:outline-none"
+                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
                                     placeholder="e.g. ± 6K"
                                     value={summaryForm.visitors}
                                     onChange={(e) => setSummaryForm({ ...summaryForm, visitors: e.target.value })}
@@ -541,11 +540,11 @@ export default function WebAnalyticsTab() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[10px] text-on-surface-variant uppercase font-semibold">Pageviews</label>
+                                <label className="text-[10px] font-mono text-muted-foreground uppercase font-medium">Pageviews</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:border-primary focus:outline-none"
+                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
                                     placeholder="e.g. 201"
                                     value={summaryForm.pageviews}
                                     onChange={(e) => setSummaryForm({ ...summaryForm, pageviews: e.target.value })}
@@ -553,11 +552,11 @@ export default function WebAnalyticsTab() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[10px] text-on-surface-variant uppercase font-semibold">New Visits</label>
+                                <label className="text-[10px] font-mono text-muted-foreground uppercase font-medium">New Visits</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:border-primary focus:outline-none"
+                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
                                     placeholder="e.g. ± 6K"
                                     value={summaryForm.new_visits}
                                     onChange={(e) => setSummaryForm({ ...summaryForm, new_visits: e.target.value })}
@@ -565,11 +564,11 @@ export default function WebAnalyticsTab() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[10px] text-on-surface-variant uppercase font-semibold">Avg. Time on Site</label>
+                                <label className="text-[10px] font-mono text-muted-foreground uppercase font-medium">Avg. Time on Site</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:border-primary focus:outline-none"
+                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
                                     placeholder="e.g. 00:01:24"
                                     value={summaryForm.avg_time_on_site}
                                     onChange={(e) => setSummaryForm({ ...summaryForm, avg_time_on_site: e.target.value })}
@@ -577,30 +576,30 @@ export default function WebAnalyticsTab() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[10px] text-on-surface-variant uppercase font-semibold">Engagement Rate</label>
+                                <label className="text-[10px] font-mono text-muted-foreground uppercase font-medium">Engagement Rate</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:border-primary focus:outline-none"
+                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
                                     placeholder="e.g. 48%"
                                     value={summaryForm.engagement_rate}
                                     onChange={(e) => setSummaryForm({ ...summaryForm, engagement_rate: e.target.value })}
                                 />
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant/20">
+                            <div className="flex justify-end gap-2 pt-3 border-t border-border">
                                 <button 
                                     type="button" 
-                                    className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction" 
+                                    className="bg-surface border border-border text-foreground hover:bg-muted font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer" 
                                     onClick={() => setIsSummaryModalOpen(false)}
                                 >
                                     Cancel
                                 </button>
                                 <button 
                                     type="submit" 
-                                    className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction flex items-center gap-1.5"
+                                    className="bg-primary text-primary-foreground hover:opacity-90 font-medium py-1.5 px-3 rounded-md text-xs transition-opacity cursor-pointer flex items-center gap-1.5"
                                 >
-                                    <span className="material-symbols-outlined text-[16px]">save</span>
+                                    <Icon name="save" size={14} />
                                     <span>Save Changes</span>
                                 </button>
                             </div>
@@ -613,31 +612,31 @@ export default function WebAnalyticsTab() {
             {/* Modal: Add/Edit List Item */}
             {isItemModalOpen && createPortal(
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
-                    <div className="w-full max-w-md bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl space-y-6 animate-fade-in">
-                        <div className="flex items-center justify-between border-b border-outline-variant/20 pb-4">
-                            <h3 className="text-headline-sm font-bold text-on-surface">
+                    <div className="w-full max-w-md bg-surface border border-border rounded-lg p-5 shadow-2xl space-y-4 animate-fade-in">
+                        <div className="flex items-center justify-between border-b border-border pb-3">
+                            <h3 className="text-xs font-semibold text-foreground">
                                 {editingItem ? 'Edit Analytics Item' : 'Add Analytics Item'}
                             </h3>
-                            <button className="text-on-surface-variant hover:text-on-surface p-1 micro-interaction" onClick={() => setIsItemModalOpen(false)}>
-                                <span className="material-symbols-outlined text-[20px]">close</span>
+                            <button className="text-muted-foreground hover:text-foreground p-1 rounded-md cursor-pointer transition-colors" onClick={() => setIsItemModalOpen(false)}>
+                                <Icon name="close" size={15} />
                             </button>
                         </div>
 
                         {/* Category Indicator Badge */}
-                        <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/20 rounded-lg text-primary text-body-sm font-semibold select-none">
+                        <div className="flex items-center justify-between p-2.5 bg-primary/10 border border-primary/20 rounded-md text-primary text-xs font-medium select-none">
                             <span>Tab Category</span>
-                            <span className="uppercase text-[11px] bg-primary text-on-primary px-2 py-0.5 rounded tracking-wider">
+                            <span className="uppercase text-[10px] font-mono bg-primary text-primary-foreground px-2 py-0.5 rounded tracking-wider">
                                 {tabs.find(t => t.id === activeTab)?.label}
                             </span>
                         </div>
 
-                        <form onSubmit={handleSaveItem} className="space-y-4">
+                        <form onSubmit={handleSaveItem} className="space-y-3.5">
                             <div className="space-y-1">
-                                <label className="text-[10px] text-on-surface-variant uppercase font-semibold">Label / Link URL</label>
+                                <label className="text-xs font-medium text-muted-foreground">Label / Link URL</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:border-primary focus:outline-none"
+                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors"
                                     placeholder="e.g. /game/mecha-chameleon or Google"
                                     value={itemForm.label}
                                     onChange={(e) => setItemForm({ ...itemForm, label: e.target.value })}
@@ -645,32 +644,30 @@ export default function WebAnalyticsTab() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[10px] text-on-surface-variant uppercase font-semibold">Metric / Value</label>
+                                <label className="text-xs font-medium text-muted-foreground">Metric / Value</label>
                                 <input
                                     type="text"
                                     required
-                                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-3 py-2 text-body-sm text-on-surface focus:border-primary focus:outline-none"
+                                    className="w-full bg-background border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none transition-colors font-mono"
                                     placeholder="e.g. 1.2K views or +85% spike"
                                     value={itemForm.metric}
                                     onChange={(e) => setItemForm({ ...itemForm, metric: e.target.value })}
                                 />
                             </div>
 
-
-
-                            <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant/20">
+                            <div className="flex justify-end gap-2 pt-3 border-t border-border">
                                 <button 
                                     type="button" 
-                                    className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction" 
+                                    className="bg-surface border border-border text-foreground hover:bg-muted font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer" 
                                     onClick={() => setIsItemModalOpen(false)}
                                 >
                                     Cancel
                                 </button>
                                 <button 
                                     type="submit" 
-                                    className="bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction flex items-center gap-1.5"
+                                    className="bg-primary text-primary-foreground hover:opacity-90 font-medium py-1.5 px-3 rounded-md text-xs transition-opacity cursor-pointer flex items-center gap-1.5"
                                 >
-                                    <span className="material-symbols-outlined text-[16px]">save</span>
+                                    <Icon name="save" size={14} />
                                     <span>Save Item</span>
                                 </button>
                             </div>
@@ -683,32 +680,32 @@ export default function WebAnalyticsTab() {
             {/* Modal: Confirm Delete Item */}
             {isDeleteModalOpen && createPortal(
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
-                    <div className="w-full max-w-md bg-surface-container border border-outline-variant/30 rounded-xl p-6 shadow-2xl space-y-6 animate-fade-in">
-                        <div className="flex items-center gap-3 text-error pb-2 border-b border-outline-variant/20">
-                            <span className="material-symbols-outlined text-[24px]">warning</span>
-                            <h3 className="text-headline-sm font-bold text-on-surface">Delete Analytics Item</h3>
+                    <div className="w-full max-w-md bg-surface border border-border rounded-lg p-5 shadow-2xl space-y-4 animate-fade-in">
+                        <div className="flex items-center gap-2 text-rose-500 pb-2 border-b border-border">
+                            <Icon name="warning" size={18} />
+                            <h3 className="text-xs font-semibold text-foreground">Delete Analytics Item</h3>
                         </div>
 
                         <div className="space-y-2">
-                            <p className="text-on-surface-variant text-body-sm">
+                            <p className="text-muted-foreground text-xs">
                                 Are you sure you want to delete this statistic item? This action is permanent and cannot be undone.
                             </p>
                             {deletingItem && (
-                                <div className="p-3 bg-surface-container-low border border-outline-variant/25 rounded flex items-center gap-3">
-                                    <span className="bg-zinc-800 text-zinc-100 text-[10px] font-mono px-2 py-0.5 rounded">
+                                <div className="p-2.5 bg-muted/40 border border-border rounded-md flex items-center gap-2.5">
+                                    <span className="bg-muted text-foreground text-[10px] font-mono px-2 py-0.5 rounded border border-border">
                                         {deletingItem.metric}
                                     </span>
-                                    <span className="text-body-sm font-medium text-on-surface truncate break-all">
+                                    <span className="text-xs font-medium text-foreground truncate break-all">
                                         {deletingItem.label}
                                     </span>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex justify-end gap-3">
+                        <div className="flex justify-end gap-2 pt-2 border-t border-border">
                             <button 
                                 type="button" 
-                                className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction" 
+                                className="bg-surface border border-border text-foreground hover:bg-muted font-medium py-1.5 px-3 rounded-md text-xs transition-colors cursor-pointer" 
                                 onClick={() => {
                                     setIsDeleteModalOpen(false);
                                     setDeletingItem(null);
@@ -718,10 +715,10 @@ export default function WebAnalyticsTab() {
                             </button>
                             <button 
                                 type="button" 
-                                className="bg-error text-on-error hover:opacity-90 font-semibold py-2 px-4 rounded text-body-sm transition-all micro-interaction flex items-center gap-1.5"
+                                className="bg-rose-600 hover:bg-rose-700 text-white font-medium py-1.5 px-3 rounded-md text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                                 onClick={handleDeleteConfirm}
                             >
-                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                                <Icon name="delete" size={14} />
                                 <span>Delete Item</span>
                             </button>
                         </div>

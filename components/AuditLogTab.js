@@ -6,30 +6,46 @@ import { useDashboard } from './DashboardContext';
 export default function AuditLogTab() {
     const { auditLogData, userRole } = useDashboard();
     if (userRole !== 'Admin') {
-        return <div className="glass-panel rounded-xl p-10 text-center text-on-surface-variant">Only administrators can view the audit log.</div>;
+        return (
+            <div className="bg-surface border border-border rounded-lg p-10 text-center text-xs text-muted-foreground">
+                Only administrators can view the audit log.
+            </div>
+        );
     }
 
     return (
-        <section className="space-y-6 max-w-6xl mx-auto">
+        <section className="space-y-5 max-w-6xl mx-auto">
             <header>
-                <p className="text-body-sm text-primary font-semibold">Accountability</p>
-                <h2 className="text-headline-md font-bold text-on-surface">Audit Log</h2>
-                <p className="text-body-sm text-on-surface-variant mt-1">Recent task and security activity.</p>
+                <p className="text-xs font-mono font-medium text-primary uppercase tracking-wider">Accountability</p>
+                <h2 className="text-lg font-semibold text-foreground tracking-tight mt-0.5">Audit Log</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Recent task and security activity records.</p>
             </header>
-            <div className="glass-panel rounded-xl overflow-x-auto">
-                <table className="w-full text-left text-body-sm">
-                    <thead className="bg-surface-container-low text-[10px] uppercase tracking-wider text-on-surface-variant">
-                        <tr><th className="px-5 py-3">User</th><th className="px-5 py-3">Action</th><th className="px-5 py-3">Record</th><th className="px-5 py-3">Time</th></tr>
+            <div className="bg-surface border border-border rounded-lg overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                    <thead className="bg-muted/40 text-[10px] uppercase font-mono font-medium text-muted-foreground tracking-wider border-b border-border">
+                        <tr>
+                            <th className="px-4 py-2.5 font-medium">User</th>
+                            <th className="px-4 py-2.5 font-medium">Action</th>
+                            <th className="px-4 py-2.5 font-medium">Record</th>
+                            <th className="px-4 py-2.5 font-medium">Time</th>
+                        </tr>
                     </thead>
-                    <tbody className="divide-y divide-outline-variant/15">
+                    <tbody className="divide-y divide-border">
                         {(auditLogData || []).length === 0 ? (
-                            <tr><td colSpan="4" className="px-5 py-12 text-center text-on-surface-variant">No audit events recorded yet.</td></tr>
+                            <tr>
+                                <td colSpan="4" className="px-4 py-12 text-center text-muted-foreground">
+                                    No audit events recorded yet.
+                                </td>
+                            </tr>
                         ) : (auditLogData || []).map((event) => (
-                            <tr key={event.id} className="hover:bg-surface-container-low/60">
-                                <td className="px-5 py-4"><p className="font-semibold text-on-surface">{event.userName}</p><p className="text-[10px] text-on-surface-variant">{event.role}</p></td>
-                                <td className="px-5 py-4 capitalize text-on-surface">{event.action}</td>
-                                <td className="px-5 py-4 text-on-surface-variant">{event.entityType} {event.entityId}</td>
-                                <td className="px-5 py-4 text-on-surface-variant whitespace-nowrap">{new Date(Number(event.createdAt)).toLocaleString()}</td>
+                            <tr key={event.id} className="hover:bg-muted/30 transition-colors">
+                                <td className="px-4 py-3">
+                                    <p className="font-medium text-foreground">{event.userName}</p>
+                                    <p className="text-[10px] text-muted-foreground font-mono">{event.role}</p>
+                                </td>
+                                <td className="px-4 py-3 capitalize text-foreground font-medium">{event.action}</td>
+                                <td className="px-4 py-3 text-muted-foreground font-mono">{event.entityType} {event.entityId}</td>
+                                <td className="px-4 py-3 text-muted-foreground font-mono whitespace-nowrap">{new Date(Number(event.createdAt)).toLocaleString()}</td>
                             </tr>
                         ))}
                     </tbody>
