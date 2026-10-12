@@ -1,12 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { useDashboard } from './DashboardContext';
 import Icon from './Icon';
 
-export default function LockScreen({ sectionName = 'Socmed Apps' }) {
-    const { unlockWorkspace, getLockdownTimeRemaining, appSettingsData } = useDashboard();
+export default function LockScreen() {
+    const {
+        unlockWorkspace,
+        getLockdownTimeRemaining,
+        appSettingsData,
+        darkMode,
+        toggleDarkMode
+    } = useDashboard();
+
     const [email, setEmail] = useState('');
     const [nim, setNim] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
@@ -68,44 +74,46 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
     };
 
     const appTitle = appSettingsData?.app_full_name || appSettingsData?.app_name || 'GAT';
-    const appSubtitle = appSettingsData?.app_subtitle || 'Content Workspace';
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col lg:flex-row bg-background text-zinc-900 dark:text-zinc-100 overflow-hidden">
-            {/* Left Column: Form & dynamic brand */}
-            <div className="w-full lg:w-[460px] xl:w-[500px] shrink-0 h-full flex flex-col justify-between p-6 sm:p-10 lg:p-12 bg-surface border-r border-border overflow-y-auto z-20">
-                {/* Header brand */}
-                <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 flex items-center justify-center overflow-hidden rounded-lg p-1 bg-surface border border-border shrink-0">
-                            <img src="/apple-touch-icon.png" className="w-7 h-7 object-contain rounded" alt="Logo" />
-                        </div>
-                        <div className="min-w-0">
-                            <h1 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 truncate leading-tight">
-                                {appTitle}
-                            </h1>
-                            <p className="text-[10px] text-primary tracking-wider uppercase font-semibold font-mono truncate">
-                                {appSubtitle}
-                            </p>
-                        </div>
-                    </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background text-zinc-900 dark:text-zinc-100 overflow-y-auto relative selection:bg-orange-500/20">
+            {/* Soft Ambient Warmth Background Accents */}
+            <div
+                className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-orange-500/10 dark:bg-orange-500/5 blur-3xl"
+                aria-hidden="true"
+            />
+            <div
+                className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-orange-500/10 dark:bg-orange-500/5 blur-3xl"
+                aria-hidden="true"
+            />
 
-                    <div className="pt-2">
-                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider font-semibold bg-orange-500/10 text-orange-800 dark:text-orange-300 border border-orange-500/20 mb-2">
-                            <Icon name="lock" size={11} weight="bold" />
-                            <span>{sectionName} Lock</span>
-                        </div>
-                        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                            CC Internal Gate
-                        </h2>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                            Enter your credentials to access team workflows and publishing permissions.
-                        </p>
-                    </div>
+            {/* Subtle Corner Theme Toggle */}
+            <div className="absolute top-4 right-4 z-20">
+                <button
+                    type="button"
+                    onClick={toggleDarkMode}
+                    aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                    title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                    className="w-8 h-8 rounded-lg border border-border bg-surface hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center transition-colors cursor-pointer"
+                >
+                    <Icon name={darkMode ? 'light_mode' : 'dark_mode'} size={15} />
+                </button>
+            </div>
+
+            {/* Minimal Centered Card */}
+            <div className="w-full max-w-[380px] sm:max-w-[400px] rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-xs relative z-10 space-y-6">
+                {/* Heading */}
+                <div className="text-center space-y-1">
+                    <h2 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                        CC Internal Gate
+                    </h2>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400 font-mono">
+                        {appSettingsData?.company_name || 'Internal Content Team'}
+                    </p>
                 </div>
 
                 {/* Unlock Form */}
-                <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4 my-8">
+                <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
                     {/* Alerts */}
                     {lockdownTimeText && (
                         <div
@@ -178,7 +186,7 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                         />
                     </div>
 
-                    {/* Actions */}
+                    {/* Actions: Clear and Login buttons */}
                     <div className="flex gap-2.5 pt-2">
                         <button
                             type="button"
@@ -198,34 +206,9 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                 </form>
 
                 {/* Footer Brand */}
-                <div className="pt-4 border-t border-border flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 font-mono">
-                    <span>{appSettingsData?.company_name || 'Internal Content Team'}</span>
+                <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 font-mono">
+                    <span>{appTitle}</span>
                     <span>v0.1.0-alpha</span>
-                </div>
-            </div>
-
-            {/* Right Column: Editorial visual split (hidden on mobile) */}
-            <div className="hidden lg:flex flex-1 relative bg-zinc-950 overflow-hidden items-end p-12 z-10">
-                <Image
-                    src="/img/lock-editorial.jpg"
-                    alt="Editorial workspace"
-                    fill
-                    priority
-                    sizes="(min-width: 1024px) 60vw, 100vw"
-                    className="object-cover object-center"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 z-10" />
-
-                <div className="relative z-20 max-w-lg space-y-2 text-white">
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-orange-400 font-semibold">
-                        Content Operations &amp; Intelligence
-                    </p>
-                    <blockquote className="text-xl font-medium tracking-tight leading-snug text-white/95 text-pretty">
-                        &ldquo;Quiet craftsmanship and rigorous workflow coordination for modern digital media.&rdquo;
-                    </blockquote>
-                    <p className="text-xs text-white/60 font-mono pt-1">
-                        {appTitle} &middot; Editorial Platform
-                    </p>
                 </div>
             </div>
         </div>
