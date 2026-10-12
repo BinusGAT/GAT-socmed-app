@@ -22,6 +22,7 @@ import {
   recordLoginFailure,
 } from './security';
 import { readJsonBody, RequestValidationError, sanitizeUserAgent, validatePayload } from './request-validation';
+import { calculateRecurringDates } from '../../../../utils/helpers';
 
 const db = {
   execute: dbExecute,
@@ -96,12 +97,22 @@ async function syncGroupsByIds(ids) {
     const title = firstRow["Content Title"];
     const category = firstRow.Category;
     const assignedUserId = firstRow.AssignedUserId || '';
+    const seriesId = firstRow.series_id || '';
     const month = getIndonesianMonth(dateStr);
 
     batchQueries.push({
-      sql: `INSERT OR REPLACE INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month, AssignedUserId)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [id, dateStr, pic, title, category, isCompleted, month, assignedUserId]
+      sql: `INSERT INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month, AssignedUserId, series_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(ID) DO UPDATE SET
+              Date = excluded.Date,
+              PIC = excluded.PIC,
+              "Content Title" = excluded."Content Title",
+              Category = excluded.Category,
+              Status = excluded.Status,
+              Month = excluded.Month,
+              AssignedUserId = excluded.AssignedUserId,
+              series_id = COALESCE(NULLIF(excluded.series_id, ''), schedule.series_id)`,
+      args: [id, dateStr, pic, title, category, isCompleted, month, assignedUserId, seriesId]
     });
   }
 
@@ -184,7 +195,9 @@ export async function POST(request) {
           Category TEXT NOT NULL,
           Status INTEGER NOT NULL,
           Month TEXT NOT NULL,
-          AssignedUserId TEXT
+          AssignedUserId TEXT,
+          series_id TEXT,
+          recurrence_rule TEXT
         )`,
         `CREATE TABLE IF NOT EXISTS scripts (
           Title TEXT PRIMARY KEY,
@@ -225,7 +238,8 @@ export async function POST(request) {
           "KPI Summary" INTEGER DEFAULT 0,
           URL TEXT,
           "Comment Text" TEXT,
-          AssignedUserId TEXT
+          AssignedUserId TEXT,
+          series_id TEXT
         )`,
         `CREATE TABLE IF NOT EXISTS notifications (
           id TEXT PRIMARY KEY,
@@ -295,8 +309,11 @@ export async function POST(request) {
         'ALTER TABLE sessions ADD COLUMN lastSeenAt INTEGER',
         'ALTER TABLE sessions ADD COLUMN userAgent TEXT',
         'ALTER TABLE schedule ADD COLUMN AssignedUserId TEXT',
+        'ALTER TABLE schedule ADD COLUMN series_id TEXT',
+        'ALTER TABLE schedule ADD COLUMN recurrence_rule TEXT',
         "ALTER TABLE scripts ADD COLUMN Origin TEXT DEFAULT 'legacy'",
         'ALTER TABLE laporan ADD COLUMN AssignedUserId TEXT',
+        'ALTER TABLE laporan ADD COLUMN series_id TEXT',
         'ALTER TABLE notifications ADD COLUMN isUrgent INTEGER DEFAULT 0',
         'ALTER TABLE notifications ADD COLUMN targetUserId TEXT',
         'ALTER TABLE notifications ADD COLUMN type TEXT',
@@ -634,7 +651,7 @@ export async function POST(request) {
           db.execute('SELECT * FROM laporan'),
           db.execute(`SELECT schedule.ID, schedule.Date, schedule.PIC,
             schedule."Content Title", schedule.Category, schedule.Month,
-            schedule.AssignedUserId,
+            schedule.AssignedUserId, schedule.series_id, schedule.recurrence_rule,
             CASE WHEN EXISTS (
               SELECT 1 FROM laporan
               WHERE laporan.ID = schedule.ID
@@ -694,7 +711,7 @@ export async function POST(request) {
           db.execute("SELECT * FROM laporan"),
           db.execute(`SELECT schedule.ID, schedule.Date, schedule.PIC,
             schedule."Content Title", schedule.Category, schedule.Month,
-            schedule.AssignedUserId,
+            schedule.AssignedUserId, schedule.series_id, schedule.recurrence_rule,
             CASE WHEN EXISTS (
               SELECT 1 FROM laporan
               WHERE laporan.ID = schedule.ID
@@ -1151,6 +1168,8 @@ export async function POST(request) {
         const title = String(params.Content_Title || params['Content Title'] || '').trim() || 'Untitled';
         const category = params.Category || '';
         const assignedUserId = String(params.AssignedUserId || params.assignedUserId || '');
+        const recurrence = params.recurrence || null;
+        const applyToSeries = params.applyToSeries || 'single';
         let taskId = id;
         let previousAssignedUserId = '';
 
@@ -1175,6 +1194,133 @@ export async function POST(request) {
           return NextResponse.json({ success: false, error: 'Forbidden: creators cannot create scheduled tasks' }, { status: 403 });
         }
 
+        // 1. Recurrence Creation for new task series
+        const isRecurrenceRequested = !isExisting && recurrence && recurrence.frequency && recurrence.frequency !== 'none';
+        if (isRecurrenceRequested) {
+          const recurringDates = calculateRecurringDates(dateStr, recurrence);
+          if (recurringDates.length > 1) {
+            const seriesId = 'SR_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+            const recurrenceRule = JSON.stringify(recurrence);
+
+            const res = await db.execute("SELECT MAX(CAST(SUBSTR(ID, 3) AS INTEGER)) AS maxNum FROM schedule WHERE ID LIKE 'CT%'");
+            let currentMax = parseInt(res.rows[0]?.maxNum || 0, 10);
+
+            const allBatchQueries = [];
+            const createdIds = [];
+            const platforms = ['Instagram', 'TikTok', 'Youtube'];
+
+            for (const occDate of recurringDates) {
+              currentMax += 1;
+              const occId = 'CT' + currentMax;
+              createdIds.push(occId);
+              const occMonth = getIndonesianMonth(occDate);
+
+              for (const plat of platforms) {
+                allBatchQueries.push({
+                  sql: `INSERT INTO laporan (
+                    Date, ID, "Content Title", PIC, Category, Platform, 
+                    Views, "Account Reach", Likes, Comments, Follows, Repost, Shares, 
+                    "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text", AssignedUserId, series_id
+                  ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 3, 3, '', '', ?, ?)`,
+                  args: [occDate, occId, title, pic, category, plat, assignedUserId, seriesId]
+                });
+              }
+
+              allBatchQueries.push({
+                sql: `INSERT INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month, AssignedUserId, series_id, recurrence_rule)
+                      VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+                args: [occId, occDate, pic, title, category, occMonth, assignedUserId, seriesId, recurrenceRule]
+              });
+            }
+
+            if (title) {
+              const existingScript = await db.execute({
+                sql: "SELECT Title FROM scripts WHERE LOWER(Title) = LOWER(?)",
+                args: [title]
+              });
+              if (existingScript.rows.length === 0) {
+                allBatchQueries.push({
+                  sql: `INSERT INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption, Origin)
+                        VALUES (?, 'Scripting', ?, '', '', ?, '', '', 'auto')`,
+                  args: [
+                    title,
+                    category,
+                    category === 'Motion' ? '#motion #content' : (category === 'Story Telling' ? '#storytelling #content' : '#content')
+                  ]
+                });
+              }
+            }
+
+            await db.batch(allBatchQueries);
+
+            if (assignedUserId) {
+              await db.execute({
+                sql: `INSERT OR REPLACE INTO notifications
+                      (id, message, targetRole, isUrgent, createdAt, createdBy, targetUserId, type, taskId)
+                      VALUES (?, ?, 'Creator', 0, ?, ?, ?, 'assignment', ?)`,
+                args: [`assignment-${createdIds[0]}-${assignedUserId}`, `New recurring assignment: ${title} (${recurringDates.length} tasks)`, Date.now(), auth.userName || auth.role, assignedUserId, createdIds[0]]
+              });
+            }
+
+            await writeAudit(db, auth, 'created', 'task_series', seriesId, {
+              title, count: recurringDates.length, assignedUserId, assigneeName: pic, dates: recurringDates
+            });
+
+            result = {
+              success: true,
+              id: createdIds[0],
+              series_id: seriesId,
+              ids: createdIds,
+              count: recurringDates.length,
+              message: `Created ${recurringDates.length} recurring tasks in series`
+            };
+            break;
+          }
+        }
+
+        // 2. Series-wide update for existing task
+        if (isExisting && (applyToSeries === 'future' || applyToSeries === 'all')) {
+          if (auth.role !== 'Admin') {
+            return NextResponse.json({ success: false, error: 'Forbidden: only Admins can update an entire recurring series' }, { status: 403 });
+          }
+
+          const schedRes = await db.execute({
+            sql: `SELECT series_id, Date FROM schedule WHERE ID = ? LIMIT 1`,
+            args: [id]
+          });
+          const targetSeriesId = schedRes.rows[0]?.series_id;
+          const targetDate = schedRes.rows[0]?.Date || dateStr;
+
+          if (targetSeriesId) {
+            const isFuture = applyToSeries === 'future';
+            const filterClause = isFuture ? 'WHERE series_id = ? AND Date >= ?' : 'WHERE series_id = ?';
+            const filterArgs = isFuture ? [title, pic, category, assignedUserId, targetSeriesId, targetDate] : [title, pic, category, assignedUserId, targetSeriesId];
+
+            await db.batch([
+              {
+                sql: `UPDATE laporan SET "Content Title" = ?, PIC = ?, Category = ?, AssignedUserId = ? ${filterClause}`,
+                args: filterArgs
+              },
+              {
+                sql: `UPDATE schedule SET "Content Title" = ?, PIC = ?, Category = ?, AssignedUserId = ? ${filterClause}`,
+                args: filterArgs
+              }
+            ]);
+
+            if (title && oldTitle && oldTitle.trim().toLowerCase() !== title.trim().toLowerCase()) {
+              await db.execute({
+                sql: "UPDATE scripts SET Title = ? WHERE LOWER(Title) = LOWER(?)",
+                args: [title, oldTitle]
+              });
+            }
+
+            await writeAudit(db, auth, 'updated', 'task_series', targetSeriesId, { applyToSeries, title, pic, category });
+            result = { success: true, id, series_id: targetSeriesId, updatedSeries: true, message: 'Recurring series updated successfully' };
+            break;
+          }
+        }
+
+        // 3. Single task update or create
         if (isExisting) {
           if (auth.role === 'Creator') {
             const existingPic = String(existingRow?.PIC || '').trim().toLowerCase();
@@ -1259,8 +1405,8 @@ export async function POST(request) {
             sql: `INSERT INTO laporan (
               Date, ID, "Content Title", PIC, Category, Platform, 
               Views, "Account Reach", Likes, Comments, Follows, Repost, Shares, 
-              "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text", AssignedUserId
-            ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 3, 3, '', '', ?)`,
+              "Total Engagement", "Engagement Rate (%)", "KPI Score", "KPI Summary", URL, "Comment Text", AssignedUserId, series_id
+            ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 3, 3, '', '', ?, '')`,
             args: [dateStr, newId, title, pic, category, plat, assignedUserId]
           }));
           await db.batch(insertQueries);
@@ -1302,6 +1448,38 @@ export async function POST(request) {
 
       case 'delete_schedule': {
         const id = params.ID || params.id || '';
+        const scope = params.scope || 'single';
+
+        if (scope === 'future' || scope === 'all') {
+          const schedRes = await db.execute({
+            sql: `SELECT series_id, Date FROM schedule WHERE ID = ? LIMIT 1`,
+            args: [id]
+          });
+          const targetSeriesId = schedRes.rows[0]?.series_id;
+          const targetDate = schedRes.rows[0]?.Date;
+
+          if (targetSeriesId) {
+            const isFuture = scope === 'future';
+            const whereClause = isFuture ? 'series_id = ? AND Date >= ?' : 'series_id = ?';
+            const queryArgs = isFuture ? [targetSeriesId, targetDate] : [targetSeriesId];
+
+            await db.batch([
+              {
+                sql: `DELETE FROM laporan WHERE ID IN (SELECT ID FROM schedule WHERE ${whereClause})`,
+                args: queryArgs
+              },
+              {
+                sql: `DELETE FROM schedule WHERE ${whereClause}`,
+                args: queryArgs
+              }
+            ]);
+
+            await writeAudit(db, auth, 'deleted', 'task_series', targetSeriesId, { scope, targetDate });
+            result = { success: true, message: `Schedule series (${scope}) deleted successfully` };
+            break;
+          }
+        }
+
         await db.execute({
           sql: "DELETE FROM laporan WHERE ID = ?",
           args: [id]

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
@@ -59,6 +59,14 @@ export default function TaskListTab({ onOpenDatePicker }) {
     const [draftRecovered, setDraftRecovered] = useState(false);
     const handledTaskIdRef = React.useRef(null);
 
+    // Recurrence & Series State
+    const [isRecurring, setIsRecurring] = useState(false);
+    const [recurrenceFreq, setRecurrenceFreq] = useState('weekly');
+    const [recurrenceLimitType, setRecurrenceLimitType] = useState('count');
+    const [recurrenceCount, setRecurrenceCount] = useState(4);
+    const [recurrenceUntilDate, setRecurrenceUntilDate] = useState('');
+    const [seriesEditOption, setSeriesEditOption] = useState('single');
+
     // Delete confirmation state
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState(null);
@@ -92,7 +100,9 @@ export default function TaskListTab({ onOpenDatePicker }) {
                 category: task.Category,
                 status: isUploaded,
                 calculatedStatus: calculatedStatus,
-                assignedUserId: task.AssignedUserId || ''
+                assignedUserId: task.AssignedUserId || '',
+                series_id: task.series_id || '',
+                recurrence_rule: task.recurrence_rule || ''
             });
         });
         return list;
@@ -149,9 +159,25 @@ export default function TaskListTab({ onOpenDatePicker }) {
         setInitialFormState(state);
     };
 
+    const currentEditingTask = useMemo(() => {
+        if (!modalTaskId) return null;
+        return getTasks().find((task) => String(task.id) === String(modalTaskId)) || null;
+    }, [modalTaskId, scheduleData, currentData]);
+
+    const taskToDeleteItem = useMemo(() => {
+        if (!taskToDelete) return null;
+        return getTasks().find((task) => String(task.id) === String(taskToDelete)) || null;
+    }, [taskToDelete, scheduleData, currentData]);
+
     const openAddModal = () => {
         if (!isUnlocked || userRole === 'Viewer') return;
         setModalTaskId('');
+        setIsRecurring(false);
+        setRecurrenceFreq('weekly');
+        setRecurrenceLimitType('count');
+        setRecurrenceCount(4);
+        setRecurrenceUntilDate('');
+        setSeriesEditOption('single');
         const blankState = { title: '', date: getLocalDateInputValue(), pic: '', category: '', status: false };
         let nextState = blankState;
         let recovered = false;
@@ -173,6 +199,8 @@ export default function TaskListTab({ onOpenDatePicker }) {
         if (!isUnlocked || userRole === 'Viewer') return;
         if (userRole === 'Creator' && !isTaskAssignedToUser(task, userId, userName)) return;
         setModalTaskId(task.id);
+        setIsRecurring(false);
+        setSeriesEditOption('single');
         const nextState = {
             title: task.contentTitle,
             date: task.date || getLocalDateInputValue(),
@@ -273,6 +301,18 @@ export default function TaskListTab({ onOpenDatePicker }) {
             Status: modalStatus
         };
 
+        if (!modalTaskId && isRecurring) {
+            taskPayload.recurrence = {
+                frequency: recurrenceFreq,
+                limitType: recurrenceLimitType,
+                count: recurrenceCount,
+                untilDate: recurrenceUntilDate
+            };
+        } else if (modalTaskId && currentEditingTask?.series_id) {
+            taskPayload.series_id = currentEditingTask.series_id;
+            taskPayload.applyToSeries = seriesEditOption;
+        }
+
         const success = await saveCalendarTask(taskPayload);
         if (success) {
             if (!modalTaskId) localStorage.removeItem(taskDraftKey);
@@ -292,7 +332,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
         setIsDeleteConfirmOpen(true);
     };
 
-    const handleDeleteConfirm = () => {
+    const handleDeleteConfirm = (scope = 'single') => {
         if (!isUnlocked || userRole !== 'Admin') {
             showAlert('Permission denied. Only admins can delete tasks.', 'error');
             return;
@@ -302,7 +342,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
             const task = getTasks().find((item) => item.id === taskId);
             scheduleDelete({
                 label: task?.contentTitle || `Task ${taskId}`,
-                execute: () => deleteCalendarTask(taskId),
+                execute: () => deleteCalendarTask(taskId, scope),
             });
             setIsDeleteConfirmOpen(false);
             setTaskToDelete(null);
@@ -468,7 +508,12 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                         <tr key={task.id} className="hover:bg-surface-container/20 transition-colors">
                                             <td className="px-5 py-3.5 text-on-surface-variant/90 font-medium text-[13px]">{task.rawDate}</td>
                                             <td className="px-5 py-3.5 font-semibold text-on-surface max-w-[280px] truncate" title={task.contentTitle}>
-                                                {task.contentTitle}
+                                                <span className="inline-flex items-center gap-1.5 max-w-full truncate">
+                                                    {task.series_id && (
+                                                        <span className="material-symbols-outlined text-[14px] text-primary shrink-0" title="Recurring task series">repeat</span>
+                                                    )}
+                                                    <span className="truncate">{task.contentTitle}</span>
+                                                </span>
                                             </td>
                                             <td className="px-5 py-3.5">
                                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getPicBadgeClasses(task.pic)}`}>
@@ -614,6 +659,109 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                         </select>
                                     </div>
                                 </div>
+
+                                {!modalTaskId && userRole === 'Admin' && (
+                                    <div className="pt-2 border-t border-outline-variant/20 space-y-2.5">
+                                        <label className="flex items-center gap-2 text-body-sm font-semibold text-on-surface cursor-pointer select-none">
+                                            <input 
+                                                type="checkbox"
+                                                checked={isRecurring}
+                                                onChange={(e) => setIsRecurring(e.target.checked)}
+                                                className="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                                            />
+                                            <span className="flex items-center gap-1.5">
+                                                <span className="material-symbols-outlined text-[16px] text-primary">repeat</span>
+                                                Repeat schedule
+                                            </span>
+                                        </label>
+                                        {isRecurring && (
+                                            <div className="bg-surface-container-low/70 border border-outline-variant/30 rounded-lg p-3 space-y-3 animate-fade-in">
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Frequency</label>
+                                                        <select 
+                                                            value={recurrenceFreq}
+                                                            onChange={(e) => setRecurrenceFreq(e.target.value)}
+                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                        >
+                                                            <option value="daily">Daily</option>
+                                                            <option value="weekly">Weekly</option>
+                                                            <option value="biweekly">Bi-weekly</option>
+                                                            <option value="monthly">Monthly</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Ends</label>
+                                                        <select 
+                                                            value={recurrenceLimitType}
+                                                            onChange={(e) => setRecurrenceLimitType(e.target.value)}
+                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                        >
+                                                            <option value="count">After count</option>
+                                                            <option value="untilDate">On date</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                {recurrenceLimitType === 'count' ? (
+                                                    <div>
+                                                        <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Occurrences (2 – 12)</label>
+                                                        <input 
+                                                            type="number"
+                                                            min="2"
+                                                            max="12"
+                                                            value={recurrenceCount}
+                                                            onChange={(e) => setRecurrenceCount(Math.min(Math.max(Number(e.target.value) || 2, 2), 12))}
+                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2.5 py-1 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Until date (max 6 months)</label>
+                                                        <input 
+                                                            type="date"
+                                                            value={recurrenceUntilDate}
+                                                            onChange={(e) => setRecurrenceUntilDate(e.target.value)}
+                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2.5 py-1 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {modalTaskId && currentEditingTask?.series_id && userRole === 'Admin' && (
+                                    <div className="pt-2 border-t border-outline-variant/20 space-y-2">
+                                        <label className="text-body-sm font-semibold text-primary flex items-center gap-1.5">
+                                            <span className="material-symbols-outlined text-[15px]">repeat</span>
+                                            Recurring Series Options
+                                        </label>
+                                        <div className="bg-surface-container-low/70 border border-outline-variant/30 rounded-lg p-2.5 space-y-1.5 text-xs">
+                                            <label className="flex items-center gap-2 cursor-pointer text-on-surface">
+                                                <input 
+                                                    type="radio"
+                                                    name="seriesEditOption"
+                                                    value="single"
+                                                    checked={seriesEditOption === 'single'}
+                                                    onChange={() => setSeriesEditOption('single')}
+                                                    className="text-primary focus:ring-primary"
+                                                />
+                                                <span>Update only this task</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer text-on-surface">
+                                                <input 
+                                                    type="radio"
+                                                    name="seriesEditOption"
+                                                    value="future"
+                                                    checked={seriesEditOption === 'future'}
+                                                    onChange={() => setSeriesEditOption('future')}
+                                                    className="text-primary focus:ring-primary"
+                                                />
+                                                <span>Update this and all future tasks in series</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div className="px-5 py-4 border-t border-outline-variant/20 flex justify-end gap-3 bg-surface-container-lowest">
                                 <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded-lg text-body-sm transition-colors cursor-pointer" onClick={closeEditor}>Cancel</button>
@@ -636,6 +784,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                 }} 
                 onConfirm={handleDeleteConfirm} 
                 isPending={isMutating}
+                seriesOptions={{ isSeries: Boolean(taskToDeleteItem?.series_id) }}
                 title="Delete scheduled task?"
                 message={`Are you sure you want to remove task ID: ${taskToDelete}?`}
             />

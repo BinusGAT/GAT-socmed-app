@@ -1,7 +1,7 @@
 'use client';
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from './DashboardContext';
 import LockScreen from './LockScreen';
@@ -16,7 +16,8 @@ import {
     formatDisplayDate,
     resolveMemberName,
     formatDate,
-    getPicBadgeClasses
+    getPicBadgeClasses,
+    calculateRecurringDates
 } from '../utils/helpers';
 import { isTaskAssignedToUser } from '../utils/rolePermissions';
 
@@ -64,9 +65,19 @@ export default function CalendarTab({ onOpenExport }) {
     const [formTitle, setFormTitle] = useState('');
     const [taskToDelete, setTaskToDelete] = useState(null);
 
-    // Drag and Drop, Popover & Link Modal States
+    // Recurrence & Series State
+    const [isRecurring, setIsRecurring] = useState(false);
+    const [recurrenceFreq, setRecurrenceFreq] = useState('weekly');
+    const [recurrenceLimitType, setRecurrenceLimitType] = useState('count');
+    const [recurrenceCount, setRecurrenceCount] = useState(4);
+    const [recurrenceUntilDate, setRecurrenceUntilDate] = useState('');
+    const [seriesEditOption, setSeriesEditOption] = useState('single');
+
+    // Drag and Drop, Quick Reschedule, Popover & Link Modal States
     const [dragOverDate, setDragOverDate] = useState(null);
     const [draggingTaskId, setDraggingTaskId] = useState(null);
+    const [quickRescheduleTaskId, setQuickRescheduleTaskId] = useState(null);
+    const [quickRescheduleCustomDate, setQuickRescheduleCustomDate] = useState('');
     const [activePopoverDate, setActivePopoverDate] = useState(null);
     const [linksModalTask, setLinksModalTask] = useState(null);
 
@@ -95,7 +106,9 @@ export default function CalendarTab({ onOpenExport }) {
                         ...task,
                         Status: isUploaded
                     }),
-                    assignedUserId: task.AssignedUserId || ''
+                    assignedUserId: task.AssignedUserId || '',
+                    series_id: task.series_id || '',
+                    recurrence_rule: task.recurrence_rule || ''
                 });
             }
         });
@@ -166,6 +179,29 @@ export default function CalendarTab({ onOpenExport }) {
         return count;
     };
 
+    // Category counts for interactive pill bar (filtered by PIC if selected)
+    const categoryCounts = useMemo(() => {
+        const counts = { total: 0 };
+        (scheduleData || []).forEach(task => {
+            if (!task.Date || !task.PIC || !task.Category) return;
+            if (tasklistFilterPic && normalizePicName(resolveMemberName(task.PIC, memberListData)) !== normalizePicName(tasklistFilterPic)) {
+                return;
+            }
+            counts.total = (counts.total || 0) + 1;
+            const cat = task.Category;
+            counts[cat] = (counts[cat] || 0) + 1;
+        });
+        if (!tasklistFilterPic) {
+            (meetingsData || []).forEach(m => {
+                if (m.date || m.Date) {
+                    counts.total = (counts.total || 0) + 1;
+                    counts['Recap'] = (counts['Recap'] || 0) + 1;
+                }
+            });
+        }
+        return counts;
+    }, [scheduleData, meetingsData, tasklistFilterPic, memberListData]);
+
     // Calendar Navigation Helpers
     const shiftMonth = (offset) => {
         setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1));
@@ -228,6 +264,11 @@ export default function CalendarTab({ onOpenExport }) {
     });
 
     // Edit/Delete handlers
+    const currentEditingTask = useMemo(() => {
+        if (!editingTaskId) return null;
+        return scheduleData.find(t => String(t.ID) === String(editingTaskId)) || null;
+    }, [editingTaskId, scheduleData]);
+
     const startEditTask = (task) => {
         if (!isUnlocked) return;
         if (userRole === 'Creator' && !isTaskAssignedToUser(task, userId, userName)) return;
@@ -235,6 +276,8 @@ export default function CalendarTab({ onOpenExport }) {
         setFormPic(normalizePicName(resolveMemberName(task.pic, memberListData)));
         setFormCategory(task.category);
         setFormTitle(task.contentTitle || '');
+        setSeriesEditOption('single');
+        setIsRecurring(false);
     };
 
     useEffect(() => {
@@ -258,6 +301,12 @@ export default function CalendarTab({ onOpenExport }) {
         setFormPic('');
         setFormCategory('');
         setFormTitle('');
+        setIsRecurring(false);
+        setRecurrenceFreq('weekly');
+        setRecurrenceLimitType('count');
+        setRecurrenceCount(4);
+        setRecurrenceUntilDate('');
+        setSeriesEditOption('single');
     };
 
     const handleFormSubmit = async (e) => {
@@ -274,7 +323,7 @@ export default function CalendarTab({ onOpenExport }) {
         }
 
         let taskID = editingTaskId;
-        if (!taskID) {
+        if (!taskID && !isRecurring) {
             let maxId = 0;
             scheduleData.forEach(t => {
                 if (String(t.ID).startsWith('CT')) {
@@ -296,6 +345,18 @@ export default function CalendarTab({ onOpenExport }) {
             Status: false // Initially false (On Progress)
         };
 
+        if (!editingTaskId && isRecurring) {
+            taskPayload.recurrence = {
+                frequency: recurrenceFreq,
+                limitType: recurrenceLimitType,
+                count: recurrenceCount,
+                untilDate: recurrenceUntilDate
+            };
+        } else if (editingTaskId && currentEditingTask?.series_id) {
+            taskPayload.series_id = currentEditingTask.series_id;
+            taskPayload.applyToSeries = seriesEditOption;
+        }
+
         const success = await saveCalendarTask(taskPayload);
         if (success) {
             resetForm();
@@ -303,7 +364,13 @@ export default function CalendarTab({ onOpenExport }) {
     };
 
     const handleDeleteTask = (task) => {
-        setTaskToDelete(task);
+        const fullTask = scheduleData.find(t => String(t.ID) === String(task.id));
+        setTaskToDelete({
+            id: task.id,
+            title: task.contentTitle || task.title || fullTask?.['Content Title'] || 'Untitled',
+            series_id: task.series_id || fullTask?.series_id || null,
+            date: task.date || fullTask?.Date || ''
+        });
     };
 
     const formDisabled = !isUnlocked;
@@ -372,6 +439,67 @@ export default function CalendarTab({ onOpenExport }) {
                         </select>
                     </div>
                 </div>
+            </div>
+
+            {/* Interactive Category Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar" role="region" aria-label="Category Filters">
+                <button
+                    type="button"
+                    onClick={() => setTasklistFilterCategory('')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border cursor-pointer ${
+                        !tasklistFilterCategory
+                            ? 'bg-primary text-on-primary border-primary shadow-xs'
+                            : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-outline-variant/30'
+                    }`}
+                >
+                    <span>All</span>
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${
+                        !tasklistFilterCategory ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                    }`}>
+                        {categoryCounts.total || 0}
+                    </span>
+                </button>
+                {categoriesData.map(cat => {
+                    const count = categoryCounts[cat.name] || 0;
+                    const isActive = tasklistFilterCategory === cat.name;
+                    return (
+                        <button
+                            key={cat.name}
+                            type="button"
+                            onClick={() => setTasklistFilterCategory(isActive ? '' : cat.name)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border cursor-pointer ${
+                                isActive
+                                    ? 'bg-primary text-on-primary border-primary shadow-xs'
+                                    : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-outline-variant/30'
+                            }`}
+                        >
+                            <span>{cat.name}</span>
+                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${
+                                isActive ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                            }`}>
+                                {count}
+                            </span>
+                        </button>
+                    );
+                })}
+                {(categoryCounts['Recap'] > 0 || tasklistFilterCategory === 'Recap') && (
+                    <button
+                        type="button"
+                        onClick={() => setTasklistFilterCategory(tasklistFilterCategory === 'Recap' ? '' : 'Recap')}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border cursor-pointer ${
+                            tasklistFilterCategory === 'Recap'
+                                ? 'bg-primary text-on-primary border-primary shadow-xs'
+                                : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-outline-variant/30'
+                        }`}
+                    >
+                        <span>Recap</span>
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${
+                            tasklistFilterCategory === 'Recap' ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                        }`}>
+                            {categoryCounts['Recap'] || 0}
+                        </span>
+                    </button>
+                )}
             </div>
 
             {/* Calendar & Form Editor Grid */}
@@ -609,7 +737,12 @@ export default function CalendarTab({ onOpenExport }) {
                                                         <span className="material-symbols-outlined text-[10px]">handshake</span> Meeting
                                                     </span>
                                                 ) : (
-                                                    <span className="calendar-day-task-pill">{getPicDisplayName(task.pic)}: {task.category}</span>
+                                                    <span className="calendar-day-task-pill flex items-center gap-1 overflow-hidden">
+                                                        {task.series_id && (
+                                                            <span className="material-symbols-outlined text-[10.5px] shrink-0" title="Recurring task series">repeat</span>
+                                                        )}
+                                                        <span className="truncate">{getPicDisplayName(task.pic)}: {task.category}</span>
+                                                    </span>
                                                 )}
                                             </div>
                                         ))}
@@ -679,16 +812,19 @@ export default function CalendarTab({ onOpenExport }) {
                                     return (
                                         <div 
                                              key={task.id} 
-                                             className={`flex items-center justify-between bg-surface-container-low border border-outline-variant/15 rounded p-3 text-body-sm gap-2 ${
+                                             className={`bg-surface-container-low border border-outline-variant/15 rounded p-3 text-body-sm ${
                                                  task.isMeeting ? 'cursor-pointer hover:border-primary/45 transition-all' : ''
                                              }`}
-                                             onClick={() => {
-                                                 if (task.isMeeting) {
-                                                     setSelectedMeetingId(task.id);
-                                                     setCurrentView('meeting');
-                                                 }
-                                             }}
                                         >
+                                            <div 
+                                                className="flex items-center justify-between gap-2"
+                                                onClick={() => {
+                                                    if (task.isMeeting) {
+                                                        setSelectedMeetingId(task.id);
+                                                        setCurrentView('meeting');
+                                                    }
+                                                }}
+                                            >
                                             <div className="flex-1 min-w-0 space-y-1">
                                                 <div className="flex items-center gap-1.5 flex-wrap">
                                                     {task.isMeeting ? (
@@ -704,8 +840,11 @@ export default function CalendarTab({ onOpenExport }) {
                                                         </>
                                                     )}
                                                 </div>
-                                                <p className="text-[12px] text-on-surface-variant/90 font-medium line-clamp-2 sm:line-clamp-1" title={task.contentTitle || 'Untitled'}>
-                                                    {task.isMeeting ? 'Meeting Agenda & Recap Details' : (task.contentTitle || 'Untitled')}
+                                                <p className="text-[12px] text-on-surface-variant/90 font-medium line-clamp-2 sm:line-clamp-1 flex items-center gap-1" title={task.contentTitle || 'Untitled'}>
+                                                    {task.series_id && (
+                                                        <span className="material-symbols-outlined text-[13px] text-primary shrink-0" title="Recurring task series">repeat</span>
+                                                    )}
+                                                    <span>{task.isMeeting ? 'Meeting Agenda & Recap Details' : (task.contentTitle || 'Untitled')}</span>
                                                 </p>
                                                 {!task.isMeeting && (
                                                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -742,6 +881,25 @@ export default function CalendarTab({ onOpenExport }) {
                                             ) : (
                                                 (!formDisabled || userRole === 'Creator') && (userRole !== 'Creator' || isTaskAssignedToUser(task, userId, userName)) && (
                                                     <div className="flex items-center gap-1">
+                                                        {userRole === 'Admin' && (
+                                                            <button 
+                                                                type="button" 
+                                                                className={`w-7 h-7 flex items-center justify-center bg-surface-container border border-outline-variant/30 rounded cursor-pointer transition-colors ${
+                                                                    quickRescheduleTaskId === task.id ? 'text-primary border-primary bg-primary/10' : 'text-on-surface-variant hover:text-primary hover:border-primary'
+                                                                }`}
+                                                                onClick={() => {
+                                                                    if (quickRescheduleTaskId === task.id) {
+                                                                        setQuickRescheduleTaskId(null);
+                                                                    } else {
+                                                                        setQuickRescheduleTaskId(task.id);
+                                                                        setQuickRescheduleCustomDate(task.date || selectedDate || getLocalDateInputValue());
+                                                                    }
+                                                                }}
+                                                                title="Quick reschedule"
+                                                            >
+                                                                <span className="material-symbols-outlined text-[15px]">event_repeat</span>
+                                                            </button>
+                                                        )}
                                                         <button 
                                                             type="button" 
                                                             className="w-7 h-7 flex items-center justify-center bg-surface-container border border-outline-variant/30 rounded text-on-surface-variant hover:text-primary hover:border-primary cursor-pointer transition-colors"
@@ -754,7 +912,7 @@ export default function CalendarTab({ onOpenExport }) {
                                                             <button 
                                                                 type="button" 
                                                                 className="w-7 h-7 flex items-center justify-center bg-surface-container border border-outline-variant/30 rounded text-on-surface-variant hover:text-error hover:border-error cursor-pointer transition-colors"
-                                                                onClick={() => handleDeleteTask({ id: task.id, title: task.contentTitle })}
+                                                                onClick={() => handleDeleteTask({ id: task.id, title: task.contentTitle, series_id: task.series_id, date: task.date })}
                                                                 title="Delete task from schedule"
                                                             >
                                                                 <span className="material-symbols-outlined text-[15px]">delete</span>
@@ -764,8 +922,77 @@ export default function CalendarTab({ onOpenExport }) {
                                                 )
                                             )}
                                         </div>
-                                    );
-                                })
+                                        {quickRescheduleTaskId === task.id && (
+                                            <div className="mt-2.5 pt-2.5 border-t border-outline-variant/20 space-y-2">
+                                                <div className="flex items-center justify-between text-[11px] font-bold text-on-surface">
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="material-symbols-outlined text-[13px] text-primary">schedule</span> Quick Reschedule
+                                                    </span>
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setQuickRescheduleTaskId(null)}
+                                                        className="text-on-surface-variant hover:text-on-surface p-0.5"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[13px]">close</span>
+                                                    </button>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <button
+                                                        type="button"
+                                                        className="px-2 py-1 text-[11px] font-semibold bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 rounded text-on-surface transition-colors cursor-pointer"
+                                                        onClick={async () => {
+                                                            const baseDate = new Date(`${task.date}T00:00:00`);
+                                                            baseDate.setDate(baseDate.getDate() + 1);
+                                                            const y = baseDate.getFullYear();
+                                                            const m = String(baseDate.getMonth() + 1).padStart(2, '0');
+                                                            const d = String(baseDate.getDate()).padStart(2, '0');
+                                                            await rescheduleCalendarTask(task.id, `${y}-${m}-${d}`);
+                                                            setQuickRescheduleTaskId(null);
+                                                        }}
+                                                    >
+                                                        +1 Day
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="px-2 py-1 text-[11px] font-semibold bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 rounded text-on-surface transition-colors cursor-pointer"
+                                                        onClick={async () => {
+                                                            const baseDate = new Date(`${task.date}T00:00:00`);
+                                                            baseDate.setDate(baseDate.getDate() + 7);
+                                                            const y = baseDate.getFullYear();
+                                                            const m = String(baseDate.getMonth() + 1).padStart(2, '0');
+                                                            const d = String(baseDate.getDate()).padStart(2, '0');
+                                                            await rescheduleCalendarTask(task.id, `${y}-${m}-${d}`);
+                                                            setQuickRescheduleTaskId(null);
+                                                        }}
+                                                    >
+                                                        +1 Week
+                                                    </button>
+                                                    <div className="flex items-center gap-1 flex-1 min-w-[140px]">
+                                                        <input 
+                                                            type="date"
+                                                            value={quickRescheduleCustomDate}
+                                                            onChange={(e) => setQuickRescheduleCustomDate(e.target.value)}
+                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2 py-1 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className="px-2.5 py-1 text-[11px] font-semibold bg-primary text-on-primary hover:opacity-90 rounded transition-opacity cursor-pointer whitespace-nowrap"
+                                                            onClick={async () => {
+                                                                if (quickRescheduleCustomDate) {
+                                                                    await rescheduleCalendarTask(task.id, quickRescheduleCustomDate);
+                                                                    setQuickRescheduleTaskId(null);
+                                                                }
+                                                            }}
+                                                        >
+                                                            Move
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })
                             )}
                         </div>
                     </div>
@@ -833,6 +1060,109 @@ export default function CalendarTab({ onOpenExport }) {
                                     />
                                 </div>
 
+                                {!editingTaskId && userRole === 'Admin' && (
+                                    <div className="pt-2 border-t border-outline-variant/20 space-y-2.5">
+                                        <label className="flex items-center gap-2 text-body-sm font-semibold text-on-surface cursor-pointer select-none">
+                                            <input 
+                                                type="checkbox"
+                                                checked={isRecurring}
+                                                onChange={(e) => setIsRecurring(e.target.checked)}
+                                                className="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                                            />
+                                            <span className="flex items-center gap-1.5">
+                                                <span className="material-symbols-outlined text-[16px] text-primary">repeat</span>
+                                                Repeat schedule
+                                            </span>
+                                        </label>
+                                        {isRecurring && (
+                                            <div className="bg-surface-container-low/70 border border-outline-variant/30 rounded-lg p-3 space-y-3 animate-fade-in">
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Frequency</label>
+                                                        <select 
+                                                            value={recurrenceFreq}
+                                                            onChange={(e) => setRecurrenceFreq(e.target.value)}
+                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                        >
+                                                            <option value="daily">Daily</option>
+                                                            <option value="weekly">Weekly</option>
+                                                            <option value="biweekly">Bi-weekly</option>
+                                                            <option value="monthly">Monthly</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Ends</label>
+                                                        <select 
+                                                            value={recurrenceLimitType}
+                                                            onChange={(e) => setRecurrenceLimitType(e.target.value)}
+                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                        >
+                                                            <option value="count">After count</option>
+                                                            <option value="untilDate">On date</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                {recurrenceLimitType === 'count' ? (
+                                                    <div>
+                                                        <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Occurrences (2 – 12)</label>
+                                                        <input 
+                                                            type="number"
+                                                            min="2"
+                                                            max="12"
+                                                            value={recurrenceCount}
+                                                            onChange={(e) => setRecurrenceCount(Math.min(Math.max(Number(e.target.value) || 2, 2), 12))}
+                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2.5 py-1 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">Until date (max 6 months)</label>
+                                                        <input 
+                                                            type="date"
+                                                            value={recurrenceUntilDate}
+                                                            onChange={(e) => setRecurrenceUntilDate(e.target.value)}
+                                                            className="w-full bg-surface-container border border-outline-variant/30 rounded px-2.5 py-1 text-xs text-on-surface focus:outline-none focus:border-primary"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {editingTaskId && currentEditingTask?.series_id && userRole === 'Admin' && (
+                                    <div className="pt-2 border-t border-outline-variant/20 space-y-2">
+                                        <label className="text-body-sm font-semibold text-primary flex items-center gap-1.5">
+                                            <span className="material-symbols-outlined text-[15px]">repeat</span>
+                                            Recurring Series Options
+                                        </label>
+                                        <div className="bg-surface-container-low/70 border border-outline-variant/30 rounded-lg p-2.5 space-y-1.5 text-xs">
+                                            <label className="flex items-center gap-2 cursor-pointer text-on-surface">
+                                                <input 
+                                                    type="radio"
+                                                    name="seriesEditOption"
+                                                    value="single"
+                                                    checked={seriesEditOption === 'single'}
+                                                    onChange={() => setSeriesEditOption('single')}
+                                                    className="text-primary focus:ring-primary"
+                                                />
+                                                <span>Update only this task</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer text-on-surface">
+                                                <input 
+                                                    type="radio"
+                                                    name="seriesEditOption"
+                                                    value="future"
+                                                    checked={seriesEditOption === 'future'}
+                                                    onChange={() => setSeriesEditOption('future')}
+                                                    className="text-primary focus:ring-primary"
+                                                />
+                                                <span>Update this and all future tasks in series</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="flex gap-2 pt-2">
                                     <button type="submit" disabled={isMutating} aria-busy={isMutating ? 'true' : 'false'} className="flex-1 bg-primary text-on-primary hover:opacity-90 font-semibold py-2 px-3 rounded text-body-sm transition-opacity flex items-center justify-center gap-1.5 cursor-pointer micro-interaction disabled:cursor-wait disabled:opacity-70">
                                         <span className={`material-symbols-outlined text-[16px] ${isMutating ? 'animate-spin' : ''}`}>{isMutating ? 'progress_activity' : 'save'}</span>
@@ -842,7 +1172,7 @@ export default function CalendarTab({ onOpenExport }) {
                                         <button 
                                             type="button" 
                                             className="bg-error-container/20 text-error border border-error/25 hover:bg-error-container/30 font-semibold py-2 px-3 rounded text-body-sm transition-colors cursor-pointer flex items-center justify-center gap-1 micro-interaction" 
-                                            onClick={() => handleDeleteTask({ id: editingTaskId, title: formTitle })}
+                                            onClick={() => handleDeleteTask({ id: editingTaskId, title: formTitle, series_id: currentEditingTask?.series_id, date: currentEditingTask?.Date })}
                                         >
                                             <span className="material-symbols-outlined text-[16px]">delete</span> Delete
                                         </button>
@@ -860,7 +1190,7 @@ export default function CalendarTab({ onOpenExport }) {
             {/* Custom Modal Confirmation for calendar task deletion */}
             {taskToDelete && typeof window !== 'undefined' && createPortal(
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-background/60 backdrop-blur-xs px-4">
-                    <div className="bg-surface-container border border-outline-variant/30 rounded-xl max-w-sm w-full overflow-hidden shadow-2xl animate-scale-up">
+                    <div className="bg-surface-container border border-outline-variant/30 rounded-xl max-w-md w-full overflow-hidden shadow-2xl animate-scale-up">
                         <div className="px-5 py-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
                             <h2 className="text-body-md font-bold text-error flex items-center gap-2">
                                 <span className="material-symbols-outlined">warning</span> Confirm Delete
@@ -869,26 +1199,74 @@ export default function CalendarTab({ onOpenExport }) {
                                 <span className="material-symbols-outlined text-[20px]">close</span>
                             </button>
                         </div>
-                        <div className="px-5 py-4 text-body-sm text-on-surface-variant leading-relaxed">
-                            Are you sure you want to delete the task <strong className="text-on-surface">"{taskToDelete.title}"</strong> from the master schedule? This will also remove its associated platform rows in the Laporan database.
+                        <div className="px-5 py-4 text-body-sm text-on-surface-variant leading-relaxed space-y-2">
+                            <p>
+                                Are you sure you want to delete <strong className="text-on-surface">"{taskToDelete.title}"</strong> from the master schedule?
+                            </p>
+                            {taskToDelete.series_id && (
+                                <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-xs text-on-surface space-y-1">
+                                    <p className="font-bold flex items-center gap-1 text-primary">
+                                        <span className="material-symbols-outlined text-[15px]">repeat</span> This task is part of a recurring series.
+                                    </p>
+                                    <p className="text-on-surface-variant">Choose how you want to apply this deletion:</p>
+                                </div>
+                            )}
                         </div>
-                        <div className="px-5 py-4 border-t border-outline-variant/20 flex justify-end gap-3 bg-surface-container-lowest">
-                            <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-4 rounded-lg text-body-sm transition-colors cursor-pointer" onClick={() => setTaskToDelete(null)}>
+                        <div className="px-5 py-4 border-t border-outline-variant/20 flex flex-col sm:flex-row justify-end gap-2 bg-surface-container-lowest">
+                            <button type="button" className="bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-semibold py-2 px-3 rounded-lg text-body-sm transition-colors cursor-pointer" onClick={() => setTaskToDelete(null)}>
                                 Cancel
                             </button>
-                            <button 
-                                type="button" 
-                                className="bg-error text-on-error hover:opacity-90 font-semibold py-2 px-4 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center gap-1.5" 
-                                onClick={async () => {
-                                    const success = await deleteCalendarTask(taskToDelete.id);
-                                    if (success) {
-                                        resetForm();
-                                    }
-                                    setTaskToDelete(null);
-                                }}
-                            >
-                                <span className="material-symbols-outlined text-[18px]">delete</span> Delete Task
-                            </button>
+                            {taskToDelete.series_id ? (
+                                <>
+                                    <button 
+                                        type="button" 
+                                        className="bg-error/20 hover:bg-error/30 text-error border border-error/30 font-semibold py-2 px-3 rounded-lg text-body-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
+                                        onClick={async () => {
+                                            const success = await deleteCalendarTask(taskToDelete.id, 'single');
+                                            if (success) resetForm();
+                                            setTaskToDelete(null);
+                                        }}
+                                    >
+                                        This task only
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        className="bg-error/85 hover:bg-error text-on-error font-semibold py-2 px-3 rounded-lg text-body-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
+                                        onClick={async () => {
+                                            const success = await deleteCalendarTask(taskToDelete.id, 'future');
+                                            if (success) resetForm();
+                                            setTaskToDelete(null);
+                                        }}
+                                    >
+                                        This &amp; future tasks
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        className="bg-error text-on-error hover:opacity-90 font-semibold py-2 px-3 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center justify-center gap-1"
+                                        onClick={async () => {
+                                            const success = await deleteCalendarTask(taskToDelete.id, 'all');
+                                            if (success) resetForm();
+                                            setTaskToDelete(null);
+                                        }}
+                                    >
+                                        Entire series
+                                    </button>
+                                </>
+                            ) : (
+                                <button 
+                                    type="button" 
+                                    className="bg-error text-on-error hover:opacity-90 font-semibold py-2 px-4 rounded-lg text-body-sm transition-opacity cursor-pointer flex items-center gap-1.5" 
+                                    onClick={async () => {
+                                        const success = await deleteCalendarTask(taskToDelete.id, 'single');
+                                        if (success) {
+                                            resetForm();
+                                        }
+                                        setTaskToDelete(null);
+                                    }}
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">delete</span> Delete Task
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>,

@@ -7,7 +7,8 @@ import {
     normalizePicName, 
     getLocalDateInputValue, 
     parseDate,
-    getContentGroupKey
+    getContentGroupKey,
+    calculateRecurringDates
 } from '../utils/helpers';
 
 const DashboardContext = createContext();
@@ -887,6 +888,103 @@ export function DashboardProvider({ children }) {
             AssignedUserId: task.AssignedUserId || task.assignedUserId || assignedIntern?.id || ''
         };
 
+        const recurrence = payload.recurrence;
+        const isNewRecurrence = !payload.ID && recurrence && recurrence.frequency && recurrence.frequency !== 'none';
+        const applyToSeries = payload.applyToSeries || 'single';
+
+        if (isNewRecurrence) {
+            const recurringDates = calculateRecurringDates(payload.Date, recurrence);
+            const tempSeriesId = `temp_series_${Date.now()}`;
+            const tempTasks = recurringDates.map((date, index) => ({
+                ID: `CT_TEMP_${Date.now()}_${index}`,
+                Date: date,
+                PIC: payload.PIC || payload.pic || '',
+                Category: payload.Category || payload.category || '',
+                'Content Title': payload['Content Title'] || payload.contentTitle || '',
+                Status: false,
+                AssignedUserId: payload.AssignedUserId || '',
+                series_id: tempSeriesId,
+                recurrence_rule: JSON.stringify(recurrence)
+            }));
+
+            setScheduleData(prev => [...tempTasks, ...prev]);
+            showAlert(`💾 Scheduled ${tempTasks.length} recurring tasks!`, 'success');
+
+            (async () => {
+                try {
+                    const result = await callSheetsAPI('save_schedule', payload);
+                    if (!result || !result.success) {
+                        throw new Error(result?.error || 'Failed to save recurring tasks');
+                    }
+                    await loadFromGoogleSheets(true);
+                } catch (error) {
+                    setScheduleData(prevSchedule);
+                    setCurrentData(prevCurrentData);
+                    showAlert(`❌ Failed to save recurring tasks: ${error.message}`, 'error');
+                }
+            })();
+
+            return true;
+        }
+
+        if (applyToSeries === 'future' || applyToSeries === 'all') {
+            const currentTask = scheduleData.find(t => String(t.ID) === String(payload.ID));
+            const targetSeriesId = currentTask?.series_id;
+            const targetDate = currentTask?.Date || payload.Date;
+
+            if (targetSeriesId) {
+                setScheduleData(prev => prev.map(t => {
+                    const matches = applyToSeries === 'future'
+                        ? (t.series_id === targetSeriesId && t.Date >= targetDate)
+                        : (t.series_id === targetSeriesId);
+                    if (matches) {
+                        return {
+                            ...t,
+                            PIC: payload.PIC || payload.pic || t.PIC,
+                            Category: payload.Category || payload.category || t.Category,
+                            'Content Title': payload['Content Title'] || payload.contentTitle || t['Content Title'],
+                            AssignedUserId: payload.AssignedUserId || t.AssignedUserId
+                        };
+                    }
+                    return t;
+                }));
+
+                setCurrentData(prev => prev.map(row => {
+                    const matches = applyToSeries === 'future'
+                        ? (row.series_id === targetSeriesId && row.Date >= targetDate)
+                        : (row.series_id === targetSeriesId);
+                    if (matches) {
+                        return {
+                            ...row,
+                            PIC: payload.PIC || payload.pic || row.PIC,
+                            Category: payload.Category || payload.category || row.Category,
+                            'Content Title': payload['Content Title'] || payload.contentTitle || row['Content Title'],
+                            AssignedUserId: payload.AssignedUserId || row.AssignedUserId
+                        };
+                    }
+                    return row;
+                }));
+
+                showAlert('💾 Recurring series updated!', 'success');
+
+                (async () => {
+                    try {
+                        const result = await callSheetsAPI('save_schedule', payload);
+                        if (!result || !result.success) {
+                            throw new Error(result?.error || 'Failed to update recurring series');
+                        }
+                        await loadFromGoogleSheets(true);
+                    } catch (error) {
+                        setScheduleData(prevSchedule);
+                        setCurrentData(prevCurrentData);
+                        showAlert(`❌ Failed to update recurring series: ${error.message}`, 'error');
+                    }
+                })();
+
+                return true;
+            }
+        }
+
         const normalizedTask = {
             ID: payload.ID || payload.id || `CT${Date.now()}`,
             Date: payload.Date || payload.date || '',
@@ -894,7 +992,9 @@ export function DashboardProvider({ children }) {
             Category: payload.Category || payload.category || '',
             'Content Title': payload['Content Title'] || payload.contentTitle || '',
             Status: Boolean(payload.Status ?? payload.status),
-            AssignedUserId: payload.AssignedUserId || ''
+            AssignedUserId: payload.AssignedUserId || '',
+            series_id: payload.series_id || undefined,
+            recurrence_rule: payload.recurrence_rule || undefined
         };
 
         setScheduleData((prev) => {
@@ -999,20 +1099,42 @@ export function DashboardProvider({ children }) {
         return false;
     };
 
-    const deleteCalendarTask = async (id) => {
+    const deleteCalendarTask = async (id, scope = 'single') => {
         const prevSchedule = scheduleData;
+        const prevCurrentData = currentData;
+        const targetTask = scheduleData.find(t => String(t.ID) === String(id));
+        const targetSeriesId = targetTask?.series_id;
+        const targetDate = targetTask?.Date;
 
-        setScheduleData(prev => prev.filter(t => String(t.ID) !== String(id)));
-        showAlert('🗑️ Task removed from schedule!', 'success');
+        if ((scope === 'future' || scope === 'all') && targetSeriesId) {
+            setScheduleData(prev => prev.filter(t => {
+                if (scope === 'future') {
+                    return !(t.series_id === targetSeriesId && t.Date >= targetDate);
+                }
+                return t.series_id !== targetSeriesId;
+            }));
+            setCurrentData(prev => prev.filter(r => {
+                if (scope === 'future') {
+                    return !(r.series_id === targetSeriesId && r.Date >= targetDate);
+                }
+                return r.series_id !== targetSeriesId;
+            }));
+            showAlert(scope === 'future' ? '🗑️ Removed future tasks in series!' : '🗑️ Removed entire recurring series!', 'success');
+        } else {
+            setScheduleData(prev => prev.filter(t => String(t.ID) !== String(id)));
+            setCurrentData(prev => prev.filter(r => String(r.ID) !== String(id)));
+            showAlert('🗑️ Task removed from schedule!', 'success');
+        }
 
         (async () => {
             try {
-                const result = await callSheetsAPI('delete_schedule', { ID: id });
+                const result = await callSheetsAPI('delete_schedule', { ID: id, scope });
                 if (!result || !result.success) {
                     throw new Error(result?.error || 'Failed to remove task');
                 }
             } catch (error) {
                 setScheduleData(prevSchedule);
+                setCurrentData(prevCurrentData);
                 showAlert(`❌ Failed to remove task: ${error.message}`, 'error');
             }
         })();

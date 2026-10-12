@@ -129,7 +129,10 @@ test('core controls remain perceivable in Windows forced-colors mode', async ({ 
 });
 
 test('dashboard prioritizes actionable deadlines and opens the exact task', async ({ page }) => {
-  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const upcomingDate = new Date();
+  upcomingDate.setDate(upcomingDate.getDate() + 2);
+  const tzOffset = upcomingDate.getTimezoneOffset() * 60000;
+  const tomorrow = new Date(upcomingDate.getTime() - tzOffset).toISOString().slice(0, 10);
   const dashboardData = {
     ...seededData,
     schedule: { data: seededData.schedule.data.map((task) => ({ ...task, Date: tomorrow })) }
@@ -213,7 +216,7 @@ test('mobile planner uses an agenda strip instead of a compressed month grid', a
   const dateStrip = page.locator('[aria-label="Choose a planning date"]');
   await expect(dateStrip.getByRole('button')).toHaveCount(7);
   let targetDateBtn = dateStrip.getByRole('button', { name: /Tuesday, August 11/ });
-  for (let i = 0; i < 4 && (await targetDateBtn.count()) === 0; i++) {
+  for (let i = 0; i < 15 && (await targetDateBtn.count()) === 0; i++) {
     await page.getByLabel('Previous week').click();
     targetDateBtn = dateStrip.getByRole('button', { name: /Tuesday, August 11/ });
   }

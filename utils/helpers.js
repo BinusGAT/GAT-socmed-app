@@ -390,3 +390,71 @@ export function getPicBadgeClasses(picName) {
     const index = Math.abs(hash) % colors.length;
     return colors[index];
 }
+
+export function calculateRecurringDates(startDateStr, options = {}) {
+    if (!startDateStr || !/^\d{4}-\d{2}-\d{2}$/.test(String(startDateStr))) {
+        return startDateStr ? [String(startDateStr)] : [];
+    }
+
+    const { frequency = 'weekly', limitType = 'count', count = 4, untilDate = '' } = options;
+
+    if (!['daily', 'weekly', 'biweekly', 'monthly'].includes(frequency)) {
+        return [startDateStr];
+    }
+
+    const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number);
+    const startDate = new Date(startYear, startMonth - 1, startDay);
+    if (isNaN(startDate.getTime())) return [startDateStr];
+
+    const maxOccurrences = Math.min(Math.max(Number(count) || 1, 1), 12);
+    const maxUntilDate = new Date(startDate);
+    maxUntilDate.setDate(maxUntilDate.getDate() + 180); // Max 6 months
+
+    let targetUntilDate = null;
+    if (limitType === 'untilDate' && untilDate && /^\d{4}-\d{2}-\d{2}$/.test(untilDate)) {
+        const [uYear, uMonth, uDay] = untilDate.split('-').map(Number);
+        const parsedUntil = new Date(uYear, uMonth - 1, uDay);
+        if (!isNaN(parsedUntil.getTime())) {
+            targetUntilDate = parsedUntil < maxUntilDate ? parsedUntil : maxUntilDate;
+        }
+    }
+
+    const dates = [startDateStr];
+    let iteration = 1;
+
+    while (dates.length < 12) {
+        if (limitType === 'count' && dates.length >= maxOccurrences) {
+            break;
+        }
+
+        let nextDate;
+        if (frequency === 'daily') {
+            nextDate = new Date(startYear, startMonth - 1, startDay + iteration);
+        } else if (frequency === 'weekly') {
+            nextDate = new Date(startYear, startMonth - 1, startDay + (iteration * 7));
+        } else if (frequency === 'biweekly') {
+            nextDate = new Date(startYear, startMonth - 1, startDay + (iteration * 14));
+        } else if (frequency === 'monthly') {
+            // Keep day clamped to valid days in the next target month
+            const targetMonth = startMonth - 1 + iteration;
+            const targetYear = startYear + Math.floor(targetMonth / 12);
+            const normalizedMonth = ((targetMonth % 12) + 12) % 12;
+            const daysInTargetMonth = new Date(targetYear, normalizedMonth + 1, 0).getDate();
+            const clampedDay = Math.min(startDay, daysInTargetMonth);
+            nextDate = new Date(targetYear, normalizedMonth, clampedDay);
+        }
+
+        if (targetUntilDate && nextDate > targetUntilDate) {
+            break;
+        }
+
+        const y = nextDate.getFullYear();
+        const m = String(nextDate.getMonth() + 1).padStart(2, '0');
+        const d = String(nextDate.getDate()).padStart(2, '0');
+        dates.push(`${y}-${m}-${d}`);
+
+        iteration++;
+    }
+
+    return dates;
+}
