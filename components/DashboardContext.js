@@ -262,7 +262,7 @@ export function DashboardProvider({ children }) {
             localStorage.removeItem('user_id');
             localStorage.removeItem('unlocked_at');
             localStorage.removeItem('expires_at');
-            showAlert('🔒 Session expired. Please unlock the workspace again.', 'error');
+            showAlert('Session expired. Please unlock the workspace again.', 'error');
         };
 
         window.addEventListener('unauthorized-api-call', handleUnauthorized);
@@ -321,7 +321,7 @@ export function DashboardProvider({ children }) {
 
             if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
                 lockWorkspace({ revokeServer: false });
-                showAlert('🔒 Session expired. Workspace locked.', 'info');
+                showAlert('Session expired. Workspace locked.', 'info');
             }
         }, 15000); // Check every 15 seconds
 
@@ -659,7 +659,7 @@ export function DashboardProvider({ children }) {
                 error.message.includes('401')
             );
             if (isAuthError) {
-                console.warn('⚠️ Session expired or invalid. Locking workspace.');
+                console.warn('Session expired or invalid. Locking workspace.');
             } else {
                 console.error('Failed to sync live data:', error);
             }
@@ -667,9 +667,9 @@ export function DashboardProvider({ children }) {
             loadOfflineData();
             if (!quiet) {
                 if (error.message && error.message.includes('SHEETS_SOURCE')) {
-                    showAlert('⚠️ Database URL is not configured. Running in Offline Mode (Sample Data).', 'warning');
+                    showAlert('Database URL is not configured. Running in Offline Mode (Sample Data).', 'warning');
                 } else {
-                    showAlert('❌ Connection error: Loaded local backup database.', 'error');
+                    showAlert('Connection error: Loaded local backup database.', 'error');
                 }
             }
         } finally {
@@ -757,7 +757,7 @@ export function DashboardProvider({ children }) {
                 localStorage.setItem('unlocked_at', Date.now().toString());
                 localStorage.setItem('expires_at', String(result.expiresAt));
                 localStorage.removeItem('session_limit_hours');
-                showAlert(`🔓 Workspace unlocked successfully!`, 'success');
+                showAlert('Workspace unlocked successfully!', 'success');
                 return true;
             } else {
                 throw new Error(result?.error || 'Invalid credentials.');
@@ -793,7 +793,7 @@ export function DashboardProvider({ children }) {
         localStorage.removeItem('user_id');
         localStorage.removeItem('unlocked_at');
         localStorage.removeItem('expires_at');
-        showAlert('🔒 Workspace locked. Session ended.', 'info');
+        showAlert('Workspace locked. Session ended.', 'info');
     };
 
     // CRUD: Laporan Metrics
@@ -803,7 +803,7 @@ export function DashboardProvider({ children }) {
         const newRow = { ...row, AssignedUserId: assignedIntern?.id || '' };
         
         setCurrentData((prev) => [newRow, ...prev]);
-        showAlert('💾 Record added successfully!', 'success');
+        showAlert('Record added successfully!', 'success');
 
         (async () => {
             try {
@@ -813,7 +813,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setCurrentData(prevData);
-                showAlert(`❌ Failed to save: ${error.message}`, 'error');
+                showAlert(`Failed to save: ${error.message}`, 'error');
             }
         })();
 
@@ -848,7 +848,7 @@ export function DashboardProvider({ children }) {
 
             return item;
         }));
-        showAlert('💾 Record updated successfully!', 'success');
+        showAlert('Record updated successfully!', 'success');
 
         (async () => {
             try {
@@ -858,7 +858,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setCurrentData(prevData);
-                showAlert(`❌ Failed to update: ${error.message}`, 'error');
+                showAlert(`Failed to update: ${error.message}`, 'error');
             }
         })();
 
@@ -869,7 +869,7 @@ export function DashboardProvider({ children }) {
         const prevData = currentData;
 
         setCurrentData((prev) => prev.filter((item, idx) => (id ? String(item.ID) !== String(id) : idx !== rowIndex)));
-        showAlert('🗑️ Record deleted successfully!', 'success');
+        showAlert('Record deleted successfully!', 'success');
 
         (async () => {
             try {
@@ -879,7 +879,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setCurrentData(prevData);
-                showAlert(`❌ Failed to delete: ${error.message}`, 'error');
+                showAlert(`Failed to delete: ${error.message}`, 'error');
             }
         })();
 
@@ -892,7 +892,7 @@ export function DashboardProvider({ children }) {
         const indexesToDelete = new Set((rows || []).map(r => r.rowIndex).filter(i => i !== undefined));
 
         setCurrentData(prev => prev.filter((item, idx) => !idsToDelete.has(String(item.ID)) && !indexesToDelete.has(idx)));
-        showAlert(`🗑️ Batch deleted ${rows.length} records!`, 'success');
+        showAlert(`Batch deleted ${rows.length} records!`, 'success');
 
         (async () => {
             try {
@@ -902,7 +902,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setCurrentData(prevData);
-                showAlert(`❌ Failed batch delete: ${error.message}`, 'error');
+                showAlert(`Failed batch delete: ${error.message}`, 'error');
             }
         })();
 
@@ -939,7 +939,7 @@ export function DashboardProvider({ children }) {
             }));
 
             setScheduleData(prev => [...tempTasks, ...prev]);
-            showAlert(`💾 Scheduled ${tempTasks.length} recurring tasks!`, 'success');
+            showAlert(`Scheduled ${tempTasks.length} recurring tasks!`, 'success');
 
             (async () => {
                 try {
@@ -951,7 +951,7 @@ export function DashboardProvider({ children }) {
                 } catch (error) {
                     setScheduleData(prevSchedule);
                     setCurrentData(prevCurrentData);
-                    showAlert(`❌ Failed to save recurring tasks: ${error.message}`, 'error');
+                    showAlert(`Failed to save recurring tasks: ${error.message}`, 'error');
                 }
             })();
 
@@ -996,7 +996,7 @@ export function DashboardProvider({ children }) {
                     return row;
                 }));
 
-                showAlert('💾 Recurring series updated!', 'success');
+                showAlert('Recurring series updated!', 'success');
 
                 (async () => {
                     try {
@@ -1008,7 +1008,7 @@ export function DashboardProvider({ children }) {
                     } catch (error) {
                         setScheduleData(prevSchedule);
                         setCurrentData(prevCurrentData);
-                        showAlert(`❌ Failed to update recurring series: ${error.message}`, 'error');
+                        showAlert(`Failed to update recurring series: ${error.message}`, 'error');
                     }
                 })();
 
@@ -1050,7 +1050,7 @@ export function DashboardProvider({ children }) {
             )
         );
 
-        showAlert('💾 Task scheduled successfully!', 'success');
+        showAlert('Task scheduled successfully!', 'success');
 
         (async () => {
             try {
@@ -1065,7 +1065,7 @@ export function DashboardProvider({ children }) {
             } catch (error) {
                 setScheduleData(prevSchedule);
                 setCurrentData(prevCurrentData);
-                showAlert(`❌ Failed to save task: ${error.message}`, 'error');
+                showAlert(`Failed to save task: ${error.message}`, 'error');
             }
         })();
 
@@ -1074,11 +1074,11 @@ export function DashboardProvider({ children }) {
 
     const rescheduleCalendarTask = async (taskId, newDate) => {
         if (!isUnlocked) {
-            showAlert('🔒 Workspace is locked. Sign in to make changes.', 'error');
+            showAlert('Workspace is locked. Sign in to make changes.', 'error');
             return false;
         }
         if (userRole !== 'Admin') {
-            showAlert('⛔ Forbidden: Only Admins can reschedule tasks.', 'error');
+            showAlert('Forbidden: Only Admins can reschedule tasks.', 'error');
             return false;
         }
 
@@ -1150,11 +1150,11 @@ export function DashboardProvider({ children }) {
                 }
                 return r.series_id !== targetSeriesId;
             }));
-            showAlert(scope === 'future' ? '🗑️ Removed future tasks in series!' : '🗑️ Removed entire recurring series!', 'success');
+            showAlert(scope === 'future' ? 'Removed future tasks in series!' : 'Removed entire recurring series!', 'success');
         } else {
             setScheduleData(prev => prev.filter(t => String(t.ID) !== String(id)));
             setCurrentData(prev => prev.filter(r => String(r.ID) !== String(id)));
-            showAlert('🗑️ Task removed from schedule!', 'success');
+            showAlert('Task removed from schedule!', 'success');
         }
 
         (async () => {
@@ -1166,7 +1166,7 @@ export function DashboardProvider({ children }) {
             } catch (error) {
                 setScheduleData(prevSchedule);
                 setCurrentData(prevCurrentData);
-                showAlert(`❌ Failed to remove task: ${error.message}`, 'error');
+                showAlert(`Failed to remove task: ${error.message}`, 'error');
             }
         })();
 
@@ -1194,7 +1194,7 @@ export function DashboardProvider({ children }) {
                 ? prev.map(d => (d.title || '').trim().toLowerCase() === (normalizedDraft.title || '').trim().toLowerCase() ? normalizedDraft : d)
                 : [normalizedDraft, ...prev];
         });
-        showAlert('💾 Storyboard script saved!', 'success');
+        showAlert('Storyboard script saved!', 'success');
 
         (async () => {
             try {
@@ -1216,7 +1216,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setDraftsData(prevDrafts);
-                showAlert(`❌ Failed to save script: ${error.message}`, 'error');
+                showAlert(`Failed to save script: ${error.message}`, 'error');
             }
         })();
 
@@ -1227,7 +1227,7 @@ export function DashboardProvider({ children }) {
         const prevDrafts = draftsData;
 
         setDraftsData(prev => prev.filter(d => (d.title || '').trim().toLowerCase() !== (title || '').trim().toLowerCase()));
-        showAlert('🗑️ Script deleted successfully!', 'success');
+        showAlert('Script deleted successfully!', 'success');
 
         (async () => {
             try {
@@ -1237,7 +1237,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setDraftsData(prevDrafts);
-                showAlert(`❌ Failed to delete script: ${error.message}`, 'error');
+                showAlert(`Failed to delete script: ${error.message}`, 'error');
             }
         })();
 
@@ -1258,7 +1258,7 @@ export function DashboardProvider({ children }) {
                 ? prev.map(m => String(m.id || m.ID) === String(normalizedMemo.id) ? { ...m, ...normalizedMemo } : m)
                 : [normalizedMemo, ...prev];
         });
-        showAlert('💾 Meeting memo saved successfully!', 'success');
+        showAlert('Meeting memo saved successfully!', 'success');
 
         (async () => {
             try {
@@ -1268,7 +1268,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setMeetingsData(prevMeetings);
-                showAlert(`❌ Failed to save memo: ${error.message}`, 'error');
+                showAlert(`Failed to save memo: ${error.message}`, 'error');
             }
         })();
 
@@ -1279,7 +1279,7 @@ export function DashboardProvider({ children }) {
         const prevMeetings = meetingsData;
 
         setMeetingsData(prev => prev.filter(m => String(m.id || m.ID) !== String(id)));
-        showAlert('🗑️ Meeting memo deleted!', 'success');
+        showAlert('Meeting memo deleted!', 'success');
 
         (async () => {
             try {
@@ -1289,7 +1289,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setMeetingsData(prevMeetings);
-                showAlert(`❌ Failed to delete memo: ${error.message}`, 'error');
+                showAlert(`Failed to delete memo: ${error.message}`, 'error');
             }
         })();
 
@@ -1305,7 +1305,7 @@ export function DashboardProvider({ children }) {
         };
 
         setNotificationsData(prev => [newNotif, ...prev]);
-        showAlert('📢 Notification broadcasted successfully!', 'success');
+        showAlert('Notification broadcasted successfully!', 'success');
 
         (async () => {
             try {
@@ -1315,7 +1315,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setNotificationsData(prevNotifications);
-                showAlert(`❌ Failed to send notification: ${error.message}`, 'error');
+                showAlert(`Failed to send notification: ${error.message}`, 'error');
             }
         })();
 
@@ -1326,7 +1326,7 @@ export function DashboardProvider({ children }) {
         const prevNotifications = notificationsData;
 
         setNotificationsData(prev => prev.filter(n => String(n.id) !== String(id)));
-        showAlert('🗑️ Notification removed!', 'success');
+        showAlert('Notification removed!', 'success');
 
         (async () => {
             try {
@@ -1336,7 +1336,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setNotificationsData(prevNotifications);
-                showAlert(`❌ Failed to delete notification: ${error.message}`, 'error');
+                showAlert(`Failed to delete notification: ${error.message}`, 'error');
             }
         })();
 
@@ -1347,7 +1347,7 @@ export function DashboardProvider({ children }) {
     const saveGaSummary = async (summary) => {
         const prevSummary = gaSummaryData;
         setGaSummaryData(summary);
-        showAlert('💾 Google Analytics summary updated!', 'success');
+        showAlert('Google Analytics summary updated!', 'success');
 
         (async () => {
             try {
@@ -1357,7 +1357,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setGaSummaryData(prevSummary);
-                showAlert(`❌ Failed to update summary: ${error.message}`, 'error');
+                showAlert(`Failed to update summary: ${error.message}`, 'error');
             }
         })();
 
@@ -1370,7 +1370,7 @@ export function DashboardProvider({ children }) {
             const exists = prev.some(i => String(i.id) === String(item.id));
             return exists ? prev.map(i => String(i.id) === String(item.id) ? item : i) : [item, ...prev];
         });
-        showAlert('💾 Google Analytics item saved!', 'success');
+        showAlert('Google Analytics item saved!', 'success');
 
         (async () => {
             try {
@@ -1380,7 +1380,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setGaItemsData(prevItems);
-                showAlert(`❌ Failed to save item: ${error.message}`, 'error');
+                showAlert(`Failed to save item: ${error.message}`, 'error');
             }
         })();
 
@@ -1390,7 +1390,7 @@ export function DashboardProvider({ children }) {
     const deleteGaItem = async (id) => {
         const prevItems = gaItemsData;
         setGaItemsData(prev => prev.filter(i => String(i.id) !== String(id)));
-        showAlert('🗑️ Google Analytics item deleted!', 'success');
+        showAlert('Google Analytics item deleted!', 'success');
 
         (async () => {
             try {
@@ -1400,7 +1400,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setGaItemsData(prevItems);
-                showAlert(`❌ Failed to delete item: ${error.message}`, 'error');
+                showAlert(`Failed to delete item: ${error.message}`, 'error');
             }
         })();
 
@@ -1414,11 +1414,11 @@ export function DashboardProvider({ children }) {
             const result = await callSheetsAPI('save_app_setting', { key, value });
             if (result && result.success) {
                 await loadFromGoogleSheets(true);
-                showAlert('💾 Settings updated!', 'success');
+                showAlert('Settings updated!', 'success');
                 return true;
             }
         } catch (error) {
-            showAlert(`❌ Failed to save setting: ${error.message}`, 'error');
+            showAlert(`Failed to save setting: ${error.message}`, 'error');
         } finally {
             setIsLoading(false);
         }
@@ -1437,11 +1437,11 @@ export function DashboardProvider({ children }) {
         try {
             const result = await callSheetsAPI('save_app_settings', { settings: settingsObj });
             if (result && result.success) {
-                showAlert('💾 Settings updated!', 'success');
+                showAlert('Settings updated!', 'success');
                 return true;
             }
         } catch (error) {
-            showAlert(`❌ Failed to save settings: ${error.message}`, 'error');
+            showAlert(`Failed to save settings: ${error.message}`, 'error');
         } finally {
             setIsLoading(false);
         }
@@ -1454,11 +1454,11 @@ export function DashboardProvider({ children }) {
             const result = await callSheetsAPI('save_platform', platform);
             if (result && result.success) {
                 await loadFromGoogleSheets(true);
-                showAlert('💾 Platform saved!', 'success');
+                showAlert('Platform saved!', 'success');
                 return true;
             }
         } catch (error) {
-            showAlert(`❌ Failed to save platform: ${error.message}`, 'error');
+            showAlert(`Failed to save platform: ${error.message}`, 'error');
         } finally {
             setIsLoading(false);
         }
@@ -1471,11 +1471,11 @@ export function DashboardProvider({ children }) {
             const result = await callSheetsAPI('delete_platform', { id });
             if (result && result.success) {
                 await loadFromGoogleSheets(true);
-                showAlert('🗑️ Platform deleted!', 'success');
+                showAlert('Platform deleted!', 'success');
                 return true;
             }
         } catch (error) {
-            showAlert(`❌ Failed to delete platform: ${error.message}`, 'error');
+            showAlert(`Failed to delete platform: ${error.message}`, 'error');
         } finally {
             setIsLoading(false);
         }
@@ -1488,11 +1488,11 @@ export function DashboardProvider({ children }) {
             const result = await callSheetsAPI('save_category', category);
             if (result && result.success) {
                 await loadFromGoogleSheets(true);
-                showAlert('💾 Category saved!', 'success');
+                showAlert('Category saved!', 'success');
                 return true;
             }
         } catch (error) {
-            showAlert(`❌ Failed to save category: ${error.message}`, 'error');
+            showAlert(`Failed to save category: ${error.message}`, 'error');
         } finally {
             setIsLoading(false);
         }
@@ -1505,11 +1505,11 @@ export function DashboardProvider({ children }) {
             const result = await callSheetsAPI('delete_category', { name });
             if (result && result.success) {
                 await loadFromGoogleSheets(true);
-                showAlert('🗑️ Category deleted!', 'success');
+                showAlert('Category deleted!', 'success');
                 return true;
             }
         } catch (error) {
-            showAlert(`❌ Failed to delete category: ${error.message}`, 'error');
+            showAlert(`Failed to delete category: ${error.message}`, 'error');
         } finally {
             setIsLoading(false);
         }
@@ -1522,11 +1522,11 @@ export function DashboardProvider({ children }) {
             const result = await callSheetsAPI('save_member', { oldNama, NAMA: nama, STREAM: stream });
             if (result && result.success) {
                 await loadFromGoogleSheets(true);
-                showAlert('💾 Member saved!', 'success');
+                showAlert('Member saved!', 'success');
                 return true;
             }
         } catch (error) {
-            showAlert(`❌ Failed to save member: ${error.message}`, 'error');
+            showAlert(`Failed to save member: ${error.message}`, 'error');
         } finally {
             setIsLoading(false);
         }
@@ -1539,11 +1539,11 @@ export function DashboardProvider({ children }) {
             const result = await callSheetsAPI('delete_member', { NAMA: nama });
             if (result && result.success) {
                 await loadFromGoogleSheets(true);
-                showAlert('🗑️ Member removed!', 'success');
+                showAlert('Member removed!', 'success');
                 return true;
             }
         } catch (error) {
-            showAlert(`❌ Failed to delete member: ${error.message}`, 'error');
+            showAlert(`Failed to delete member: ${error.message}`, 'error');
         } finally {
             setIsLoading(false);
         }

@@ -164,9 +164,9 @@ function DashboardAppContent() {
             ws['!cols'] = colWidths;
 
             XLSX.writeFile(wb, `content_performance_${new Date().toISOString().slice(0, 10)}.xlsx`);
-            showAlert('💾 Database exported to Excel successfully!', 'success');
+            showAlert('Database exported to Excel successfully!', 'success');
         } catch (error) {
-            showAlert(`❌ Export failed: ${error.message}`, 'error');
+            showAlert(`Export failed: ${error.message}`, 'error');
         } finally {
             setIsExporting(false);
         }
