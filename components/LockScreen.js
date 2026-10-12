@@ -91,12 +91,12 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                     </div>
 
                     <div className="pt-2">
-                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider font-semibold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 mb-2">
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider font-semibold bg-orange-500/10 text-orange-800 dark:text-orange-300 border border-orange-500/20 mb-2">
                             <Icon name="lock" size={11} weight="bold" />
                             <span>{sectionName} Lock</span>
                         </div>
                         <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                            Authentication Gate
+                            CC Internal Gate
                         </h2>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                             Enter your credentials to access team workflows and publishing permissions.
@@ -189,7 +189,7 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 bg-primary text-on-primary hover:opacity-90 font-medium py-2.5 px-4 rounded-lg text-xs transition-all cursor-pointer text-center disabled:opacity-50 active:scale-[0.98]"
+                            className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-orange-500 dark:text-zinc-950 dark:hover:bg-orange-400 font-medium py-2.5 px-4 rounded-lg text-xs transition-all cursor-pointer text-center disabled:opacity-50 active:scale-[0.98]"
                             disabled={!!lockdownTimeText}
                         >
                             Login
@@ -198,7 +198,7 @@ export default function LockScreen({ sectionName = 'Socmed Apps' }) {
                 </form>
 
                 {/* Footer Brand */}
-                <div className="pt-4 border-t border-border flex items-center justify-between text-[11px] text-zinc-400 font-mono">
+                <div className="pt-4 border-t border-border flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 font-mono">
                     <span>{appSettingsData?.company_name || 'Internal Content Team'}</span>
                     <span>v0.1.0-alpha</span>
                 </div>

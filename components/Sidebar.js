@@ -165,7 +165,7 @@ export default function Sidebar() {
                             {!sidebarCollapsed && (
                                 <h2
                                     id={`nav-group-${group.label.toLowerCase()}`}
-                                    className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500 font-mono"
+                                    className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-600 dark:text-zinc-400 font-mono"
                                 >
                                     {group.label}
                                 </h2>
@@ -183,7 +183,7 @@ export default function Sidebar() {
                                                 aria-label={item.label}
                                                 className={`w-10 h-10 mx-auto rounded-lg flex items-center justify-center transition-colors cursor-pointer relative ${
                                                     isActive
-                                                        ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20'
+                                                        ? 'bg-orange-500/10 text-orange-800 dark:text-orange-400 border border-orange-500/20'
                                                         : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'
                                                 }`}
                                             >
@@ -205,7 +205,7 @@ export default function Sidebar() {
                                             onClick={() => handleNavClick(item.id)}
                                             className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer text-xs relative ${
                                                 isActive
-                                                    ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 font-semibold border border-orange-500/20'
+                                                    ? 'bg-orange-500/10 text-orange-800 dark:text-orange-400 font-semibold border border-orange-500/20'
                                                     : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'
                                             }`}
                                         >
@@ -232,7 +232,7 @@ export default function Sidebar() {
                         <button
                             className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
                                 currentView === 'settings'
-                                    ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20'
+                                    ? 'bg-orange-500/10 text-orange-800 dark:text-orange-400 border border-orange-500/20'
                                     : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'
                             }`}
                             onClick={() => handleNavClick('settings')}
@@ -246,7 +246,7 @@ export default function Sidebar() {
                         <button
                             className={`w-full text-left py-2 px-2.5 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer text-xs ${
                                 currentView === 'settings'
-                                    ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 font-semibold border border-orange-500/20'
+                                    ? 'bg-orange-500/10 text-orange-800 dark:text-orange-400 font-semibold border border-orange-500/20'
                                     : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'
                             }`}
                             onClick={() => handleNavClick('settings')}

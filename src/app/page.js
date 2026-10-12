@@ -327,10 +327,10 @@ function DashboardAppContent() {
                         aria-live={globalAlert.type === 'error' ? 'assertive' : 'polite'}
                         className={`fixed top-4 right-4 z-[10000] flex items-center gap-2.5 py-2.5 px-4 rounded-lg shadow-md animate-slide-in text-xs font-medium border ${
                             globalAlert.type === 'error'
-                                ? 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400'
+                                ? 'bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400'
                                 : globalAlert.type === 'warning'
-                                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
-                                    : 'bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400'
+                                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300'
+                                    : 'bg-orange-500/10 border-orange-500/20 text-orange-800 dark:text-orange-300'
                         }`}
                     >
                         <Icon name={globalAlert.type === 'error' ? 'error' : globalAlert.type === 'warning' ? 'warning' : 'check_circle'} size={16} />

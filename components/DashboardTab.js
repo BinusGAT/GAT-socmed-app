@@ -412,10 +412,10 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
 
     const getKpiBadgeClass = (score) => {
         const kpi = parseCleanInt(score);
-        if (kpi >= 6) return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
-        if (kpi >= 5) return 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20';
-        if (kpi >= 4) return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
-        return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20';
+        if (kpi >= 6) return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20';
+        if (kpi >= 5) return 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20';
+        if (kpi >= 4) return 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20';
+        return 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20';
     };
 
     // Auto calculate KPI Score and Engagement Rate on form
@@ -930,70 +930,70 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                         {/* Stat 1 - Lead: Total Views */}
                         <div className="col-span-2 sm:col-span-1 lg:col-span-1 p-4 lg:p-5 flex flex-col justify-between bg-orange-500/[0.03]">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Views</span>
+                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Views</span>
                                 <Icon name="trending_up" size={16} className="text-primary" />
                             </div>
                             <div className="mt-3">
                                 <h4 className="text-2xl lg:text-3xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
                                     {formatNumber(stats.totalViews)}
                                 </h4>
-                                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Across all platforms</p>
+                                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-1 font-mono">Across all platforms</p>
                             </div>
                         </div>
 
                         {/* Stat 2 - Active Titles */}
                         <div className="p-4 lg:p-5 flex flex-col justify-between">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Active Titles</span>
+                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Active Titles</span>
                                 <Icon name="tag" size={16} className="text-zinc-400" />
                             </div>
                             <div className="mt-3">
                                 <h4 className="text-xl lg:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
                                     {stats.contentTitlesSize}
                                 </h4>
-                                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Active campaigns</p>
+                                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-1 font-mono">Active campaigns</p>
                             </div>
                         </div>
 
                         {/* Stat 3 - Total Reach */}
                         <div className="p-4 lg:p-5 flex flex-col justify-between">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Reach</span>
+                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Reach</span>
                                 <Icon name="public" size={16} className="text-zinc-400" />
                             </div>
                             <div className="mt-3">
                                 <h4 className="text-xl lg:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
                                     {formatNumber(stats.totalReach)}
                                 </h4>
-                                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Unique accounts</p>
+                                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-1 font-mono">Unique accounts</p>
                             </div>
                         </div>
 
                         {/* Stat 4 - Total Engagement */}
                         <div className="p-4 lg:p-5 flex flex-col justify-between">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Engagement</span>
+                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Engagement</span>
                                 <Icon name="favorite" size={16} className="text-zinc-400" />
                             </div>
                             <div className="mt-3">
                                 <h4 className="text-xl lg:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
                                     {formatNumber(stats.totalEngagement)}
                                 </h4>
-                                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Likes, comments, shares</p>
+                                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-1 font-mono">Likes, comments, shares</p>
                             </div>
                         </div>
 
                         {/* Stat 5 - Engagement Rate */}
                         <div className="p-4 lg:p-5 flex flex-col justify-between">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Engagement Rate</span>
+                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Engagement Rate</span>
                                 <Icon name="percent" size={16} className="text-zinc-400" />
                             </div>
                             <div className="mt-3">
                                 <h4 className="text-xl lg:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
                                     {stats.avgEngagementRate}
                                 </h4>
-                                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">Avg. engagement ratio</p>
+                                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-1 font-mono">Avg. engagement ratio</p>
                             </div>
                         </div>
                     </div>
@@ -1026,7 +1026,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                         title={`YouTube: ${platformDistribution.ytPct}%`}
                                     />
                                 </div>
-                                <div className="flex justify-between text-[10px] text-zinc-400 font-mono">
+                                <div className="flex justify-between text-[10px] text-zinc-600 dark:text-zinc-400 font-mono">
                                     <span>Instagram {platformDistribution.igPct}%</span>
                                     <span>TikTok {platformDistribution.ttPct}%</span>
                                     <span>YouTube {platformDistribution.ytPct}%</span>
@@ -1199,7 +1199,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                                         </td>
                                                     )}
                                                     {rowSpan.ContentTitle > 0 && (
-                                                        <td rowSpan={rowSpan.ContentTitle} className="px-3 py-2.5 w-12 text-center text-zinc-400 text-xs font-mono">
+                                                        <td rowSpan={rowSpan.ContentTitle} className="px-3 py-2.5 w-12 text-center text-zinc-600 dark:text-zinc-400 text-xs font-mono">
                                                             {contentGroupNumbers[idx]}
                                                         </td>
                                                     )}
@@ -1315,7 +1315,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                             </div>
                             <div className="mt-3 border-t border-border pt-2.5">
                                 <div className="flex items-center justify-between gap-3">
-                                    <h3 className="text-[10px] font-semibold text-zinc-400 uppercase font-mono tracking-wider">Next deadline</h3>
+                                    <h3 className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-400 uppercase font-mono tracking-wider">Next deadline</h3>
                                     <button type="button" onClick={openPlanner} className="text-[10px] font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Planner</button>
                                 </div>
                                 {taskOverview.upcoming[0] ? (
@@ -1324,7 +1324,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                         <span className="min-w-0 flex-1 truncate text-xs font-semibold text-zinc-800 dark:text-zinc-200">{taskOverview.upcoming[0].contentTitle || 'Untitled'}</span>
                                         <Icon name="chevron_right" size={13} className="text-zinc-400 shrink-0" aria-hidden="true" />
                                     </button>
-                                ) : <p className="mt-1.5 text-xs text-zinc-400">Nothing scheduled next.</p>}
+                                ) : <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-400">Nothing scheduled next.</p>}
                             </div>
                         </section>
                     )}
@@ -1340,7 +1340,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                 <Icon name="chevron_right" size={15} />
                             </button>
                         </div>
-                        <div className="grid grid-cols-7 text-center text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                        <div className="grid grid-cols-7 text-center text-[10px] font-mono font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-2">
                             <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                         </div>
                         <div className="grid grid-cols-7 gap-1">
@@ -1417,8 +1417,8 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
 
                         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1" tabIndex={0} aria-label="Scheduled uploads for the selected date">
                             {scheduledTimeline.length === 0 ? (
-                                <div className="py-6 text-center text-zinc-400 text-xs space-y-1.5">
-                                    <Icon name="check_circle" size={24} className="mx-auto text-zinc-400" />
+                                <div className="py-6 text-center text-zinc-600 dark:text-zinc-400 text-xs space-y-1.5">
+                                    <Icon name="check_circle" size={24} className="mx-auto text-zinc-500 dark:text-zinc-400" />
                                     <p>No uploads scheduled for this date.</p>
                                 </div>
                             ) : (

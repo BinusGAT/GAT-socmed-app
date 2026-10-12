@@ -287,7 +287,7 @@ export default function Topbar({
                             <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100 leading-tight">
                                 {isUnlocked ? (userName || `${userRole} Account`) : 'Guest'}
                             </p>
-                            <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-mono">
+                            <p className="text-[10px] text-zinc-600 dark:text-zinc-400 uppercase tracking-wider font-mono">
                                 {isUnlocked ? userRole : 'Read Only'}
                             </p>
                         </div>

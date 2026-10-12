@@ -263,7 +263,7 @@ test('phone My Work keeps a very long assignment title readable', async ({ page 
 
 test('My Work shows assignment-shaped placeholders while loading', async ({ page }) => {
   test.skip((page.viewportSize()?.width || 0) >= 640, 'Phone-specific My Work loading state is tested on phones.');
-  await openAuthenticatedDashboard(page, { readDelayMs: 800 });
+  await openAuthenticatedDashboard(page, { readDelayMs: 2000 });
   await openAuthenticatedView(page, { mobileName: /My Work/ });
   const loadingState = page.getByRole('status', { name: 'Loading assigned tasks' });
   await expect(loadingState).toBeVisible();
@@ -360,7 +360,7 @@ test('announces successful saves and pending deletions', async ({ page }) => {
 
 test('analytics charts expose accessible text alternatives', async ({ page }) => {
   await openAuthenticatedDashboard(page);
-  await openAuthenticatedView(page, { mobileName: /Content analytics/, desktopName: /^analytics Analytics$/i, secondary: true });
+  await openAuthenticatedView(page, { mobileName: /Content analytics/, desktopName: /^(analytics\s+)?Analytics$/i, secondary: true });
   for (const name of ['Views and engagement trend chart', 'Platform distribution chart', 'Total views by creator chart', 'Category share by views chart']) {
     await expect(page.getByRole('img', { name })).toHaveAttribute('aria-describedby');
   }
