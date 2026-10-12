@@ -20,17 +20,7 @@ export function getContentGroupKey(row) {
 
 export function formatDate(dateInput) {
     if (!dateInput) return '';
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(String(dateInput))) return String(dateInput);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(String(dateInput))) {
-        const [year, month, day] = String(dateInput).split('-');
-        return `${month}/${day}/${year}`;
-    }
-    const date = new Date(dateInput);
-    if (isNaN(date.getTime())) return dateInput;
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${month}/${day}/${year}`;
+    return parseDate(dateInput);
 }
 
 export function formatDisplayDate(dateInput) {

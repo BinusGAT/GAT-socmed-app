@@ -455,7 +455,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
         }
         setEditIndex(index);
         setFormId(row.ID || '');
-        setFormDate(row.Date || getLocalDateInputValue());
+        setFormDate(parseDate(row.Date) || getLocalDateInputValue());
         setFormTitle(row['Content Title'] || '');
         setFormPic(normalizePicName(resolveMemberName(row.PIC, memberListData)));
         setFormCategory(row.Category || 'Story Telling');

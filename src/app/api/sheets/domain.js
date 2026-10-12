@@ -31,8 +31,16 @@ export function getIsoDateString(value) {
 
   const localDateMatch = dateString.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (localDateMatch) {
-    const [, month, day, year] = localDateMatch;
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    const p1 = Number.parseInt(localDateMatch[1], 10);
+    const p2 = Number.parseInt(localDateMatch[2], 10);
+    const year = localDateMatch[3];
+    let month = String(p1).padStart(2, '0');
+    let day = String(p2).padStart(2, '0');
+    if (p1 > 12 && p2 <= 12) {
+      day = String(p1).padStart(2, '0');
+      month = String(p2).padStart(2, '0');
+    }
+    return `${year}-${month}-${day}`;
   }
 
   const parsedDate = new Date(dateString);

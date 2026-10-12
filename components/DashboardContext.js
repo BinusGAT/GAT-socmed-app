@@ -400,7 +400,8 @@ export function DashboardProvider({ children }) {
         // Pass 1: fill in missing values, calculate KPI Score, and collect max KPI Scores
         list.forEach(row => {
             if (row.Date) {
-                lastDate = row.Date;
+                lastDate = parseDate(row.Date);
+                row.Date = lastDate;
             } else {
                 row.Date = lastDate;
             }

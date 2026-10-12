@@ -4,6 +4,7 @@ import {
   getIsoDateString,
   parseMetricToNumber,
 } from '../../src/app/api/sheets/domain';
+import { formatDate, parseDate } from '../../utils/helpers';
 
 describe('dashboard domain helpers', () => {
   it.each([
@@ -20,12 +21,22 @@ describe('dashboard domain helpers', () => {
     ['2026-08-08', '2026-08-08'],
     ['8/8/2026', '2026-08-08'],
     ['08-09-2026', '2026-08-09'],
+    ['09/05/2026', '2026-09-05'],
+    ['25/08/2026', '2026-08-25'],
+    ['2026-09-09', '2026-09-09'],
   ])('normalizes date %s', (value, expected) => {
     expect(getIsoDateString(value)).toBe(expected);
+  });
+
+  it('standardizes formatDate and parseDate to canonical YYYY-MM-DD', () => {
+    expect(formatDate('2026-09-09')).toBe('2026-09-09');
+    expect(formatDate('09/05/2026')).toBe('2026-09-05');
+    expect(parseDate('09/05/2026')).toBe('2026-09-05');
   });
 
   it('returns the Indonesian month name', () => {
     expect(getIndonesianMonth('2026-08-08')).toBe('Agustus');
   });
 });
+
 

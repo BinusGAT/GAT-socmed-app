@@ -91,7 +91,7 @@ async function syncGroupsByIds(ids) {
     });
 
     const firstRow = groupRows[0];
-    const dateStr = firstRow.Date;
+    const dateStr = getIsoDateString(firstRow.Date);
     const pic = firstRow.PIC;
     const title = firstRow["Content Title"];
     const category = firstRow.Category;
@@ -321,6 +321,51 @@ export async function POST(request) {
             )
         `)
       ]);
+
+      // Legacy date normalization migration: convert any non-ISO dates to standard YYYY-MM-DD
+      try {
+        const [laporanDates, scheduleDates, meetingsDates] = await Promise.all([
+          db.execute("SELECT rowid, Date FROM laporan WHERE Date IS NOT NULL AND Date NOT LIKE '____-__-__'"),
+          db.execute("SELECT ID, Date FROM schedule WHERE Date IS NOT NULL AND Date NOT LIKE '____-__-__'"),
+          db.execute("SELECT ID, Date FROM meetings WHERE Date IS NOT NULL AND Date NOT LIKE '____-__-__'")
+        ]);
+
+        const migrationBatches = [];
+        for (const row of laporanDates.rows) {
+          const iso = getIsoDateString(row.Date);
+          if (iso && iso !== row.Date) {
+            migrationBatches.push({
+              sql: 'UPDATE laporan SET Date = ? WHERE rowid = ?',
+              args: [iso, row.rowid]
+            });
+          }
+        }
+        for (const row of scheduleDates.rows) {
+          const iso = getIsoDateString(row.Date);
+          if (iso && iso !== row.Date) {
+            migrationBatches.push({
+              sql: 'UPDATE schedule SET Date = ? WHERE ID = ?',
+              args: [iso, row.ID]
+            });
+          }
+        }
+        for (const row of meetingsDates.rows) {
+          const iso = getIsoDateString(row.Date);
+          if (iso && iso !== row.Date) {
+            migrationBatches.push({
+              sql: 'UPDATE meetings SET Date = ? WHERE ID = ?',
+              args: [iso, row.ID]
+            });
+          }
+        }
+
+        if (migrationBatches.length > 0) {
+          await db.batch(migrationBatches);
+          console.log(`[API] Normalized ${migrationBatches.length} legacy date records to YYYY-MM-DD`);
+        }
+      } catch (err) {
+        console.warn('[API] Legacy date normalization error (continuing):', err);
+      }
 
       // 3. Parallelize seed count checks
       try {
@@ -844,6 +889,7 @@ export async function POST(request) {
         const platforms = ['Instagram', 'TikTok', 'Youtube'];
         const selectedPlatform = String(params.Platform || '').trim().toLowerCase();
         const contentTitle = String(params['Content Title'] || '').trim() || 'Untitled';
+        const dateStr = getIsoDateString(params.Date);
         
         const views = parseInt(params.Views) || 0;
         const likes = parseInt(params.Likes) || 0;
@@ -881,7 +927,7 @@ export async function POST(request) {
               , AssignedUserId
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
-              params.Date, newId, contentTitle, params.PIC, params.Category, plat,
+              dateStr, newId, contentTitle, params.PIC, params.Category, plat,
               viewsVal, reachVal, likesVal, commentsVal, followsVal, repostVal, sharesVal,
               totalEngVal, rateVal, kpiVal, 3, urlVal, commentVal, String(params.AssignedUserId || '')
             ]
@@ -899,8 +945,8 @@ export async function POST(request) {
               sql: `INSERT INTO scripts (Title, Status, Category, Hook, Script, Hastags, "References", Caption, Origin)
                     VALUES (?, 'Scripting', ?, '', '', ?, '', '', 'auto')`,
               args: [
-                contentTitle,
-                params.Category || 'Story Telling',
+                contentTitle, 
+                params.Category || 'Story Telling', 
                 params.Category === 'Motion' ? '#motion #content' : (params.Category === 'Story Telling' ? '#storytelling #content' : '#content')
               ]
             });
@@ -912,11 +958,13 @@ export async function POST(request) {
       }
 
       case 'update': {
-        const matchDate = params.original_Date || params.Date;
+        const rawMatchDate = params.original_Date || params.Date;
+        const matchDate = getIsoDateString(rawMatchDate);
         const matchTitle = params['original_Content Title'] || params['Content Title'];
         const matchPic = params.original_PIC || params.PIC;
         const matchCategory = params.original_Category || params.Category;
         const matchPlatform = params.original_Platform || params.Platform;
+        const targetDate = getIsoDateString(params.Date);
 
         const views = parseInt(params.Views) || 0;
         const likes = parseInt(params.Likes) || 0;
@@ -931,8 +979,8 @@ export async function POST(request) {
         let id = params.ID || params.id;
         if (!id) {
           const idRes = await db.execute({
-            sql: `SELECT ID FROM laporan WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ? LIMIT 1`,
-            args: [matchDate, matchTitle, matchPic, matchCategory, matchPlatform]
+            sql: `SELECT ID FROM laporan WHERE (Date = ? OR Date = ?) AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ? LIMIT 1`,
+            args: [matchDate, rawMatchDate, matchTitle, matchPic, matchCategory, matchPlatform]
           });
           id = idRes.rows[0]?.ID;
         }
@@ -960,7 +1008,7 @@ export async function POST(request) {
               AssignedUserId = ?
             WHERE ID = ? AND LOWER(Platform) = LOWER(?)`,
             args: [
-              params.Date, params['Content Title'], params.PIC, params.Category, params.Platform,
+              targetDate, params['Content Title'], params.PIC, params.Category, params.Platform,
               views, parseInt(params['Account Reach']) || 0, likes, comments, follows, reposts, shares,
               totalEngagement, engagementRate, parseInt(params['KPI Score']) || 3, params.URL || '', params['Comment Text'] || '', String(params.AssignedUserId || ''),
               id, matchPlatform
@@ -989,12 +1037,12 @@ export async function POST(request) {
                 URL = ?,
                 "Comment Text" = ?,
                 AssignedUserId = ?
-              WHERE Date = ? AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ?`,
+              WHERE (Date = ? OR Date = ?) AND "Content Title" = ? AND PIC = ? AND Category = ? AND Platform = ?`,
               args: [
-                params.Date, params['Content Title'], params.PIC, params.Category, params.Platform,
+                targetDate, params['Content Title'], params.PIC, params.Category, params.Platform,
                 views, parseInt(params['Account Reach']) || 0, likes, comments, follows, reposts, shares,
                 totalEngagement, engagementRate, parseInt(params['KPI Score']) || 3, params.URL || '', params['Comment Text'] || '', String(params.AssignedUserId || ''),
-                matchDate, matchTitle, matchPic, matchCategory, matchPlatform
+                matchDate, rawMatchDate, matchTitle, matchPic, matchCategory, matchPlatform
               ]
             });
           }
@@ -1002,7 +1050,7 @@ export async function POST(request) {
           // Update shared metadata across all rows sharing this ID
           await db.execute({
             sql: `UPDATE laporan SET Date = ?, "Content Title" = ?, PIC = ?, Category = ?, AssignedUserId = ? WHERE ID = ?`,
-            args: [params.Date, params['Content Title'], params.PIC, params.Category, String(params.AssignedUserId || ''), id]
+            args: [targetDate, params['Content Title'], params.PIC, params.Category, String(params.AssignedUserId || ''), id]
           });
 
           await syncGroupById(id);
@@ -1098,7 +1146,7 @@ export async function POST(request) {
 
       case 'save_schedule': {
         const id = params.ID || params.id || '';
-        const dateStr = params.Date || '';
+        const dateStr = getIsoDateString(params.Date || '');
         const pic = params.PIC || '';
         const title = String(params.Content_Title || params['Content Title'] || '').trim() || 'Untitled';
         const category = params.Category || '';
@@ -1311,7 +1359,7 @@ export async function POST(request) {
 
       case 'save_meeting': {
         const id = params.ID || params.id || ('M' + Date.now());
-        const date = params.Date || params.date || '';
+        const date = getIsoDateString(params.Date || params.date || '');
         const rawAttendees = params.Attendees || params.attendees || '';
         const attendees = Array.isArray(rawAttendees) ? rawAttendees.join(', ') : rawAttendees;
         const rawAbsentees = params.Absentees || params.absentees || '';
