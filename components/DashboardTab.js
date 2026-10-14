@@ -344,6 +344,28 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
         return rowspans.map((span) => span.ContentTitle > 0 ? ++groupNumber : groupNumber);
     }, [rowspans, activeTablePage.start, processedData]);
 
+    const tableGroups = React.useMemo(() => {
+        if (visibleTableData.length === 0) return [];
+        const groups = [];
+        let i = 0;
+        while (i < visibleTableData.length) {
+            let j = i + 1;
+            const currentGroupKey = getContentGroupKey(visibleTableData[i]);
+            if (currentGroupKey) {
+                while (j < visibleTableData.length && getContentGroupKey(visibleTableData[j]) === currentGroupKey) {
+                    j++;
+                }
+            }
+            groups.push({
+                groupKey: currentGroupKey || `single-${i}-${visibleTableData[i].ID || i}`,
+                startIndex: i,
+                rows: visibleTableData.slice(i, j)
+            });
+            i = j;
+        }
+        return groups;
+    }, [visibleTableData]);
+
     // Stats calculations
     const stats = React.useMemo(() => {
         let totalViews = 0;
@@ -917,99 +939,99 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 2k:space-y-6">
 
             {/* ========================================================
                1. DESKTOP VIEW LAYOUT (hidden on screens <= 1024px)
                ======================================================== */}
-            <div className="hidden lg:grid grid-cols-4 gap-6 items-start">
-                {/* Left/Center 3 Columns */}
-                <div className="col-span-3 space-y-6">
+            <div className="hidden lg:grid grid-cols-4 2k:grid-cols-12 gap-4 2k:gap-6 items-start">
+                {/* Left/Center Main Columns (3 cols on 1080p, 9 cols on 2K) */}
+                <div className="col-span-3 2k:col-span-9 space-y-4 2k:space-y-6">
                     {/* Card-less KPI Band */}
                     <div className="border border-border bg-surface rounded-xl overflow-hidden divide-y sm:divide-y-0 sm:divide-x divide-border grid grid-cols-2 lg:grid-cols-5">
-                        {/* Stat 1 - Lead: Total Views */}
-                        <div className="col-span-2 sm:col-span-1 lg:col-span-1 p-4 lg:p-5 flex flex-col justify-between bg-orange-500/[0.03]">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Views</span>
-                                <Icon name="trending_up" size={16} className="text-primary" />
+                        {/* Stat 1 - Total Views */}
+                        <div className="col-span-2 sm:col-span-1 lg:col-span-1 py-3.5 px-4 2k:py-5 2k:px-5 flex flex-col justify-start">
+                            <div className="flex items-center justify-between h-4 2k:h-5">
+                                <span className="text-xs 2k:text-sm font-medium text-zinc-600 dark:text-zinc-400">Total Views</span>
+                                <Icon name="trending_up" size={16} className="text-zinc-400 dark:text-zinc-500 2k:scale-110" />
                             </div>
-                            <div className="mt-3">
-                                <h4 className="text-2xl lg:text-3xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
+                            <div className="mt-2.5 2k:mt-3.5">
+                                <h4 className="text-xl lg:text-2xl 2k:text-3xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
                                     {formatNumber(stats.totalViews)}
                                 </h4>
-                                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-1 font-mono">Across all platforms</p>
+                                <p className="text-[11px] 2k:text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 2k:mt-2 font-mono truncate whitespace-nowrap">Across all platforms</p>
                             </div>
                         </div>
 
                         {/* Stat 2 - Active Titles */}
-                        <div className="p-4 lg:p-5 flex flex-col justify-between">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Active Titles</span>
-                                <Icon name="tag" size={16} className="text-zinc-400" />
+                        <div className="py-3.5 px-4 2k:py-5 2k:px-5 flex flex-col justify-start">
+                            <div className="flex items-center justify-between h-4 2k:h-5">
+                                <span className="text-xs 2k:text-sm font-medium text-zinc-600 dark:text-zinc-400">Active Titles</span>
+                                <Icon name="tag" size={16} className="text-zinc-400 dark:text-zinc-500 2k:scale-110" />
                             </div>
-                            <div className="mt-3">
-                                <h4 className="text-xl lg:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
+                            <div className="mt-2.5 2k:mt-3.5">
+                                <h4 className="text-xl lg:text-2xl 2k:text-3xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
                                     {stats.contentTitlesSize}
                                 </h4>
-                                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-1 font-mono">Active campaigns</p>
+                                <p className="text-[11px] 2k:text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 2k:mt-2 font-mono truncate whitespace-nowrap">Active campaigns</p>
                             </div>
                         </div>
 
                         {/* Stat 3 - Total Reach */}
-                        <div className="p-4 lg:p-5 flex flex-col justify-between">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Reach</span>
-                                <Icon name="public" size={16} className="text-zinc-400" />
+                        <div className="py-3.5 px-4 2k:py-5 2k:px-5 flex flex-col justify-start">
+                            <div className="flex items-center justify-between h-4 2k:h-5">
+                                <span className="text-xs 2k:text-sm font-medium text-zinc-600 dark:text-zinc-400">Total Reach</span>
+                                <Icon name="public" size={16} className="text-zinc-400 dark:text-zinc-500 2k:scale-110" />
                             </div>
-                            <div className="mt-3">
-                                <h4 className="text-xl lg:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
+                            <div className="mt-2.5 2k:mt-3.5">
+                                <h4 className="text-xl lg:text-2xl 2k:text-3xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
                                     {formatNumber(stats.totalReach)}
                                 </h4>
-                                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-1 font-mono">Unique accounts</p>
+                                <p className="text-[11px] 2k:text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 2k:mt-2 font-mono truncate whitespace-nowrap">Unique accounts</p>
                             </div>
                         </div>
 
                         {/* Stat 4 - Total Engagement */}
-                        <div className="p-4 lg:p-5 flex flex-col justify-between">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Engagement</span>
-                                <Icon name="favorite" size={16} className="text-zinc-400" />
+                        <div className="py-3.5 px-4 2k:py-5 2k:px-5 flex flex-col justify-start">
+                            <div className="flex items-center justify-between h-4 2k:h-5">
+                                <span className="text-xs 2k:text-sm font-medium text-zinc-600 dark:text-zinc-400">Total Engagement</span>
+                                <Icon name="favorite" size={16} className="text-zinc-400 dark:text-zinc-500 2k:scale-110" />
                             </div>
-                            <div className="mt-3">
-                                <h4 className="text-xl lg:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
+                            <div className="mt-2.5 2k:mt-3.5">
+                                <h4 className="text-xl lg:text-2xl 2k:text-3xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
                                     {formatNumber(stats.totalEngagement)}
                                 </h4>
-                                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-1 font-mono">Likes, comments, shares</p>
+                                <p className="text-[11px] 2k:text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 2k:mt-2 font-mono truncate whitespace-nowrap">Likes, comments, shares</p>
                             </div>
                         </div>
 
                         {/* Stat 5 - Engagement Rate */}
-                        <div className="p-4 lg:p-5 flex flex-col justify-between">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Engagement Rate</span>
-                                <Icon name="percent" size={16} className="text-zinc-400" />
+                        <div className="py-3.5 px-4 2k:py-5 2k:px-5 flex flex-col justify-start">
+                            <div className="flex items-center justify-between h-4 2k:h-5">
+                                <span className="text-xs 2k:text-sm font-medium text-zinc-600 dark:text-zinc-400">Engagement Rate</span>
+                                <Icon name="percent" size={16} className="text-zinc-400 dark:text-zinc-500 2k:scale-110" />
                             </div>
-                            <div className="mt-3">
-                                <h4 className="text-xl lg:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
+                            <div className="mt-2.5 2k:mt-3.5">
+                                <h4 className="text-xl lg:text-2xl 2k:text-3xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tracking-tight leading-none">
                                     {stats.avgEngagementRate}
                                 </h4>
-                                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-1 font-mono">Avg. engagement ratio</p>
+                                <p className="text-[11px] 2k:text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 2k:mt-2 font-mono truncate whitespace-nowrap">Avg. engagement ratio</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Platform Performance & Growth Performance Row */}
-                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 2k:gap-6 items-stretch">
                         {/* Platform Distribution Card */}
-                        <div className="xl:col-span-5 border border-border bg-surface rounded-xl p-4 sm:p-5 flex flex-col justify-between space-y-4">
-                            <div className="flex justify-between items-center pb-2 border-b border-border">
-                                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Platform Performance</span>
-                                <span className="text-[10px] text-primary font-semibold uppercase tracking-wider font-mono">Views</span>
+                        <div className="lg:col-span-5 border border-border bg-surface rounded-xl p-3.5 sm:p-4 2k:p-5 flex flex-col justify-between">
+                            <div className="flex justify-between items-center pb-2 2k:pb-3 border-b border-border">
+                                <span className="text-xs 2k:text-sm font-semibold text-zinc-900 dark:text-zinc-100">Platform Performance</span>
+                                <span className="text-[10px] 2k:text-xs text-primary font-semibold uppercase tracking-wider font-mono">Views</span>
                             </div>
 
                             {/* Proportional Segmented Bar */}
-                            <div className="space-y-2">
-                                <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
+                            <div className="space-y-1.5 2k:space-y-2.5 my-auto py-2 2k:py-4">
+                                <div className="h-2 2k:h-3 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
                                     <div
                                         style={{ width: `${platformDistribution.igPct}%` }}
                                         className="bg-[#E1306C] h-full transition-all duration-300"
@@ -1026,7 +1048,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                         title={`YouTube: ${platformDistribution.ytPct}%`}
                                     />
                                 </div>
-                                <div className="flex justify-between text-[10px] text-zinc-600 dark:text-zinc-400 font-mono">
+                                <div className="flex justify-between text-[10px] 2k:text-xs text-zinc-600 dark:text-zinc-400 font-mono">
                                     <span>Instagram {platformDistribution.igPct}%</span>
                                     <span>TikTok {platformDistribution.ttPct}%</span>
                                     <span>YouTube {platformDistribution.ytPct}%</span>
@@ -1034,39 +1056,47 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                             </div>
 
                             {/* Platform Cards */}
-                            <div className="grid grid-cols-3 gap-2.5">
+                            <div className="grid grid-cols-3 gap-2 2k:gap-3">
                                 {/* Instagram */}
-                                <div className="border border-border/70 rounded-lg p-2.5 flex flex-col items-center justify-center gap-1.5 bg-zinc-50/50 dark:bg-zinc-900/50">
-                                    <Image src="/img/icons/instagram-logo.png" width={18} height={18} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
-                                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">IG</span>
-                                    <span className="text-xs font-bold font-mono text-zinc-900 dark:text-zinc-100">{formatNumber(platformStats.Instagram.views)}</span>
+                                <div className="border border-border/70 rounded-lg py-2 px-1.5 2k:py-3 2k:px-3 flex flex-col items-center justify-center gap-1 2k:gap-1.5 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                    <Image src="/img/icons/instagram-logo.png" width={20} height={20} alt="" aria-hidden="true" className="h-3.5 w-3.5 2k:h-5 2k:w-5 object-contain" />
+                                    <span className="text-[10px] 2k:text-xs font-mono text-zinc-500 uppercase tracking-wider">IG</span>
+                                    <span className="text-xs 2k:text-sm font-bold font-mono text-zinc-900 dark:text-zinc-100">{formatNumber(platformStats.Instagram.views)}</span>
                                 </div>
 
                                 {/* TikTok */}
-                                <div className="border border-border/70 rounded-lg p-2.5 flex flex-col items-center justify-center gap-1.5 bg-zinc-50/50 dark:bg-zinc-900/50">
-                                    <Image src="/img/icons/tiktok-logo.png" width={17} height={17} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
-                                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">TT</span>
-                                    <span className="text-xs font-bold font-mono text-zinc-900 dark:text-zinc-100">{formatNumber(platformStats.TikTok.views)}</span>
+                                <div className="border border-border/70 rounded-lg py-2 px-1.5 2k:py-3 2k:px-3 flex flex-col items-center justify-center gap-1 2k:gap-1.5 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                    <Image src="/img/icons/tiktok-logo.png" width={19} height={19} alt="" aria-hidden="true" className="h-3.5 w-3.5 2k:h-5 2k:w-5 object-contain" />
+                                    <span className="text-[10px] 2k:text-xs font-mono text-zinc-500 uppercase tracking-wider">TT</span>
+                                    <span className="text-xs 2k:text-sm font-bold font-mono text-zinc-900 dark:text-zinc-100">{formatNumber(platformStats.TikTok.views)}</span>
                                 </div>
 
                                 {/* YouTube */}
-                                <div className="border border-border/70 rounded-lg p-2.5 flex flex-col items-center justify-center gap-1.5 bg-zinc-50/50 dark:bg-zinc-900/50">
-                                    <Image src="/img/icons/youtube-logo.webp" width={18} height={18} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
-                                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">YT</span>
-                                    <span className="text-xs font-bold font-mono text-zinc-900 dark:text-zinc-100">{formatNumber(platformStats.YouTube.views)}</span>
+                                <div className="border border-border/70 rounded-lg py-2 px-1.5 2k:py-3 2k:px-3 flex flex-col items-center justify-center gap-1 2k:gap-1.5 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                    <Image src="/img/icons/youtube-logo.webp" width={20} height={20} alt="" aria-hidden="true" className="h-3.5 w-3.5 2k:h-5 2k:w-5 object-contain" />
+                                    <span className="text-[10px] 2k:text-xs font-mono text-zinc-500 uppercase tracking-wider">YT</span>
+                                    <span className="text-xs 2k:text-sm font-bold font-mono text-zinc-900 dark:text-zinc-100">{formatNumber(platformStats.YouTube.views)}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Growth Performance Chart */}
-                        <div className="xl:col-span-7 border border-border bg-surface rounded-xl p-4 sm:p-5 flex flex-col justify-between space-y-3">
-                            <div className="flex justify-between items-center pb-2 border-b border-border">
-                                <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Growth Performance</h3>
-                                <div className="flex border border-border rounded-lg p-0.5 text-[10px] font-medium font-mono">
+                        <div className="lg:col-span-7 border border-border bg-surface rounded-xl p-3.5 sm:p-4 2k:p-5 flex flex-col justify-between">
+                            <div className="flex flex-wrap justify-between items-center pb-2 2k:pb-3 border-b border-border gap-2">
+                                <div className="flex items-center gap-2.5 2k:gap-4">
+                                    <h3 className="text-xs 2k:text-sm font-semibold text-zinc-900 dark:text-zinc-100">Growth Performance</h3>
+                                    {/* Inline Platform Indicators */}
+                                    <div className="hidden sm:flex items-center gap-2 2k:gap-3 text-[10px] 2k:text-xs text-zinc-500 font-mono">
+                                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 2k:w-2 2k:h-2 rounded-full" style={{ backgroundColor: '#E1306C' }} /> IG</span>
+                                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 2k:w-2 2k:h-2 rounded-full" style={{ backgroundColor: '#00F2FE' }} /> TT</span>
+                                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 2k:w-2 2k:h-2 rounded-full" style={{ backgroundColor: '#FF0000' }} /> YT</span>
+                                    </div>
+                                </div>
+                                <div className="flex border border-border rounded-lg p-0.5 text-[10px] 2k:text-xs font-medium font-mono">
                                     {['Followers', 'Engagement', 'Reach'].map(tab => (
                                         <button
                                             key={tab}
-                                            className={`px-2.5 py-0.5 rounded cursor-pointer transition-colors ${
+                                            className={`px-2 2k:px-3 py-0.5 2k:py-1 rounded cursor-pointer transition-colors ${
                                                 activeChartTab === tab
                                                     ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold'
                                                     : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
@@ -1079,15 +1109,9 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                 </div>
                             </div>
 
-                            <div className="h-44 w-full relative">
+                            <div className="h-[150px] 2k:h-[220px] w-full relative mt-1.5 2k:mt-3">
                                 <canvas ref={activityCanvasRef} role="img" aria-label={`${activeChartTab} performance by platform`} aria-describedby="dashboard-chart-summary" />
                                 <p id="dashboard-chart-summary" className="sr-only">Platform views: Instagram {formatNumber(platformStats.Instagram.views)}; TikTok {formatNumber(platformStats.TikTok.views)}; YouTube {formatNumber(platformStats.YouTube.views)}.</p>
-                            </div>
-
-                            <div className="flex justify-center gap-4 text-[11px] text-zinc-500 font-mono">
-                                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#E1306C' }} /> Instagram</span>
-                                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#00F2FE' }} /> TikTok</span>
-                                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#FF0000' }} /> YouTube</span>
                             </div>
                         </div>
                     </div>
@@ -1169,104 +1193,113 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                                     />
                                                 </th>
                                             )}
-                                            <th className="px-3 py-3 w-12 text-center font-mono">No</th>
-                                            <SortableTableHeader column="Date" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5">Date</SortableTableHeader>
-                                            <SortableTableHeader column="Content Title" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5">Content title</SortableTableHeader>
-                                            <th className="px-4 py-3">Platform</th>
-                                            <SortableTableHeader column="Views" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 text-right font-mono" align="right">Views</SortableTableHeader>
-                                            <SortableTableHeader column="Total Engagement" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 text-right font-mono" align="right">Engagement</SortableTableHeader>
-                                            <SortableTableHeader column="KPI Summary" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 text-center font-mono" align="center">Summary</SortableTableHeader>
-                                            <th className="px-4 py-3 text-center">Link</th>
-                                            {isUnlocked && userRole === 'Admin' && <th className="px-4 py-3 text-center">Edit</th>}
+                                            <th className="px-3 py-3 2k:py-4 w-12 text-center font-mono 2k:text-xs">No</th>
+                                            <SortableTableHeader column="Date" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 2k:py-2.5 2k:text-xs">Date</SortableTableHeader>
+                                            <SortableTableHeader column="Content Title" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 2k:py-2.5 2k:text-xs">Content title</SortableTableHeader>
+                                            <th className="px-4 py-3 2k:py-4 2k:text-xs">Platform</th>
+                                            <SortableTableHeader column="Views" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 2k:py-2.5 text-right font-mono 2k:text-xs" align="right">Views</SortableTableHeader>
+                                            <SortableTableHeader column="Total Engagement" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 2k:py-2.5 text-right font-mono 2k:text-xs" align="right">Engagement</SortableTableHeader>
+                                            <SortableTableHeader column="KPI Summary" activeColumn={sortColumn} direction={sortDirection} onSort={handleHeaderSort} className="px-4 py-1.5 2k:py-2.5 text-center font-mono 2k:text-xs" align="center">Summary</SortableTableHeader>
+                                            <th className="px-4 py-3 2k:py-4 text-center 2k:text-xs">Link</th>
+                                            {isUnlocked && userRole === 'Admin' && <th className="px-4 py-3 2k:py-4 text-center 2k:text-xs">Edit</th>}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-border">
-                                        {visibleTableData.map((row, idx) => {
-                                            const isRowSelected = selectedRows.includes(row.ID);
-                                            const rowSpan = rowspans[idx] || { Date: 1, ID: 1, ContentTitle: 1, PIC: 1, Category: 1, KPISummary: 1 };
+                                    {tableGroups.map((group) => {
+                                        const isGroupSelected = group.rows.some(r => selectedRows.includes(r.ID));
+                                        return (
+                                            <tbody
+                                                key={group.groupKey}
+                                                className={`divide-y divide-border/60 border-b border-border transition-colors hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40 ${isGroupSelected ? 'bg-orange-500/5' : ''}`}
+                                            >
+                                                {group.rows.map((row, rIdx) => {
+                                                    const idx = group.startIndex + rIdx;
+                                                    const isRowSelected = selectedRows.includes(row.ID);
+                                                    const rowSpan = rowspans[idx] || { Date: 1, ID: 1, ContentTitle: 1, PIC: 1, Category: 1, KPISummary: 1 };
 
-                                            return (
-                                                <tr key={`${row.ID}-${idx}`} className={`hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40 transition-colors ${isRowSelected ? 'bg-orange-500/5' : ''}`}>
+                                                    return (
+                                                        <tr key={`${row.ID}-${idx}`} className="transition-colors">
                                                     {isUnlocked && userRole === 'Admin' && (
-                                                        <td className="px-4 py-2.5 w-10 text-center">
+                                                        <td className="px-4 py-2.5 2k:py-3.5 w-10 text-center">
                                                             <input
                                                                 type="checkbox"
                                                                 aria-label={`Select ${row['Content Title'] || `content record ${idx + 1}`}`}
-                                                                className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
+                                                                className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5 2k:h-4 2k:w-4 cursor-pointer"
                                                                 checked={isRowSelected}
                                                                 onChange={() => toggleSelectRow(row.ID)}
                                                             />
                                                         </td>
                                                     )}
                                                     {rowSpan.ContentTitle > 0 && (
-                                                        <td rowSpan={rowSpan.ContentTitle} className="px-3 py-2.5 w-12 text-center text-zinc-600 dark:text-zinc-400 text-xs font-mono">
+                                                        <td rowSpan={rowSpan.ContentTitle} className="px-3 py-2.5 2k:py-3.5 w-12 text-center text-zinc-600 dark:text-zinc-400 text-xs 2k:text-sm font-mono">
                                                             {contentGroupNumbers[idx]}
                                                         </td>
                                                     )}
                                                     {rowSpan.Date > 0 && (
-                                                        <td rowSpan={rowSpan.Date} className="px-4 py-2.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 font-mono">
+                                                        <td rowSpan={rowSpan.Date} className="px-4 py-2.5 2k:py-3.5 text-xs 2k:text-sm font-medium text-zinc-600 dark:text-zinc-400 font-mono">
                                                             {formatDisplayDate(row.Date)}
                                                         </td>
                                                     )}
                                                     {rowSpan.ContentTitle > 0 && (
-                                                        <td rowSpan={rowSpan.ContentTitle} className="px-4 py-2.5">
-                                                            <div className="space-y-0.5 max-w-[240px]">
-                                                                <p className="font-semibold text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2" title={row['Content Title']}>
+                                                        <td rowSpan={rowSpan.ContentTitle} className="px-4 py-2.5 2k:py-3.5">
+                                                            <div className="space-y-0.5 max-w-[240px] 2k:max-w-[340px]">
+                                                                <p className="font-semibold text-zinc-900 dark:text-zinc-100 leading-snug line-clamp-2 text-xs 2k:text-sm" title={row['Content Title']}>
                                                                     {row['Content Title'] || 'Untitled'}
                                                                 </p>
-                                                                <p className="text-[11px] text-zinc-500">
+                                                                <p className="text-[11px] 2k:text-xs text-zinc-500">
                                                                     {row.Category} &middot; PIC: <span className="font-semibold text-primary">{getPicDisplayName(row.PIC)}</span>
                                                                 </p>
                                                             </div>
                                                         </td>
                                                     )}
-                                                    <td className="px-4 py-2.5">
+                                                    <td className="px-4 py-2.5 2k:py-3.5">
                                                         <PlatformBadge platform={row.Platform} />
                                                     </td>
-                                                    <td className="px-4 py-2.5 text-right font-bold text-zinc-900 dark:text-zinc-100 font-mono">
+                                                    <td className="px-4 py-2.5 2k:py-3.5 text-right font-bold text-zinc-900 dark:text-zinc-100 font-mono text-xs 2k:text-sm">
                                                         {formatNumber(row.Views)}
                                                     </td>
-                                                    <td className="px-4 py-2.5 text-right text-zinc-600 dark:text-zinc-400 font-mono">
+                                                    <td className="px-4 py-2.5 2k:py-3.5 text-right text-zinc-600 dark:text-zinc-400 font-mono text-xs 2k:text-sm">
                                                         {formatNumber(row['Total Engagement'])}
                                                     </td>
                                                     {rowSpan.KPISummary > 0 && (
-                                                        <td rowSpan={rowSpan.KPISummary} className="px-4 py-2.5 text-center">
-                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase tracking-wider ${getKpiBadgeClass(row['KPI Summary'])}`}>
+                                                        <td rowSpan={rowSpan.KPISummary} className="px-4 py-2.5 2k:py-3.5 text-center">
+                                                            <span className={`px-2 py-0.5 rounded text-[10px] 2k:text-xs font-mono font-semibold uppercase tracking-wider ${getKpiBadgeClass(row['KPI Summary'])}`}>
                                                                 KPI: {row['KPI Summary'] || '3'}
                                                             </span>
                                                         </td>
                                                     )}
-                                                    <td className="px-4 py-2.5 text-center">
+                                                    <td className="px-4 py-2.5 2k:py-3.5 text-center">
                                                         {row.URL ? (
                                                             <a href={row.URL} target="_blank" rel="noopener noreferrer" className="inline-flex p-1 text-zinc-400 hover:text-primary transition-colors cursor-pointer" title="Open post URL">
-                                                                <Icon name="open_in_new" size={15} />
+                                                                <Icon name="open_in_new" size={15} className="2k:scale-110" />
                                                             </a>
                                                         ) : (
-                                                            <span className="text-zinc-300 dark:text-zinc-700">-</span>
+                                                            <span className="text-zinc-300 dark:text-zinc-700 text-xs 2k:text-sm">-</span>
                                                         )}
                                                     </td>
                                                     {isUnlocked && userRole === 'Admin' && (
-                                                        <td className="px-4 py-2.5 text-center">
+                                                        <td className="px-4 py-2.5 2k:py-3.5 text-center">
                                                             <button
                                                                 type="button"
                                                                 className="p-1 text-zinc-400 hover:text-primary transition-colors cursor-pointer"
                                                                 onClick={() => loadRowForEdit(row, currentData.indexOf(row))}
                                                                 title="Edit metrics"
                                                             >
-                                                                <Icon name="edit" size={15} />
+                                                                <Icon name="edit" size={15} className="2k:scale-110" />
                                                             </button>
                                                         </td>
                                                     )}
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        );
+                                    })}
                                 </table>
                             )}
                         </div>
                         {tablePages.length > 1 && (
-                            <nav className="flex items-center justify-between gap-4 border-t border-border bg-zinc-50/50 dark:bg-zinc-900/50 px-5 py-3" aria-label="Content table pagination">
-                                <p className="text-xs text-zinc-500 font-mono">
+                            <nav className="flex items-center justify-between gap-4 border-t border-border bg-zinc-50/50 dark:bg-zinc-900/50 px-5 py-3 2k:py-4" aria-label="Content table pagination">
+                                <p className="text-xs 2k:text-sm text-zinc-500 font-mono">
                                     Showing {activeTablePage.start + 1} - {activeTablePage.start + visibleTableData.length} of {processedData.length}
                                 </p>
                                 <div className="flex items-center gap-2">
@@ -1295,55 +1328,55 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                     </div>
                 </div>
 
-                {/* Right 1 Column Sidebar */}
-                <div className="space-y-6">
+                {/* Right Column Sidebar (1 col on 1080p, 3 cols on 2K) */}
+                <div className="col-span-1 2k:col-span-3 space-y-4 2k:space-y-6 2k:max-w-[420px]">
                     {userRole !== 'Viewer' && (
-                        <section aria-labelledby="dashboard-priority-heading" className="rounded-xl border border-border bg-surface p-4 shadow-xs">
+                        <section aria-labelledby="dashboard-priority-heading" className="rounded-xl border border-border bg-surface p-4 2k:p-5 shadow-xs">
                             <div className="flex items-center justify-between gap-3">
-                                <h2 id="dashboard-priority-heading" className="text-xs font-bold text-zinc-900 dark:text-zinc-100">What needs attention</h2>
-                                <button type="button" onClick={openTaskDirectory} className="text-[11px] font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">View all tasks</button>
+                                <h2 id="dashboard-priority-heading" className="text-xs 2k:text-sm font-bold text-zinc-900 dark:text-zinc-100">What needs attention</h2>
+                                <button type="button" onClick={openTaskDirectory} className="text-[11px] 2k:text-xs font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">View all tasks</button>
                             </div>
                             <div className="mt-3 grid grid-cols-2 divide-x divide-border rounded-lg border border-border bg-zinc-50/50 dark:bg-zinc-900/50">
-                                <button type="button" onClick={() => taskOverview.overdue[0] ? openTask(taskOverview.overdue[0].id) : openTaskDirectory()} className="flex items-center justify-between gap-2 rounded-l-lg px-3 py-2.5 text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                                    <span className="text-xs font-medium text-zinc-500">Overdue</span>
-                                    <span className={`font-mono text-base font-bold ${taskOverview.overdue.length ? 'text-red-500' : 'text-zinc-900 dark:text-zinc-100'}`}>{taskOverview.overdue.length}</span>
+                                <button type="button" onClick={() => taskOverview.overdue[0] ? openTask(taskOverview.overdue[0].id) : openTaskDirectory()} className="flex items-center justify-between gap-2 rounded-l-lg px-3 py-2.5 2k:py-3.5 text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                                    <span className="text-xs 2k:text-sm font-medium text-zinc-500">Overdue</span>
+                                    <span className={`font-mono text-base 2k:text-lg font-bold ${taskOverview.overdue.length ? 'text-red-500' : 'text-zinc-900 dark:text-zinc-100'}`}>{taskOverview.overdue.length}</span>
                                 </button>
-                                <button type="button" onClick={() => taskOverview.dueToday[0] ? openTask(taskOverview.dueToday[0].id) : openPlanner()} className="flex items-center justify-between gap-2 rounded-r-lg px-3 py-2.5 text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                                    <span className="text-xs font-medium text-zinc-500">Due today</span>
-                                    <span className="font-mono text-base font-bold text-zinc-900 dark:text-zinc-100">{taskOverview.dueToday.length}</span>
+                                <button type="button" onClick={() => taskOverview.dueToday[0] ? openTask(taskOverview.dueToday[0].id) : openPlanner()} className="flex items-center justify-between gap-2 rounded-r-lg px-3 py-2.5 2k:py-3.5 text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                                    <span className="text-xs 2k:text-sm font-medium text-zinc-500">Due today</span>
+                                    <span className="font-mono text-base 2k:text-lg font-bold text-zinc-900 dark:text-zinc-100">{taskOverview.dueToday.length}</span>
                                 </button>
                             </div>
-                            <div className="mt-3 border-t border-border pt-2.5">
+                            <div className="mt-3 2k:mt-4 border-t border-border pt-2.5 2k:pt-3.5">
                                 <div className="flex items-center justify-between gap-3">
-                                    <h3 className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-400 uppercase font-mono tracking-wider">Next deadline</h3>
-                                    <button type="button" onClick={openPlanner} className="text-[10px] font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Planner</button>
+                                    <h3 className="text-[10px] 2k:text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase font-mono tracking-wider">Next deadline</h3>
+                                    <button type="button" onClick={openPlanner} className="text-[10px] 2k:text-xs font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Planner</button>
                                 </div>
                                 {taskOverview.upcoming[0] ? (
-                                    <button type="button" onClick={() => openTask(taskOverview.upcoming[0].id)} className="mt-1.5 flex w-full min-w-0 items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`Open task ${taskOverview.upcoming[0].contentTitle || 'Untitled'}`}>
-                                        <span className="shrink-0 text-[10px] font-mono font-bold text-primary">{formatDisplayDate(taskOverview.upcoming[0].date)}</span>
-                                        <span className="min-w-0 flex-1 truncate text-xs font-semibold text-zinc-800 dark:text-zinc-200">{taskOverview.upcoming[0].contentTitle || 'Untitled'}</span>
-                                        <Icon name="chevron_right" size={13} className="text-zinc-400 shrink-0" aria-hidden="true" />
+                                    <button type="button" onClick={() => openTask(taskOverview.upcoming[0].id)} className="mt-1.5 flex w-full min-w-0 items-center gap-2 rounded-md px-1.5 py-1 2k:py-1.5 text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label={`Open task ${taskOverview.upcoming[0].contentTitle || 'Untitled'}`}>
+                                        <span className="shrink-0 text-[10px] 2k:text-xs font-mono font-bold text-primary">{formatDisplayDate(taskOverview.upcoming[0].date)}</span>
+                                        <span className="min-w-0 flex-1 truncate text-xs 2k:text-sm font-semibold text-zinc-800 dark:text-zinc-200">{taskOverview.upcoming[0].contentTitle || 'Untitled'}</span>
+                                        <Icon name="chevron_right" size={13} className="text-zinc-400 shrink-0 2k:scale-110" aria-hidden="true" />
                                     </button>
-                                ) : <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-400">Nothing scheduled next.</p>}
+                                ) : <p className="mt-1.5 text-xs 2k:text-sm text-zinc-600 dark:text-zinc-400">Nothing scheduled next.</p>}
                             </div>
                         </section>
                     )}
 
                     {/* Monthly Calendar Widget */}
-                    <div className="border border-border bg-surface rounded-xl p-4 shadow-xs">
+                    <div className="border border-border bg-surface rounded-xl p-4 2k:p-5 shadow-xs">
                         <div className="flex justify-between items-center pb-2.5 mb-3 border-b border-border">
                             <button className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={handlePrevMonth} aria-label="Previous month">
                                 <Icon name="chevron_left" size={15} />
                             </button>
-                            <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">{monthNames[currentMonth]} {currentYear}</span>
+                            <span className="font-semibold text-xs 2k:text-sm text-zinc-900 dark:text-zinc-100">{monthNames[currentMonth]} {currentYear}</span>
                             <button className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800" onClick={handleNextMonth} aria-label="Next month">
                                 <Icon name="chevron_right" size={15} />
                             </button>
                         </div>
-                        <div className="grid grid-cols-7 text-center text-[10px] font-mono font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-2">
+                        <div className="grid grid-cols-7 text-center text-[10px] 2k:text-xs font-mono font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider mb-2">
                             <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                         </div>
-                        <div className="grid grid-cols-7 gap-1">
+                        <div className="grid grid-cols-7 gap-1 2k:gap-1.5">
                             {calendarDays.map((day, idx) => {
                                 const isSelected = day.dateStr && selectedDate === day.dateStr;
 
@@ -1383,7 +1416,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                         aria-hidden={day.isDummy ? 'true' : undefined}
                                         aria-label={day.isDummy ? undefined : `Show schedule for ${formatDisplayDate(day.dateStr)}`}
                                         tabIndex={day.isDummy ? -1 : undefined}
-                                        className={`h-7 w-full border-none rounded text-xs font-mono cursor-pointer flex items-center justify-center transition-colors ${day.isDummy
+                                        className={`h-7 2k:h-9 w-full border-none rounded text-xs 2k:text-sm font-mono cursor-pointer flex items-center justify-center transition-colors ${day.isDummy
                                                 ? 'bg-transparent text-transparent pointer-events-none'
                                                 : isSelected
                                                     ? 'bg-primary text-on-primary font-bold shadow-xs'
@@ -1400,9 +1433,9 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                     </div>
 
                     {/* Scheduled timeline card */}
-                    <div className="border border-border bg-surface rounded-xl p-4 shadow-xs space-y-3">
+                    <div className="border border-border bg-surface rounded-xl p-4 2k:p-5 shadow-xs space-y-3 2k:space-y-4">
                         <div className="flex justify-between items-center pb-2.5 border-b border-border">
-                            <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">Scheduled for this day</h3>
+                            <h3 className="text-xs 2k:text-sm font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">Scheduled for this day</h3>
                             {userRole === 'Admin' && (
                                 <button
                                     className="w-6 h-6 flex items-center justify-center bg-primary text-on-primary rounded hover:opacity-90 cursor-pointer transition-opacity"

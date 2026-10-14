@@ -711,6 +711,7 @@ export function CalendarExportModal({ isOpen, onClose }) {
                     gap: 1px !important;
                     flex-grow: 1 !important;
                     grid-auto-rows: 1fr !important;
+                    grid-template-rows: none !important;
                     width: 100% !important;
                     background-color: ${exportTheme === 'light' ? '#e2e8f0' : '#2e3038'} !important;
                 }

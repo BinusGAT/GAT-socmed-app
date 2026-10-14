@@ -36,6 +36,11 @@
 }
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant 2k (@media (min-width: 2000px));
+
+@theme {
+  --breakpoint-2k: 2000px;
+}
 
 :root {
   --surface: #ffffff;
@@ -619,4 +624,47 @@ input[type="checkbox"]:checked::before {
   :focus-visible { outline: 3px solid Highlight !important; outline-offset: 3px; }
   .material-symbols-outlined { forced-color-adjust: none; color: ButtonText; }
   canvas { border: 1px solid CanvasText; }
+}
+
+/* Content Planner: fit the whole month in the viewport on desktop.
+   --cal-chrome = everything stacked above the week rows (topbar, page padding,
+   filter toolbar, category pills, month toolbar, weekday header).
+   --cal-panel-offset = everything above the calendar/panel row. */
+@media (min-width: 1024px) {
+  .calendar-days {
+    --cal-chrome: 334px;
+    grid-template-rows: repeat(
+      var(--cal-rows, 6),
+      minmax(96px, calc((100vh - var(--cal-chrome)) / var(--cal-rows, 6)))
+    );
+    grid-template-rows: repeat(
+      var(--cal-rows, 6),
+      minmax(96px, calc((100dvh - var(--cal-chrome)) / var(--cal-rows, 6)))
+    );
+  }
+
+  .calendar-side-panel {
+    --cal-panel-offset: 236px;
+    max-height: calc(100dvh - var(--cal-panel-offset));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (min-width: 2000px) {
+  .calendar-layout {
+    grid-template-columns: minmax(0, 1fr) 420px;
+  }
+
+  .calendar-layout > * {
+    grid-column: auto;
+  }
+
+  .calendar-days {
+    --cal-chrome: 342px;
+  }
+
+  .calendar-side-panel {
+    --cal-panel-offset: 244px;
+  }
 }

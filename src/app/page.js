@@ -295,9 +295,7 @@ function DashboardAppContent() {
             <main
                 id="main-content"
                 tabIndex={-1}
-                className={`min-w-0 flex-1 flex flex-col min-h-screen transition-all duration-200 pt-14 pb-20 lg:pb-0 ${
-                    sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-[232px]'
-                }`}
+                className="min-w-0 flex-1 flex flex-col min-h-screen transition-all duration-200 pb-20 lg:pb-0"
             >
                 <Topbar
                     openUnlockModal={() => setUnlockOpen(true)}

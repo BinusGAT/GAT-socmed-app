@@ -31,8 +31,7 @@ export default function Topbar({
         notificationsData,
         saveNotification,
         deleteNotification,
-        showAlert,
-        sidebarCollapsed
+        showAlert
     } = useDashboard();
 
     const [profileOpen, setProfileOpen] = useState(false);
@@ -169,28 +168,26 @@ export default function Topbar({
 
     return (
         <header
-            className={`fixed top-0 right-0 left-0 h-14 bg-surface/85 backdrop-blur-md border-b border-border z-30 flex items-center justify-between px-4 sm:px-6 transition-all duration-200 ${
-                sidebarCollapsed ? 'lg:left-16' : 'lg:left-[232px]'
-            }`}
+            className="sticky top-0 w-full h-14 2k:h-16 bg-surface/85 backdrop-blur-md border-b border-border z-20 flex items-center justify-between px-4 sm:px-6 2k:px-8 transition-all duration-200"
         >
             {/* Header Left: Page Title */}
             <div className="flex items-center gap-3 min-w-0">
-                <h2 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                <h2 className="text-sm sm:text-base 2k:text-lg font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                     {getPageTitle()}
                 </h2>
             </div>
 
             {/* Header Right: Search, Date Filter, Notifications, Profile */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 2k:gap-4">
                 {/* Search (only on dashboard) */}
                 {currentView === 'dashboard' && (
-                    <div className="relative w-40 sm:w-60 hidden sm:block">
+                    <div className="relative w-40 sm:w-60 2k:w-72 hidden sm:block">
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none flex items-center">
-                            <Icon name="search" size={15} />
+                            <Icon name="search" size={15} className="2k:scale-110" />
                         </span>
                         <input
                             type="text"
-                            className="w-full h-8 pl-8 pr-3 text-xs bg-zinc-100/70 dark:bg-zinc-800/60 border border-border rounded-lg text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                            className="w-full h-8 2k:h-9 pl-8 2k:pl-9 pr-3 text-xs 2k:text-sm bg-zinc-100/70 dark:bg-zinc-800/60 border border-border rounded-lg text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                             placeholder="Search posts..."
                             value={searchQuery || ''}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -201,17 +198,17 @@ export default function Topbar({
                 {/* Date range trigger */}
                 <button
                     onClick={openDateRangeModal}
-                    className="h-8 px-2.5 rounded-lg border border-border bg-surface hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 text-xs font-medium text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="h-8 2k:h-9 px-2.5 2k:px-3 rounded-lg border border-border bg-surface hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 text-xs 2k:text-sm font-medium text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5 transition-colors cursor-pointer"
                     title="Filter by date range"
                 >
-                    <Icon name="date_range" size={14} className="text-zinc-400" />
+                    <Icon name="date_range" size={14} className="text-zinc-400 2k:scale-110" />
                     <span className="truncate max-w-[110px] sm:max-w-none">{dateRangeText || 'All Time'}</span>
                 </button>
 
                 {/* Notifications Bell */}
                 <div className="relative">
                     <button
-                        className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer relative ${
+                        className={`h-8 w-8 2k:h-9 2k:w-9 rounded-lg flex items-center justify-center transition-colors cursor-pointer relative ${
                             notificationsOpen
                                 ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white'
                                 : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50'
@@ -220,7 +217,7 @@ export default function Topbar({
                         onClick={() => setNotificationsOpen(!notificationsOpen)}
                         aria-label="Notifications"
                     >
-                        <Icon name="notifications" size={17} />
+                        <Icon name="notifications" size={17} className="2k:scale-110" />
                         {hasUrgent && (
                             <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
                         )}

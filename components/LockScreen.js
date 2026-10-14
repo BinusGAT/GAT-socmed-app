@@ -206,9 +206,8 @@ export default function LockScreen() {
                 </form>
 
                 {/* Footer Brand */}
-                <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400 font-mono">
+                <div className="pt-2 border-t border-border text-center text-xs text-zinc-600 dark:text-zinc-400 font-mono">
                     <span>{appTitle}</span>
-                    <span>v0.1.0-alpha</span>
                 </div>
             </div>
         </div>

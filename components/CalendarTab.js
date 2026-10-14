@@ -503,7 +503,7 @@ export default function CalendarTab({ onOpenExport }) {
             </div>
 
             {/* Calendar & Form Editor Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-gutter items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start calendar-layout">
                 
                 {/* Mobile agenda navigator */}
                 <section className="sm:hidden rounded-lg border border-border bg-surface p-3 shadow-xs" aria-labelledby="mobile-planner-period">
@@ -547,7 +547,7 @@ export default function CalendarTab({ onOpenExport }) {
                 </section>
 
                 {/* Main Month Grid (Left/Center 3 columns) */}
-                <div className="hidden sm:block lg:col-span-3 rounded-lg overflow-hidden border border-border shadow-xs bg-surface calendar-shell">
+                <div className="hidden sm:block lg:col-span-8 rounded-lg overflow-hidden border border-border shadow-xs bg-surface calendar-shell">
                     
                     {/* Month Toolbar */}
                     <div className="px-4 py-3 border-b border-border flex flex-col sm:flex-row gap-2.5 items-center justify-between bg-surface">
@@ -592,8 +592,10 @@ export default function CalendarTab({ onOpenExport }) {
                     </div>
 
                     {/* Days Grid Cells */}
-                    <div className="grid grid-cols-7 bg-border gap-[1px] calendar-days">
+                    <div className="grid grid-cols-7 bg-border gap-[1px] calendar-days" style={{ '--cal-rows': Math.ceil(totalCells / 7) }}>
                         {Array.from({ length: totalCells }).map((_, cellIndex) => {
+                            // 6-week months have shorter rows: 2 pills + "more" keeps content inside the cell
+                            const maxPills = totalCells > 35 ? 2 : 3;
                             const dayNumber = cellIndex - startOffset + 1;
                             const isInMonth = dayNumber >= 1 && dayNumber <= daysInMonth;
                             
@@ -638,7 +640,7 @@ export default function CalendarTab({ onOpenExport }) {
 
                             if (!isInMonth) {
                                 return (
-                                    <div key={cellIndex} className="bg-muted/20 aspect-square p-1.5 opacity-25 select-none">
+                                    <div key={cellIndex} className="bg-muted/20 aspect-square lg:aspect-auto p-1.5 opacity-25 select-none">
                                         &nbsp;
                                     </div>
                                 );
@@ -658,7 +660,7 @@ export default function CalendarTab({ onOpenExport }) {
                             return (
                                 <div 
                                     key={cellIndex} 
-                                    className={`aspect-square p-2 flex flex-col justify-between items-stretch text-left transition-all duration-150 cursor-pointer calendar-day ${statusClass} ${activeBorder}`}
+                                    className={`aspect-square lg:aspect-auto min-h-0 overflow-hidden p-2 flex flex-col justify-start items-stretch text-left transition-all duration-150 cursor-pointer calendar-day ${statusClass} ${activeBorder}`}
                                     onClick={() => setSelectedDate(cellDate)}
                                     onDragOver={(e) => {
                                         if (userRole === 'Admin' && cellDate) {
@@ -682,20 +684,36 @@ export default function CalendarTab({ onOpenExport }) {
                                         }
                                     }}
                                 >
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className={`text-xs font-mono font-medium ${
-                                            isToday ? 'bg-primary text-primary-foreground w-5 h-5 rounded-full flex items-center justify-center shadow-xs' : 'text-muted-foreground'
+                                    <div className="flex justify-between items-center gap-1 mb-0.5">
+                                        <span className={`text-sm font-mono font-medium ${
+                                            isToday ? 'bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center shadow-xs' : 'text-muted-foreground'
                                         }`}>
                                             {dayNumber}
                                         </span>
-                                        {isFullyUploaded && (
-                                            <Icon name="task_alt" size={13} className="text-primary" />
-                                        )}
+                                        <span className="flex items-center gap-1 min-w-0">
+                                            {uniqueRenderTasks.length > maxPills && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedDate(cellDate);
+                                                        setActivePopoverDate(cellDate);
+                                                    }}
+                                                    className="text-[11px] font-medium font-mono text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 rounded px-1.5 py-0.5 leading-none whitespace-nowrap transition-colors cursor-pointer"
+                                                    aria-label={`Show ${uniqueRenderTasks.length - maxPills} more tasks`}
+                                                >
+                                                    +{uniqueRenderTasks.length - maxPills} more
+                                                </button>
+                                            )}
+                                            {isFullyUploaded && (
+                                                <Icon name="task_alt" size={13} className="text-primary shrink-0" />
+                                            )}
+                                        </span>
                                     </div>
 
                                     {/* Task mini-tags stack */}
-                                    <div className="space-y-1 overflow-hidden mt-1 calendar-day-tasks-container">
-                                        {uniqueRenderTasks.slice(0, 3).map((task, idx) => (
+                                    <div className="space-y-0.5 overflow-hidden mt-1 calendar-day-tasks-container">
+                                        {uniqueRenderTasks.slice(0, maxPills).map((task, idx) => (
                                             <div 
                                                 key={idx} 
                                                 draggable={userRole === 'Admin' && !task.isMeeting}
@@ -710,7 +728,7 @@ export default function CalendarTab({ onOpenExport }) {
                                                     setDraggingTaskId(null);
                                                     setDragOverDate(null);
                                                 }}
-                                                className={`text-[10px] font-medium px-1.5 py-0.5 rounded border leading-tight truncate uppercase flex items-center gap-1 calendar-day-task-item hover:opacity-85 transition-all ${
+                                                className={`text-xs font-medium px-1.5 py-0.5 rounded border leading-snug truncate flex items-center gap-1 calendar-day-task-item hover:opacity-85 transition-all ${
                                                     userRole === 'Admin' && !task.isMeeting ? 'cursor-grab active:cursor-grabbing' : ''
                                                 } ${
                                                     draggingTaskId === task.id ? 'opacity-40 scale-95' : ''
@@ -744,19 +762,6 @@ export default function CalendarTab({ onOpenExport }) {
                                                 )}
                                             </div>
                                         ))}
-                                        {uniqueRenderTasks.length > 3 && (
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedDate(cellDate);
-                                                    setActivePopoverDate(cellDate);
-                                                }}
-                                                className="w-full text-[9px] font-medium text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 rounded py-0.5 text-center uppercase tracking-tight transition-colors cursor-pointer"
-                                            >
-                                                + {uniqueRenderTasks.length - 3} more
-                                            </button>
-                                        )}
                                     </div>
                                 </div>
                             );
@@ -765,37 +770,27 @@ export default function CalendarTab({ onOpenExport }) {
                 </div>
 
                 {/* Day Editor Sidebar (Right 1 column) */}
-                <div className="space-y-4 sm:space-y-6">
+                <div className="space-y-3 lg:col-span-4 calendar-side-panel">
                     
-                    {/* Selection Summary Header */}
-                    <div className="hidden sm:block bg-surface border border-border rounded-lg p-3.5 shadow-xs space-y-2">
-                        <div>
-                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Selected Date</span>
-                            <div className="text-sm font-semibold text-foreground flex items-center gap-2 mt-0.5">
-                                <Icon name="calendar_month" size={16} className="text-primary" />
-                                {formatDisplayDateString(selectedDate)}
+                    {/* Selected Date & Scheduled Pipeline Card */}
+                    <div className="bg-surface border border-border rounded-lg p-3 shadow-xs space-y-2.5">
+                        <div className="flex items-center justify-between gap-2 border-b border-border pb-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <Icon name="calendar_month" size={15} className="text-primary shrink-0" />
+                                <h5 className="text-xs font-semibold text-foreground truncate">
+                                    {formatDisplayDateString(selectedDate)}
+                                </h5>
                             </div>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground leading-snug">
-                            Click a cell in the monthly grid to schedule new tasks or modify agenda entries for that date.
-                        </p>
-                    </div>
-
-                    {/* Selected Date Tasks List */}
-                    <div className="bg-surface border border-border rounded-lg p-3.5 shadow-xs space-y-3">
-                        <div className="flex items-end justify-between gap-3 border-b border-border pb-2">
-                            <div>
-                                <h5 className="text-xs font-semibold text-foreground uppercase tracking-wider">Scheduled pipeline</h5>
-                                <p className="mt-0.5 text-xs font-semibold text-primary sm:hidden">{formatDisplayDateString(selectedDate)}</p>
-                            </div>
-                            <span className="text-xs font-mono text-muted-foreground">{selectedDateTasks.length} {selectedDateTasks.length === 1 ? 'item' : 'items'}</span>
+                            <span className="text-[11px] font-mono text-muted-foreground shrink-0 bg-muted/60 px-1.5 py-0.5 rounded">
+                                {selectedDateTasks.length} {selectedDateTasks.length === 1 ? 'task' : 'tasks'}
+                            </span>
                         </div>
 
-                        <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                        <div className="space-y-2 max-h-[160px] 2k:max-h-[220px] overflow-y-auto pr-0.5">
                             {selectedDateTasks.length === 0 ? (
-                                <div className="py-6 text-center text-muted-foreground text-xs space-y-1">
-                                    <Icon name="inbox" size={24} className="text-muted-foreground/40 mx-auto" />
-                                    <p>No tasks scheduled on this day</p>
+                                <div className="py-2.5 px-3 rounded-md bg-muted/20 border border-dashed border-border/70 text-center text-muted-foreground text-xs flex items-center justify-center gap-2">
+                                    <Icon name="event_available" size={14} className="text-muted-foreground/60 shrink-0" />
+                                    <span>No tasks scheduled on this day</span>
                                 </div>
                             ) : (
                                 selectedDateTasks.map((task) => {
@@ -997,8 +992,8 @@ export default function CalendarTab({ onOpenExport }) {
 
                     {/* Task Scheduler Form (Right sidebar bottom) */}
                     {showForm && (
-                        <div className="bg-surface border border-border rounded-lg p-3.5 shadow-xs space-y-3">
-                            <h5 className="text-xs font-semibold text-foreground uppercase tracking-wider pb-2 border-b border-border flex items-center justify-between">
+                        <div className="bg-surface border border-border rounded-lg p-3 shadow-xs space-y-2.5">
+                            <h5 className="text-xs font-semibold text-foreground uppercase tracking-wider pb-1.5 border-b border-border flex items-center justify-between">
                                 <span>{editingTaskId ? (userRole === 'Creator' ? 'Edit Content Title' : 'Edit schedule') : 'Schedule task'}</span>
                                 {userRole === 'Creator' && (
                                     <div className="relative group inline-flex items-center">
@@ -1014,7 +1009,7 @@ export default function CalendarTab({ onOpenExport }) {
                                     </div>
                                 )}
                             </h5>
-                            <form onSubmit={handleFormSubmit} className="space-y-3" autoComplete="off">
+                            <form onSubmit={handleFormSubmit} className="space-y-2.5" autoComplete="off">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                     <div className="space-y-1">
                                         <label className="text-xs font-medium text-muted-foreground">PIC</label>
