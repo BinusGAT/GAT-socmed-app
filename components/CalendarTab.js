@@ -757,7 +757,9 @@ export default function CalendarTab({ onOpenExport }) {
                                                         {task.series_id && (
                                                             <Icon name="repeat" size={10} className="shrink-0" />
                                                         )}
-                                                        <span className="truncate">{getPicDisplayName(task.pic)}: {task.category}</span>
+                                                        <span className="truncate">
+                                                            <strong className="font-bold">{getPicDisplayName(task.pic)}</strong>: <span className="font-normal">{task.category}</span>
+                                                        </span>
                                                     </span>
                                                 )}
                                             </div>
@@ -829,7 +831,7 @@ export default function CalendarTab({ onOpenExport }) {
                                                             <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase ${getPicMobileBadgeClass(task.pic)}`}>
                                                                 {getPicDisplayName(task.pic)}
                                                             </span>
-                                                            <span className="font-semibold text-foreground">{task.category}</span>
+                                                            <span className="font-normal text-foreground">{task.category}</span>
                                                         </>
                                                     )}
                                                 </div>
@@ -1303,7 +1305,7 @@ export default function CalendarTab({ onOpenExport }) {
                                                     <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase ${getPicMobileBadgeClass(task.pic)}`}>
                                                         {getPicDisplayName(task.pic)}
                                                     </span>
-                                                    <span className="text-[10px] font-semibold text-foreground">{task.category}</span>
+                                                    <span className="text-[10px] font-normal text-foreground">{task.category}</span>
                                                 </>
                                             )}
                                         </div>
