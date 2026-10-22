@@ -10,3 +10,6 @@
 
 [functions."prune-audit-log"]
   schedule = "@daily"
+
+[functions."keep-warm"]
+  schedule = "*/10 * * * *"
