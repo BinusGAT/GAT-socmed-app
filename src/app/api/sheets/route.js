@@ -30,6 +30,7 @@ const db = {
 };
 
 let isDbInitialized = false;
+const CURRENT_SCHEMA_VERSION = 'v2';
 
 
 
@@ -148,7 +149,23 @@ export async function POST(request) {
 
     // Ensure all required tables exist in the database dynamically (only once per server lifecycle)
     if (!isDbInitialized) {
-      console.log(`[API] Initializing tables for first request...`);
+      let isUpToDate = false;
+      try {
+        const versionRes = await db.execute({
+          sql: "SELECT value FROM app_settings WHERE key = 'schema_version'",
+          args: []
+        });
+        if (versionRes?.rows?.[0]?.value === CURRENT_SCHEMA_VERSION) {
+          isUpToDate = true;
+          isDbInitialized = true;
+          console.log(`[API] DB schema verified (${CURRENT_SCHEMA_VERSION}), skipped DDL in ${Date.now() - startTime}ms`);
+        }
+      } catch {
+        // Table app_settings does not exist yet or connection error; proceed to run full initialization
+      }
+
+      if (!isUpToDate) {
+        console.log(`[API] Initializing tables for first request...`);
 
       // 1. Batch create all tables in a single roundtrip
       await db.batch([
@@ -485,8 +502,18 @@ export async function POST(request) {
         console.error("Failed during seed checks:", e);
       }
 
-      isDbInitialized = true;
-      console.log(`[API] DB initialization completed in ${Date.now() - startTime}ms`);
+        try {
+          await db.execute({
+            sql: "INSERT OR REPLACE INTO app_settings (key, value) VALUES ('schema_version', ?)",
+            args: [CURRENT_SCHEMA_VERSION]
+          });
+        } catch (verErr) {
+          console.warn('[API] Could not persist schema_version:', verErr);
+        }
+
+        isDbInitialized = true;
+        console.log(`[API] DB initialization completed in ${Date.now() - startTime}ms`);
+      }
     } else {
       console.log(`[API] DB already initialized, skipped in ${Date.now() - startTime}ms`);
     }
