@@ -75,10 +75,10 @@ test('serves the required browser security headers', async ({ request }) => {
   const csp = headers['content-security-policy'];
 
   expect(csp).toContain("default-src 'self'");
-  expect(csp).toContain("frame-ancestors *");
+  expect(csp).toContain("frame-ancestors 'self'");
   expect(csp).toContain("script-src 'self' 'unsafe-inline' 'unsafe-eval'");
   expect(headers['x-content-type-options']).toBe('nosniff');
-  expect(headers['x-frame-options']).toBeUndefined();
+  expect(headers['x-frame-options']).toBe('SAMEORIGIN');
   expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
   expect(headers['permissions-policy']).toContain('camera=()');
 });

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDashboard } from './DashboardContext';
 
-export default function LockScreen({ sectionName = 'Socmed Apps' }) {
+export default function LockScreen({ sectionName = 'GAT Content Suite' }) {
     const { unlockWorkspace, getLockdownTimeRemaining, appSettingsData } = useDashboard();
     const [email, setEmail] = useState('');
     const [nim, setNim] = useState('');

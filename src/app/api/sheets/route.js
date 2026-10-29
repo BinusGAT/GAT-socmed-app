@@ -467,8 +467,8 @@ export async function POST(request) {
         if ((settingsCountRes.rows[0]?.count || 0) === 0) {
           seedBatches.push(
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_name", "contentmanager"] },
-            { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_subtitle", "Socmed Apps"] },
-            { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_full_name", "Socmed Apps"] },
+            { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_subtitle", "Content Suite"] },
+            { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_full_name", "GAT Content Suite"] },
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["company_name", "Internal Content Team"] },
             { sql: "INSERT INTO app_settings (key, value) VALUES (?, ?)", args: ["app_version", "v0.2.0-alpha"] }
           );

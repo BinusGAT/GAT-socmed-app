@@ -188,8 +188,8 @@ export function DashboardProvider({ children }) {
 
         setAppSettingsData({
             app_name: 'GAT',
-            app_subtitle: 'Socmed Apps',
-            app_full_name: 'Socmed Apps',
+            app_subtitle: 'Content Suite',
+            app_full_name: 'GAT Content Suite',
             company_name: 'GAT Internal Content Team',
             app_version: 'v0.2.0-alpha'
         });
