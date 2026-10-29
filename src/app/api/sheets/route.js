@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getSessionDurationMs } from '../../../../utils/sessionPolicy';
-import { verifyCredential } from '../../../../utils/credentialHash';
+import { verifyCredential, hashCredential } from '../../../../utils/credentialHash';
 import { dbExecute, dbBatch, gatAppExecute } from '../../../../utils/db';
 import { getAllowedRoles, getExpectedRequestOrigin, getRequestServingOrigin, getVisibleAuditRows, isTrustedRequestOrigin } from './authorization';
 import { getIndonesianMonth, getIsoDateString, parseMetricToNumber } from './domain';
@@ -557,12 +557,13 @@ export async function POST(request) {
                 u.id, 
                 u.email, 
                 u.name, 
+                u.nim,
                 GROUP_CONCAT(r.name) AS role_names
               FROM users u
               LEFT JOIN user_roles ur ON ur.user_id = u.id
               LEFT JOIN roles r ON r.id = ur.role_id
               WHERE LOWER(u.email) = ?
-              GROUP BY u.id, u.email, u.name
+              GROUP BY u.id, u.email, u.name, u.nim
               LIMIT 1
             `,
             args: [email]
@@ -584,7 +585,29 @@ export async function POST(request) {
           });
           nimHash = String(credentialRes.rows[0]?.nimHash || '');
         }
-        const validNim = userRow ? await verifyCredential(nimHash, nim) : false;
+        let validNim = false;
+        if (userRow) {
+          if (userRow.nim) {
+            const upstreamNim = String(userRow.nim).trim();
+            const matchesUpstream =
+              upstreamNim.length === nim.length &&
+              crypto.timingSafeEqual(Buffer.from(upstreamNim), Buffer.from(nim));
+
+            if (matchesUpstream) {
+              validNim = true;
+              // Dynamically provision or refresh Argon2id hash in user_credentials
+              if (!nimHash || !(await verifyCredential(nimHash, nim))) {
+                const newHash = await hashCredential(nim);
+                await db.execute({
+                  sql: `INSERT OR REPLACE INTO user_credentials (userId, nimHash, createdAt, updatedAt) VALUES (?, ?, ?, ?)`,
+                  args: [String(userRow.id), newHash, now, now],
+                });
+              }
+            }
+          } else if (nimHash) {
+            validNim = await verifyCredential(nimHash, nim);
+          }
+        }
         if (!userRow || !validNim) {
           const limit = await recordLoginFailure(db, rateLimitKeys, now);
           return NextResponse.json(

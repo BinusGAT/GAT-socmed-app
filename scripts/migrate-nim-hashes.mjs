@@ -22,7 +22,7 @@ async function main() {
     return;
   }
 
-  if (mode === '--migrate') {
+  if (mode === '--migrate' || mode === '--force') {
     let usersRes;
     try {
       usersRes = await gatAppExecute('SELECT id, nim FROM users WHERE nim IS NOT NULL');
@@ -31,9 +31,15 @@ async function main() {
       return;
     }
 
+    const existingCredsRes = await dbExecute('SELECT userId FROM user_credentials');
+    const existingUserIds = new Set((existingCredsRes.rows || []).map((r) => String(r.userId)));
+
     let migrated = 0;
     for (const user of usersRes.rows || []) {
       if (!user.id || !user.nim) continue;
+      if (mode !== '--force' && existingUserIds.has(String(user.id))) {
+        continue;
+      }
       const hashed = await hashCredential(user.nim);
       const now = Date.now();
       await dbExecute({
@@ -42,7 +48,7 @@ async function main() {
       });
       migrated++;
     }
-    console.log(`[auth-nim] Successfully migrated ${migrated} user credential hashes.`);
+    console.log(`[auth-nim] Successfully synced ${migrated} user credential hashes.`);
     return;
   }
 
