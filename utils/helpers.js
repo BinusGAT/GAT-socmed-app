@@ -458,3 +458,20 @@ export function calculateRecurringDates(startDateStr, options = {}) {
 
     return dates;
 }
+
+/**
+ * Validates that a URL string uses a safe http or https scheme.
+ * Prevents javascript:, data:, and vbscript: execution via anchor sinks.
+ * @param {string} urlString
+ * @returns {boolean}
+ */
+export function isSafeUrl(urlString) {
+    if (!urlString || typeof urlString !== 'string') return false;
+    const trimmed = urlString.trim();
+    try {
+        const parsed = new URL(trimmed);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}

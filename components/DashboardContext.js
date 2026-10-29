@@ -726,7 +726,7 @@ export function DashboardProvider({ children }) {
         }
     };
  
-    // Lock Workspace
+    // Lock Workspace & Purge Offline Data
     const lockWorkspace = ({ revokeServer = true } = {}) => {
         if (revokeServer) {
             callSheetsAPI('logout').catch((error) => {
@@ -737,12 +737,50 @@ export function DashboardProvider({ children }) {
         setUserRole(null);
         setUserName(null);
         setUserId(null);
-        localStorage.removeItem('cud_unlocked');
-        localStorage.removeItem('user_role');
-        localStorage.removeItem('user_name');
-        localStorage.removeItem('user_id');
-        localStorage.removeItem('unlocked_at');
-        localStorage.removeItem('expires_at');
+
+        // Purge identity and cached workspace tables
+        const SENSITIVE_STORAGE_KEYS = [
+            'cud_unlocked',
+            'user_role',
+            'user_name',
+            'user_id',
+            'unlocked_at',
+            'expires_at',
+            'laporan_data_local',
+            'schedule_data_local',
+            'GAT_storyboard_drafts',
+            'GAT_meeting_memos',
+            'GAT_notifications',
+            'GAT_ga_summary_local',
+            'GAT_ga_items_local',
+        ];
+
+        SENSITIVE_STORAGE_KEYS.forEach((key) => {
+            sessionStorage.removeItem(key);
+            localStorage.removeItem(key);
+        });
+
+        // Purge all editor drafts across users
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const storageKey = localStorage.key(i);
+                if (storageKey && (storageKey.startsWith('GAT_') || storageKey.startsWith('draft_'))) {
+                    keysToRemove.push(storageKey);
+                }
+            }
+            keysToRemove.forEach((key) => localStorage.removeItem(key));
+        } catch (storageErr) {
+            console.warn('Could not cleanly purge editor drafts from localStorage:', storageErr);
+        }
+
+        // Flush in-memory React states
+        setCurrentData([]);
+        setScheduleData([]);
+        setDraftsData([]);
+        setMeetingsData([]);
+        setNotificationsData([]);
+
         showAlert('🔒 Workspace locked. Session ended.', 'info');
     };
 

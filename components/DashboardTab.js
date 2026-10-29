@@ -14,7 +14,8 @@ import {
     normalizePlatformName,
     getTaskCalculatedStatus,
     formatDisplayDate,
-    getContentGroupKey
+    getContentGroupKey,
+    isSafeUrl
 } from '../utils/helpers';
 import PlatformBadge from './PlatformBadge.jsx';
 import SortableTableHeader from './SortableTableHeader';
@@ -1179,7 +1180,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                                         </td>
                                                     )}
                                                     <td className="px-4 py-3 text-center">
-                                                        {row.URL ? (
+                                                        {row.URL && isSafeUrl(row.URL) ? (
                                                             <a href={row.URL} target="_blank" rel="noopener noreferrer" className="inline-flex p-1 text-on-surface-variant hover:text-primary transition-colors cursor-pointer" title="Open post URL">
                                                                 <span className="material-symbols-outlined text-[16px]">open_in_new</span>
                                                             </a>

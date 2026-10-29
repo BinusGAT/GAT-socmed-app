@@ -14,7 +14,8 @@ import {
     getPicDisplayName,
     getLocalDateInputValue,
     parseDate,
-    getPicBadgeClasses
+    getPicBadgeClasses,
+    isSafeUrl
 } from '../utils/helpers';
 
 const getToolbarBtnStyle = (isActive) => {
@@ -431,36 +432,8 @@ export default function MeetingsTab({ onOpenDatePicker }) {
         e.preventDefault();
         const html = e.clipboardData.getData('text/html');
         if (html) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const allElements = doc.body.querySelectorAll('*');
-            allElements.forEach(el => {
-                el.removeAttribute('class');
-                const style = el.getAttribute('style');
-                if (style) {
-                    const cleanedStyle = style
-                        .split(';')
-                        .map(prop => prop.trim())
-                        .filter(prop => {
-                            const lower = prop.toLowerCase();
-                            return !(
-                                lower.startsWith('color') || 
-                                lower.startsWith('background') || 
-                                lower.startsWith('font-') ||
-                                lower.includes('color:') ||
-                                lower.includes('background:') ||
-                                lower.includes('font-')
-                            );
-                        })
-                        .join(';');
-                    if (cleanedStyle) {
-                        el.setAttribute('style', cleanedStyle);
-                    } else {
-                        el.removeAttribute('style');
-                    }
-                }
-            });
-            document.execCommand('insertHTML', false, doc.body.innerHTML);
+            const sanitizedHtml = sanitizeHtmlString(html);
+            document.execCommand('insertHTML', false, sanitizedHtml);
         } else {
             const text = e.clipboardData.getData('text/plain');
             document.execCommand('insertText', false, text);
@@ -533,8 +506,17 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                 for (const attr of attrs) {
                     if (node.hasAttribute(attr)) {
                         const val = node.getAttribute(attr);
-                        if (attr === 'href' && /^\s*javascript:/i.test(val)) {
-                            continue;
+                        if (attr === 'href') {
+                            const trimmedVal = val.trim().toLowerCase();
+                            const isAllowedScheme = 
+                                trimmedVal.startsWith('http://') || 
+                                trimmedVal.startsWith('https://') || 
+                                trimmedVal.startsWith('mailto:') || 
+                                trimmedVal.startsWith('#') || 
+                                trimmedVal.startsWith('/');
+                            if (!isAllowedScheme) {
+                                continue;
+                            }
                         }
                         if (attr === 'style') {
                              const cleanedVal = val
@@ -803,7 +785,7 @@ export default function MeetingsTab({ onOpenDatePicker }) {
                                     <label className="text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-wider">Video Recap</label>
                                     <div className="flex flex-col gap-1 items-start">
                                         {(() => {
-                                            const links = formVideoRecap ? formVideoRecap.split(/[\s,]+/).map(l => l.trim()).filter(Boolean) : [];
+                                            const links = formVideoRecap ? formVideoRecap.split(/[\s,]+/).map(l => l.trim()).filter(l => isSafeUrl(l)) : [];
                                             return links.length > 0 ? (
                                                 links.map((link, idx) => (
                                                     <a 

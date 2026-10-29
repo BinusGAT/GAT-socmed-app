@@ -4,7 +4,7 @@ import {
   getIsoDateString,
   parseMetricToNumber,
 } from '../../src/app/api/sheets/domain';
-import { formatDate, parseDate } from '../../utils/helpers';
+import { formatDate, parseDate, isSafeUrl } from '../../utils/helpers';
 
 describe('dashboard domain helpers', () => {
   it.each([
@@ -36,6 +36,16 @@ describe('dashboard domain helpers', () => {
 
   it('returns the Indonesian month name', () => {
     expect(getIndonesianMonth('2026-08-08')).toBe('Agustus');
+  });
+
+  it('validates safe URL schemes and blocks dangerous protocols', () => {
+    expect(isSafeUrl('https://example.com/post/123')).toBe(true);
+    expect(isSafeUrl('http://example.com/video')).toBe(true);
+    expect(isSafeUrl('javascript:alert(1)')).toBe(false);
+    expect(isSafeUrl('data:text/html,<script>alert(1)</script>')).toBe(false);
+    expect(isSafeUrl('vbscript:msgbox(1)')).toBe(false);
+    expect(isSafeUrl('')).toBe(false);
+    expect(isSafeUrl(null)).toBe(false);
   });
 });
 

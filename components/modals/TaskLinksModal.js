@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDashboard } from '../DashboardContext';
-import { getPicBadgeClasses, getPicDisplayName } from '../../utils/helpers';
+import { getPicBadgeClasses, getPicDisplayName, isSafeUrl } from '../../utils/helpers';
 
 export default function TaskLinksModal({ isOpen, onClose, task }) {
   const { currentData, setCurrentView, setSelectedPostId, showAlert } = useDashboard();
@@ -116,15 +116,21 @@ export default function TaskLinksModal({ isOpen, onClose, task }) {
                             </span>
                           )}
                         </div>
-                        <a
-                          href={row.URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[11px] text-primary hover:underline truncate block font-mono"
-                          title={row.URL}
-                        >
-                          {row.URL}
-                        </a>
+                        {isSafeUrl(row.URL) ? (
+                          <a
+                            href={row.URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] text-primary hover:underline truncate block font-mono"
+                            title={row.URL}
+                          >
+                            {row.URL}
+                          </a>
+                        ) : (
+                          <span className="text-[11px] text-on-surface-variant truncate block font-mono" title={row.URL}>
+                            {row.URL || 'No URL'}
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
@@ -138,15 +144,17 @@ export default function TaskLinksModal({ isOpen, onClose, task }) {
                             {isCopied ? 'check' : 'content_copy'}
                           </span>
                         </button>
-                        <a
-                          href={row.URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors cursor-pointer"
-                          title="Open URL in New Tab"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                        </a>
+                        {isSafeUrl(row.URL) && (
+                          <a
+                            href={row.URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors cursor-pointer"
+                            title="Open URL in New Tab"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                          </a>
+                        )}
                       </div>
                     </div>
                   );
