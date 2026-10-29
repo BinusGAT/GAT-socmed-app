@@ -58,6 +58,7 @@ describe('API authorization policy', () => {
     expect(isTrustedRequestOrigin(null, 'https://dashboard.example.test')).toBe(true);
     expect(isTrustedRequestOrigin('https://attacker.example', 'https://dashboard.example.test')).toBe(false);
     expect(isTrustedRequestOrigin('not-a-url', 'https://dashboard.example.test')).toBe(false);
+    expect(isTrustedRequestOrigin('https://portal.example.test', 'https://dashboard.example.test', 'https://portal.example.test')).toBe(true);
   });
 
   it('uses the configured application origin instead of forged proxy headers', () => {
@@ -170,6 +171,22 @@ describe('API authorization policy', () => {
       path: '/',
     });
     expect(options.maxAge).toBeGreaterThan(0);
+  });
+
+  it('supports configured partitioned cookies for cross-origin portal embedding', () => {
+    const prev = process.env.COOKIE_SAME_SITE;
+    try {
+      process.env.COOKIE_SAME_SITE = 'none';
+      const options = getSessionCookieOptions(Date.now() + 60_000);
+      expect(options).toMatchObject({
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+        partitioned: true,
+      });
+    } finally {
+      process.env.COOKIE_SAME_SITE = prev;
+    }
   });
 
   it('expires the session cookie during logout', () => {

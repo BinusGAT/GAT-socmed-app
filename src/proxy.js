@@ -1,12 +1,30 @@
 import { NextResponse } from 'next/server';
 
+function getAllowedFrameAncestors() {
+  const configured = process.env.ALLOWED_EMBED_ORIGINS || '';
+  const origins = configured
+    .split(/[\s,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      try {
+        return new URL(item).origin;
+      } catch {
+        return item;
+      }
+    });
+  const unique = Array.from(new Set(origins));
+  return unique.length > 0 ? `'self' ${unique.join(' ')}` : "'self'";
+}
+
 export function proxy(request) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const frameAncestors = getAllowedFrameAncestors();
   const contentSecurityPolicy = [
     "default-src 'self'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'self'",
+    `frame-ancestors ${frameAncestors}`,
     "object-src 'none'",
     `script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",

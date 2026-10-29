@@ -2,6 +2,9 @@
   command = "npm run build"
   publish = ".next"
 
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "ALLOWED_EMBED_ORIGINS"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 

@@ -37,10 +37,34 @@ export function getVisibleAuditRows(role, rows) {
   return role === ROLES.ADMIN ? rows : [];
 }
 
-export function isTrustedRequestOrigin(origin, expectedOrigin) {
+export function isTrustedRequestOrigin(
+  origin,
+  expectedOrigin,
+  allowedOrigins = process.env.ALLOWED_EMBED_ORIGINS || ''
+) {
   if (!origin) return true;
   try {
-    return new URL(origin).origin === new URL(expectedOrigin).origin;
+    const originUrl = new URL(origin).origin;
+    if (originUrl === new URL(expectedOrigin).origin) {
+      return true;
+    }
+    if (allowedOrigins) {
+      const allowedList = allowedOrigins
+        .split(/[\s,]+/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .map((item) => {
+          try {
+            return new URL(item).origin;
+          } catch {
+            return item;
+          }
+        });
+      if (allowedList.includes(originUrl)) {
+        return true;
+      }
+    }
+    return false;
   } catch {
     return false;
   }
