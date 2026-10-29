@@ -38,12 +38,20 @@ export default function TaskListTab({ onOpenDatePicker }) {
         memberListData,
         categoriesData,
         showAlert,
-        tasklistSearch, setTasklistSearch,
-        tasklistFilterPic, setTasklistFilterPic,
-        tasklistFilterCategory, setTasklistFilterCategory,
-        tasklistFilterStatus, setTasklistFilterStatus,
         selectedTaskId, setSelectedTaskId
     } = useDashboard();
+
+    const [tasklistSearch, setTasklistSearch] = useState(() => typeof window === "undefined" ? "" : localStorage.getItem("GAT_task_filter_search") || "");
+    const [tasklistFilterPic, setTasklistFilterPic] = useState(() => typeof window === "undefined" ? "" : localStorage.getItem("GAT_task_filter_pic") || "");
+    const [tasklistFilterCategory, setTasklistFilterCategory] = useState(() => typeof window === "undefined" ? "" : localStorage.getItem("GAT_task_filter_category") || "");
+    const [tasklistFilterStatus, setTasklistFilterStatus] = useState(() => typeof window === "undefined" ? "" : localStorage.getItem("GAT_task_filter_status") || "");
+
+    useEffect(() => {
+        localStorage.setItem("GAT_task_filter_search", tasklistSearch);
+        localStorage.setItem("GAT_task_filter_pic", tasklistFilterPic);
+        localStorage.setItem("GAT_task_filter_category", tasklistFilterCategory);
+        localStorage.setItem("GAT_task_filter_status", tasklistFilterStatus);
+    }, [tasklistSearch, tasklistFilterPic, tasklistFilterCategory, tasklistFilterStatus]);
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -483,6 +491,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
                                                 onAction={scheduleData.length ? () => {
                                                     setTasklistSearch('');
                                                     setTasklistFilterPic('');
+                                                    setTasklistFilterCategory('');
                                                     setTasklistFilterStatus('');
                                                 } : (canCreateTask ? openAddModal : undefined)}
                                             />

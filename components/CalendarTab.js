@@ -1,5 +1,4 @@
 'use client';
-'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
@@ -48,12 +47,16 @@ export default function CalendarTab({ onOpenExport }) {
         setSelectedMeetingId,
         selectedTaskId,
         setSelectedTaskId,
-        setSelectedPostId,
-        tasklistFilterPic,
-        setTasklistFilterPic,
-        tasklistFilterCategory,
-        setTasklistFilterCategory
+        setSelectedPostId
     } = useDashboard();
+
+    const [calendarFilterPic, setCalendarFilterPic] = useState(() => typeof window === "undefined" ? "" : localStorage.getItem("GAT_calendar_filter_pic") || "");
+    const [calendarFilterCategory, setCalendarFilterCategory] = useState(() => typeof window === "undefined" ? "" : localStorage.getItem("GAT_calendar_filter_category") || "");
+
+    useEffect(() => {
+        localStorage.setItem("GAT_calendar_filter_pic", calendarFilterPic);
+        localStorage.setItem("GAT_calendar_filter_category", calendarFilterCategory);
+    }, [calendarFilterPic, calendarFilterCategory]);
 
     const [currentMonth, setCurrentMonth] = useState(() => new Date());
     const [selectedDate, setSelectedDate] = useState(() => getLocalDateInputValue());
@@ -130,14 +133,14 @@ export default function CalendarTab({ onOpenExport }) {
 
         return tasks.filter(task => {
             if (task.isMeeting) {
-                if (tasklistFilterCategory && tasklistFilterCategory !== 'Recap') return false;
-                if (tasklistFilterPic) return false;
+                if (calendarFilterCategory && calendarFilterCategory !== 'Recap') return false;
+                if (calendarFilterPic) return false;
                 return true;
             }
-            if (tasklistFilterPic && normalizePicName(resolveMemberName(task.pic, memberListData)) !== normalizePicName(tasklistFilterPic)) {
+            if (calendarFilterPic && normalizePicName(resolveMemberName(task.pic, memberListData)) !== normalizePicName(calendarFilterPic)) {
                 return false;
             }
-            if (tasklistFilterCategory && task.category !== tasklistFilterCategory) {
+            if (calendarFilterCategory && task.category !== calendarFilterCategory) {
                 return false;
             }
             return true;
@@ -184,14 +187,14 @@ export default function CalendarTab({ onOpenExport }) {
         const counts = { total: 0 };
         (scheduleData || []).forEach(task => {
             if (!task.Date || !task.PIC || !task.Category) return;
-            if (tasklistFilterPic && normalizePicName(resolveMemberName(task.PIC, memberListData)) !== normalizePicName(tasklistFilterPic)) {
+            if (calendarFilterPic && normalizePicName(resolveMemberName(task.PIC, memberListData)) !== normalizePicName(calendarFilterPic)) {
                 return;
             }
             counts.total = (counts.total || 0) + 1;
             const cat = task.Category;
             counts[cat] = (counts[cat] || 0) + 1;
         });
-        if (!tasklistFilterPic) {
+        if (!calendarFilterPic) {
             (meetingsData || []).forEach(m => {
                 if (m.date || m.Date) {
                     counts.total = (counts.total || 0) + 1;
@@ -200,7 +203,7 @@ export default function CalendarTab({ onOpenExport }) {
             });
         }
         return counts;
-    }, [scheduleData, meetingsData, tasklistFilterPic, memberListData]);
+    }, [scheduleData, meetingsData, calendarFilterPic, memberListData]);
 
     // Calendar Navigation Helpers
     const shiftMonth = (offset) => {
@@ -398,13 +401,13 @@ export default function CalendarTab({ onOpenExport }) {
 
                 <div className="flex items-center gap-2.5 w-full sm:w-auto flex-wrap sm:flex-nowrap">
                     {/* Reset button */}
-                    {(tasklistFilterPic || tasklistFilterCategory) && (
+                    {(calendarFilterPic || calendarFilterCategory) && (
                         <button 
                             type="button"
                             className="bg-surface-container-high border border-outline-variant/30 hover:bg-surface-container-highest text-on-surface font-bold py-1.5 px-3 rounded text-[11px] uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer"
                             onClick={() => {
-                                setTasklistFilterPic('');
-                                setTasklistFilterCategory('');
+                                setCalendarFilterPic('');
+                                setCalendarFilterCategory('');
                             }}
                         >
                             <span className="material-symbols-outlined text-[14px]">restart_alt</span> Reset
@@ -415,8 +418,8 @@ export default function CalendarTab({ onOpenExport }) {
                     <div className="flex-1 sm:w-40 min-w-[130px]">
                         <select 
                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary"
-                            value={tasklistFilterPic}
-                            onChange={(e) => setTasklistFilterPic(e.target.value)}
+                            value={calendarFilterPic}
+                            onChange={(e) => setCalendarFilterPic(e.target.value)}
                         >
                             <option value="">All PICs</option>
                             {memberListData.map(m => (
@@ -429,8 +432,8 @@ export default function CalendarTab({ onOpenExport }) {
                     <div className="flex-1 sm:w-40 min-w-[130px]">
                         <select 
                             className="w-full bg-surface-container-low border border-outline-variant/30 rounded px-2.5 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary"
-                            value={tasklistFilterCategory}
-                            onChange={(e) => setTasklistFilterCategory(e.target.value)}
+                            value={calendarFilterCategory}
+                            onChange={(e) => setCalendarFilterCategory(e.target.value)}
                         >
                             <option value="">All Categories</option>
                             {categoriesData.map(c => (
@@ -445,28 +448,28 @@ export default function CalendarTab({ onOpenExport }) {
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar" role="region" aria-label="Category Filters">
                 <button
                     type="button"
-                    onClick={() => setTasklistFilterCategory('')}
+                    onClick={() => setCalendarFilterCategory('')}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border cursor-pointer ${
-                        !tasklistFilterCategory
+                        !calendarFilterCategory
                             ? 'bg-primary text-on-primary border-primary shadow-xs'
                             : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-outline-variant/30'
                     }`}
                 >
                     <span>All</span>
                     <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${
-                        !tasklistFilterCategory ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                        !calendarFilterCategory ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant'
                     }`}>
                         {categoryCounts.total || 0}
                     </span>
                 </button>
                 {categoriesData.map(cat => {
                     const count = categoryCounts[cat.name] || 0;
-                    const isActive = tasklistFilterCategory === cat.name;
+                    const isActive = calendarFilterCategory === cat.name;
                     return (
                         <button
                             key={cat.name}
                             type="button"
-                            onClick={() => setTasklistFilterCategory(isActive ? '' : cat.name)}
+                            onClick={() => setCalendarFilterCategory(isActive ? '' : cat.name)}
                             className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border cursor-pointer ${
                                 isActive
                                     ? 'bg-primary text-on-primary border-primary shadow-xs'
@@ -482,19 +485,19 @@ export default function CalendarTab({ onOpenExport }) {
                         </button>
                     );
                 })}
-                {(categoryCounts['Recap'] > 0 || tasklistFilterCategory === 'Recap') && (
+                {(categoryCounts['Recap'] > 0 || calendarFilterCategory === 'Recap') && (
                     <button
                         type="button"
-                        onClick={() => setTasklistFilterCategory(tasklistFilterCategory === 'Recap' ? '' : 'Recap')}
+                        onClick={() => setCalendarFilterCategory(calendarFilterCategory === 'Recap' ? '' : 'Recap')}
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border cursor-pointer ${
-                            tasklistFilterCategory === 'Recap'
+                            calendarFilterCategory === 'Recap'
                                 ? 'bg-primary text-on-primary border-primary shadow-xs'
                                 : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-outline-variant/30'
                         }`}
                     >
                         <span>Recap</span>
                         <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${
-                            tasklistFilterCategory === 'Recap' ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant'
+                            calendarFilterCategory === 'Recap' ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant'
                         }`}>
                             {categoryCounts['Recap'] || 0}
                         </span>

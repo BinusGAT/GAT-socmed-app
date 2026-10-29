@@ -72,18 +72,9 @@ export function DashboardProvider({ children }) {
     const [darkMode, setDarkMode] = useState(true);
     const [isNewPostDrawerOpen, setIsNewPostDrawerOpen] = useState(false);
 
-    // Filter States
+    // Filter States (Dashboard tab only; other tabs own their local filter state)
     const [dateRange, setDateRange] = useState({ start: '', end: '', mode: 'auto' });
     const [searchQuery, setSearchQuery] = useState(() => readStoredValue('GAT_dashboard_filter_search'));
-    const [mainFilterPic, setMainFilterPic] = useState(() => readStoredValue('GAT_dashboard_filter_pic'));
-    const [mainFilterCategory, setMainFilterCategory] = useState(() => readStoredValue('GAT_dashboard_filter_category'));
-    const [mainFilterPlatform, setMainFilterPlatform] = useState(() => readStoredValue('GAT_dashboard_filter_platform'));
-
-    // Tasklist & Workflow Filter States
-    const [tasklistSearch, setTasklistSearch] = useState(() => readStoredValue('GAT_task_filter_search'));
-    const [tasklistFilterPic, setTasklistFilterPic] = useState(() => readStoredValue('GAT_task_filter_pic'));
-    const [tasklistFilterCategory, setTasklistFilterCategory] = useState(() => readStoredValue('GAT_task_filter_category'));
-    const [tasklistFilterStatus, setTasklistFilterStatus] = useState(() => readStoredValue('GAT_task_filter_status'));
     const [connectionState, setConnectionState] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'online');
 
     // Data States
@@ -327,17 +318,7 @@ export function DashboardProvider({ children }) {
 
     useEffect(() => {
         localStorage.setItem('GAT_dashboard_filter_search', searchQuery);
-        localStorage.setItem('GAT_dashboard_filter_pic', mainFilterPic);
-        localStorage.setItem('GAT_dashboard_filter_category', mainFilterCategory);
-        localStorage.setItem('GAT_dashboard_filter_platform', mainFilterPlatform);
-    }, [searchQuery, mainFilterPic, mainFilterCategory, mainFilterPlatform]);
-
-    useEffect(() => {
-        localStorage.setItem('GAT_task_filter_search', tasklistSearch);
-        localStorage.setItem('GAT_task_filter_pic', tasklistFilterPic);
-        localStorage.setItem('GAT_task_filter_category', tasklistFilterCategory);
-        localStorage.setItem('GAT_task_filter_status', tasklistFilterStatus);
-    }, [tasklistSearch, tasklistFilterPic, tasklistFilterCategory, tasklistFilterStatus]);
+    }, [searchQuery]);
 
     useEffect(() => {
         const handleOffline = () => setConnectionState('offline');
@@ -1543,14 +1524,6 @@ export function DashboardProvider({ children }) {
             // Filters
             dateRange, setDateRange,
             searchQuery, setSearchQuery,
-            mainFilterPic, setMainFilterPic,
-            mainFilterCategory, setMainFilterCategory,
-            mainFilterPlatform, setMainFilterPlatform,
-            
-            tasklistSearch, setTasklistSearch,
-            tasklistFilterPic, setTasklistFilterPic,
-            tasklistFilterCategory, setTasklistFilterCategory,
-            tasklistFilterStatus, setTasklistFilterStatus,
 
             // Datasets
             currentData,
