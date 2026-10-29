@@ -12,6 +12,7 @@ const ACTION_API_LIMITS = Object.freeze({
   read_dashboard: { user: 30, ip: 90 },
   delete_batch: { user: 10, ip: 30 },
   save_app_settings: { user: 20, ip: 60 },
+  validate_mode: { user: 15, ip: 25 },
 });
 
 export function hashSessionToken(token) {
@@ -85,7 +86,7 @@ export function getLoginRateLimitKeys(email, ip) {
   const normalizedIp = String(ip || 'unknown').trim().toLowerCase();
   return [
     { key: `account:${hashRateLimitKey(normalizedEmail)}`, limit: MAX_ACCOUNT_ATTEMPTS },
-    { key: `ip:${hashRateLimitKey(normalizedIp)}`, limit: MAX_IP_ATTEMPTS },
+    { key: `ip:${hashRateLimitKey(normalizedIp)}`, limit: normalizedIp === 'unknown' ? 1000 : MAX_IP_ATTEMPTS },
   ];
 }
 

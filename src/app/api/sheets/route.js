@@ -521,13 +521,24 @@ export async function POST(request) {
     console.log(`[API] Action payload parsed. Action = "${action}" in ${Date.now() - startTime}ms`);
     if (action === 'validate_mode') {
       const now = Date.now();
+      const clientIp = getClientIp(request.headers);
+
+      // Pre-rate-limit guard to shield Argon2id hashing and DB queries from resource exhaustion
+      const preRateLimit = await consumeApiRateLimit(db, 'unauthenticated_login', clientIp, 'validate_mode', now);
+      if (preRateLimit.limited) {
+        return NextResponse.json(
+          { success: false, error: 'Too many login attempts from this network. Try again later.' },
+          { status: 429, headers: { 'Retry-After': String(preRateLimit.retryAfterSeconds) } }
+        );
+      }
+
       const email = (params.email || '').trim().toLowerCase();
       const nim = (params.nim || '').trim();
       if (!email || !nim || email.length > 254 || nim.length > 128) {
         return NextResponse.json({ success: false, error: 'Invalid credentials.' }, { status: 401 });
       }
 
-      const rateLimitKeys = getLoginRateLimitKeys(email, getClientIp(request.headers));
+      const rateLimitKeys = getLoginRateLimitKeys(email, clientIp);
       const currentLimit = await getLoginRateLimit(db, rateLimitKeys, now);
       if (currentLimit.locked) {
         return NextResponse.json(
@@ -725,7 +736,14 @@ export async function POST(request) {
           schedule: { success: true, data: scheduleRes.rows },
           memberList: { success: true, data: internUsers.map((user) => ({ NAMA: user.name, STREAM: user.role, USER_ID: user.id })) },
           internList: { success: true, data: internUsers },
-          notifications: { success: true, data: notificationsRes.rows.filter((notification) => !notification.targetUserId || String(notification.targetUserId) === String(auth.userId || '')) },
+          notifications: {
+            success: true,
+            data: notificationsRes.rows.filter((notification) => {
+              const matchesUser = !notification.targetUserId || String(notification.targetUserId) === String(auth.userId || '');
+              const matchesRole = !notification.targetRole || notification.targetRole === 'All' || notification.targetRole === auth.role;
+              return matchesUser && matchesRole;
+            })
+          },
           appSettings: { success: true, data: settingsRes.rows },
           platforms: { success: true, data: platformsRes.rows },
           categories: { success: true, data: categoriesRes.rows }
@@ -853,13 +871,28 @@ export async function POST(request) {
               showInAttendees: lecturerVisibility.get(String(lecturer.id)) ?? true
             }))
           },
-          scripts: { success: true, data: scriptsRes.rows },
+          scripts: {
+            success: true,
+            data: auth.role === 'Admin'
+              ? scriptsRes.rows
+              : scriptsRes.rows.filter((script) => {
+                  const scriptTitle = String(script.Title || '').trim().toLowerCase();
+                  return scheduleRes.rows.some((task) =>
+                    String(task.AssignedUserId || '') === String(auth.userId || '') &&
+                    String(task['Content Title'] || '').trim().toLowerCase() === scriptTitle
+                  );
+                })
+          },
           meetings: { success: true, data: meetingsRes.rows },
           notifications: {
             success: true,
             data: [
               ...deadlineNotifications,
-              ...notificationsRes.rows.filter((notification) => !notification.targetUserId || String(notification.targetUserId) === String(auth.userId || ''))
+              ...notificationsRes.rows.filter((notification) => {
+                const matchesUser = !notification.targetUserId || String(notification.targetUserId) === String(auth.userId || '');
+                const matchesRole = !notification.targetRole || notification.targetRole === 'All' || notification.targetRole === auth.role;
+                return matchesUser && matchesRole;
+              })
             ]
           },
           auditLog: { success: true, data: getVisibleAuditRows(auth.role, auditRes.rows) },
@@ -1351,7 +1384,7 @@ export async function POST(request) {
         if (isExisting) {
           if (auth.role === 'Creator') {
             const existingPic = String(existingRow?.PIC || '').trim().toLowerCase();
-            const authName = String(auth.name || '').trim().toLowerCase();
+            const authName = String(auth.userName || '').trim().toLowerCase();
             const isAssigned = existingRow && (
               (previousAssignedUserId && previousAssignedUserId === String(auth.userId || '')) ||
               (existingPic && authName && (
@@ -1363,6 +1396,26 @@ export async function POST(request) {
             );
             if (!isAssigned) {
               return NextResponse.json({ success: false, error: 'Forbidden: creators may only update content details for their assigned tasks' }, { status: 403 });
+            }
+
+            // Prevent title collisions with existing storyboards or tasks assigned to other users
+            if (title && oldTitle && oldTitle.trim().toLowerCase() !== title.trim().toLowerCase()) {
+              const collidingTask = await db.execute({
+                sql: `SELECT ID, AssignedUserId FROM schedule
+                      WHERE LOWER(TRIM("Content Title")) = LOWER(TRIM(?))
+                        AND ID <> ?
+                        AND AssignedUserId IS NOT NULL
+                        AND AssignedUserId <> ?
+                      LIMIT 1`,
+                args: [title, id, String(auth.userId || '')]
+              });
+
+              if (collidingTask.rows.length > 0) {
+                return NextResponse.json(
+                  { success: false, error: 'Conflict: A storyboard or schedule item with this title already exists and is assigned to another user.' },
+                  { status: 409 }
+                );
+              }
             }
 
             // Creators are strictly scoped to updating Content Title only
@@ -1394,11 +1447,13 @@ export async function POST(request) {
             });
 
             if (existingScript.rows.length > 0) {
-              // 3. Update category of the existing script to stay in sync
-              await db.execute({
-                sql: "UPDATE scripts SET Category = ? WHERE LOWER(Title) = LOWER(?)",
-                args: [category, title]
-              });
+              // 3. Update category of the existing script only if Admin
+              if (auth.role === 'Admin') {
+                await db.execute({
+                  sql: "UPDATE scripts SET Category = ? WHERE LOWER(Title) = LOWER(?)",
+                  args: [category, title]
+                });
+              }
             } else {
               // 4. Create a new script draft if it doesn't exist yet
               await db.execute({
@@ -1458,7 +1513,7 @@ export async function POST(request) {
             }
           }
         }
-        if (assignedUserId && assignedUserId !== previousAssignedUserId) {
+        if (auth.role === 'Admin' && assignedUserId && assignedUserId !== previousAssignedUserId) {
           await db.execute({
             sql: `INSERT OR REPLACE INTO notifications
                   (id, message, targetRole, isUrgent, createdAt, createdBy, targetUserId, type, taskId)
@@ -1533,7 +1588,7 @@ export async function POST(request) {
 
         if (auth.role === 'Creator') {
           const assignment = await db.execute({
-            sql: `SELECT ID FROM schedule WHERE LOWER("Content Title") = LOWER(?) AND AssignedUserId = ? LIMIT 1`,
+            sql: `SELECT ID FROM schedule WHERE LOWER(TRIM("Content Title")) = LOWER(TRIM(?)) AND AssignedUserId = ? LIMIT 1`,
             args: [title, String(auth.userId || '')]
           });
           if (assignment.rows.length === 0) {
@@ -1650,12 +1705,23 @@ export async function POST(request) {
             sql: `UPDATE google_analytics_items SET category = ?, label = ?, metric = ?, sort_order = ? WHERE id = ?`,
             args: [category, label, metric, sort_order, id]
           });
+          await writeAudit(db, auth, 'updated', 'ga_item', String(id), { category, label, metric });
           result = { success: true, message: 'Google Analytics item updated successfully' };
         } else {
-          await db.execute({
-            sql: `INSERT INTO google_analytics_items (category, label, metric, sort_order) VALUES (?, ?, ?, ?)`,
+          const countRes = await db.execute('SELECT COUNT(*) AS total FROM google_analytics_items');
+          const totalRows = Number(countRes.rows[0]?.total || 0);
+          if (totalRows >= 500) {
+            return NextResponse.json(
+              { success: false, error: 'Limit exceeded: Maximum of 500 analytics items allowed.' },
+              { status: 400 }
+            );
+          }
+          const insertRes = await db.execute({
+            sql: `INSERT INTO google_analytics_items (category, label, metric, sort_order) VALUES (?, ?, ?, ?) RETURNING id`,
             args: [category, label, metric, sort_order]
           });
+          const insertedId = insertRes.rows[0]?.id || 'unknown';
+          await writeAudit(db, auth, 'created', 'ga_item', String(insertedId), { category, label, metric });
           result = { success: true, message: 'Google Analytics item created successfully' };
         }
         break;

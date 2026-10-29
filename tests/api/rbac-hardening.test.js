@@ -151,6 +151,27 @@ describe('RBAC Hardening & Role Authorization Matrix', () => {
       expect(res.role).toBe('Admin');
       expect(res.userId).toBe('usr_admin');
     });
+
+    it('rejects access when session role is revoked or modified', async () => {
+      const mockDb = {
+        execute: vi.fn()
+          .mockResolvedValueOnce({
+            rows: [{
+              token: 'hashed',
+              role: 'Creator',
+              userId: 'usr_demoted',
+              userName: 'Demoted Person',
+              userEmail: 'demoted@example.com',
+              sessionId: 'sess_demoted_1',
+              expiresAt: Date.now() + 3600000,
+            }],
+          }),
+      };
+      const res = await validateAuth(mockDb, 'valid-token-12345678901234567890', [ROLES.ADMIN]);
+      expect(res.valid).toBe(false);
+      expect(res.authenticated).toBe(true);
+      expect(res.reason).toBe('forbidden');
+    });
   });
 
   describe('Client View Permissions Matrix', () => {
