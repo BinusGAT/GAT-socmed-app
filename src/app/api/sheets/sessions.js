@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { hashSessionToken } from './security';
-import { getGatAppDbClient } from '../../../../utils/db';
+import { gatAppExecute } from '../../../../utils/db';
 
 const REVALIDATION_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -28,8 +28,7 @@ export async function validateAuth(db, token, allowedRoles = []) {
     const lastValidated = Number(session.lastValidatedAt || session.createdAt || now);
     if (now - lastValidated > REVALIDATION_INTERVAL_MS && session.userId) {
       try {
-        const gatAppDb = getGatAppDbClient();
-        const userRes = await gatAppDb.execute({
+        const userRes = await gatAppExecute({
           sql: `
             SELECT GROUP_CONCAT(r.name) AS role_names
             FROM users u
