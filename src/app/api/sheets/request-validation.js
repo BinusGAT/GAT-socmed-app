@@ -10,6 +10,7 @@ const MAX_DEFAULT_STRING_LENGTH = 16_384;
 const ACTION_LIMITS = Object.freeze({
   create: { strings: { URL: 2_048 } },
   update: { strings: { URL: 2_048 } },
+  toggle_schedule_upload: { strings: { ID: 64, id: 64 } },
   delete_batch: { arrays: { rows: 100 } },
   save_meeting: {
     arrays: { Attendees: 200, attendees: 200, Absentees: 200, absentees: 200 },

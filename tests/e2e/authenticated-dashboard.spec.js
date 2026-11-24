@@ -535,3 +535,68 @@ test('uses the accessible undo flow for storyboard deletion', async ({ page }) =
   await page.getByRole('button', { name: 'Undo' }).click();
   expect(actionLog).not.toContain('delete_script');
 });
+
+test('lets admins manually tick uploads in Calendar while locking URL-verified tasks', async ({ page }) => {
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const actionLog = [];
+  const dashboardData = {
+    ...seededData,
+    laporan: {
+      data: [
+        { Date: todayIso, ID: 'POST-002', 'Content Title': 'Community recap', PIC: 'Alya', Category: 'News', Platform: 'Instagram', Views: '2400', 'Total Engagement': '210', 'KPI Summary': 'Good', URL: 'https://example.test/2' },
+        { Date: todayIso, ID: 'TASK-001', 'Content Title': 'Campus highlights', PIC: 'Alya', Category: 'Story Telling', Platform: 'Instagram', Views: '0', 'Total Engagement': '0', 'KPI Summary': '3', URL: '' }
+      ]
+    },
+    schedule: {
+      data: [
+        { Date: todayIso, ID: 'TASK-001', 'Content Title': 'Campus highlights', PIC: 'Alya', Category: 'Story Telling', AssignedUserId: 'e2e-admin', Status: 0, ManualUploaded: 0 },
+        { Date: todayIso, ID: 'POST-002', 'Content Title': 'Community recap', PIC: 'Alya', Category: 'News', AssignedUserId: 'e2e-admin', Status: 1, ManualUploaded: 0 }
+      ]
+    }
+  };
+
+  await openAuthenticatedDashboard(page, { actionLog, dashboardData, role: 'Admin' });
+  await openAuthenticatedView(page, { mobileName: /Planner/, desktopName: /Calendar/ });
+
+  // URL-verified task should appear checked and disabled
+  const urlTickButton = page.getByRole('button', { name: 'Uploaded via Post URL: Community recap' });
+  await expect(urlTickButton).toBeVisible();
+  await expect(urlTickButton).toBeDisabled();
+  await expect(urlTickButton).toHaveAttribute('aria-pressed', 'true');
+
+  // Manual task without URL should toggle on and off via tick button
+  const manualTickButton = page.getByRole('button', { name: 'Mark Campus highlights as uploaded' });
+  await expect(manualTickButton).toBeVisible();
+  await expect(manualTickButton).toBeEnabled();
+  await expect(manualTickButton).toHaveAttribute('aria-pressed', 'false');
+
+  await manualTickButton.click();
+  await expect.poll(() => actionLog.filter((action) => action === 'toggle_schedule_upload').length).toBe(1);
+
+  const untickButton = page.getByRole('button', { name: 'Unmark Campus highlights as uploaded' });
+  await expect(untickButton).toBeVisible();
+  await expect(untickButton).toHaveAttribute('aria-pressed', 'true');
+
+  await untickButton.click();
+  await expect.poll(() => actionLog.filter((action) => action === 'toggle_schedule_upload').length).toBe(2);
+  await expect(page.getByRole('button', { name: 'Mark Campus highlights as uploaded' })).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('hides the Calendar upload tick button from Creator accounts', async ({ page }) => {
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const dashboardData = {
+    ...seededData,
+    schedule: {
+      data: [
+        { Date: todayIso, ID: 'TASK-001', 'Content Title': 'Campus highlights', PIC: 'Alya', Category: 'Story Telling', AssignedUserId: 'e2e-admin', Status: 0, ManualUploaded: 0 }
+      ]
+    }
+  };
+
+  await openAuthenticatedDashboard(page, { dashboardData, role: 'Creator' });
+  await openAuthenticatedView(page, { mobileName: /Planner/, desktopName: /Calendar/ });
+  await expect(page.getByText('Campus highlights')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Mark .* as uploaded|Unmark .* as uploaded|Uploaded via Post URL/ })).toHaveCount(0);
+});

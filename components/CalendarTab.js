@@ -16,7 +16,8 @@ import {
     resolveMemberName,
     formatDate,
     getPicBadgeClasses,
-    calculateRecurringDates
+    calculateRecurringDates,
+    getTaskUploadState
 } from '../utils/helpers';
 import { isTaskAssignedToUser } from '../utils/rolePermissions';
 
@@ -39,6 +40,7 @@ export default function CalendarTab({ onOpenExport }) {
         userName,
         saveCalendarTask,
         rescheduleCalendarTask,
+        toggleScheduleUpload,
         deleteCalendarTask,
         memberListData,
         categoriesData,
@@ -93,9 +95,7 @@ export default function CalendarTab({ onOpenExport }) {
             if (!task.Date || !task.PIC || !task.Category) return;
             const parsedDate = parseDate(task.Date);
             if (parsedDate) {
-                const isUploaded = currentData.some(row => 
-                    row.ID === task.ID && row.URL && String(row.URL).trim() !== ''
-                );
+                const { hasUrl, isManualUploaded, isUploaded } = getTaskUploadState(task, currentData);
                 
                 tasks.push({
                     id: task.ID,
@@ -104,6 +104,8 @@ export default function CalendarTab({ onOpenExport }) {
                     category: task.Category,
                     contentTitle: task['Content Title'] || '',
                     status: isUploaded,
+                    hasUrl,
+                    manualUploaded: isManualUploaded,
                     isFromDashboard: true,
                     calculatedStatus: getTaskCalculatedStatus({
                         ...task,
@@ -345,7 +347,8 @@ export default function CalendarTab({ onOpenExport }) {
             PIC: formPic,
             Category: formCategory,
             'Content Title': formTitle.trim() || 'Untitled',
-            Status: false // Initially false (On Progress)
+            Status: editingTaskId ? Boolean(currentEditingTask?.Status) : false,
+            ManualUploaded: editingTaskId ? (currentEditingTask?.ManualUploaded ?? 0) : 0
         };
 
         if (!editingTaskId && isRecurring) {
@@ -884,6 +887,42 @@ export default function CalendarTab({ onOpenExport }) {
                                             ) : (
                                                 (!formDisabled || userRole === 'Creator') && (userRole !== 'Creator' || isTaskAssignedToUser(task, userId, userName)) && (
                                                     <div className="flex items-center gap-1">
+                                                        {userRole === 'Admin' && (
+                                                            <button
+                                                                type="button"
+                                                                disabled={task.hasUrl}
+                                                                aria-pressed={task.status}
+                                                                aria-label={
+                                                                    task.hasUrl
+                                                                        ? `Uploaded via Post URL: ${task.contentTitle || 'Untitled'}`
+                                                                        : task.manualUploaded
+                                                                        ? `Unmark ${task.contentTitle || 'Untitled'} as uploaded`
+                                                                        : `Mark ${task.contentTitle || 'Untitled'} as uploaded`
+                                                                }
+                                                                title={
+                                                                    task.hasUrl
+                                                                        ? 'Uploaded via Post URL — clear the URL in Dashboard to untick'
+                                                                        : task.manualUploaded
+                                                                        ? 'Marked as uploaded — click to untick'
+                                                                        : 'Mark as uploaded'
+                                                                }
+                                                                className={`w-7 h-7 flex items-center justify-center border rounded transition-colors ${
+                                                                    task.hasUrl
+                                                                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 cursor-not-allowed opacity-85'
+                                                                        : task.manualUploaded
+                                                                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 cursor-pointer'
+                                                                        : 'bg-surface-container border-outline-variant/30 text-on-surface-variant hover:text-emerald-500 hover:border-emerald-500/50 cursor-pointer'
+                                                                }`}
+                                                                onClick={() => {
+                                                                    if (task.hasUrl) return;
+                                                                    toggleScheduleUpload(task.id, !task.manualUploaded);
+                                                                }}
+                                                            >
+                                                                <span className="material-symbols-outlined text-[15px]" aria-hidden="true">
+                                                                    {task.status ? 'task_alt' : 'check'}
+                                                                </span>
+                                                            </button>
+                                                        )}
                                                         {userRole === 'Admin' && (
                                                             <button 
                                                                 type="button" 

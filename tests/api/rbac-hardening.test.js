@@ -12,6 +12,7 @@ describe('RBAC Hardening & Role Authorization Matrix', () => {
         'delete',
         'delete_batch',
         'delete_schedule',
+        'toggle_schedule_upload',
         'save_app_setting',
         'save_app_settings',
         'save_platform',

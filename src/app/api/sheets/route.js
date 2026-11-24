@@ -30,7 +30,7 @@ const db = {
 };
 
 let isDbInitialized = false;
-const CURRENT_SCHEMA_VERSION = 'v2';
+const CURRENT_SCHEMA_VERSION = 'v3';
 
 
 
@@ -48,11 +48,23 @@ async function syncGroupsByIds(ids) {
   if (uniqueIds.length === 0) return;
 
   const idsPlaceholder = uniqueIds.map(() => '?').join(', ');
-  const rowsRes = await db.execute({
-    sql: `SELECT * FROM laporan WHERE ID IN (${idsPlaceholder})`,
-    args: uniqueIds
-  });
+  const [rowsRes, existingSchedRes] = await Promise.all([
+    db.execute({
+      sql: `SELECT * FROM laporan WHERE ID IN (${idsPlaceholder})`,
+      args: uniqueIds
+    }),
+    db.execute({
+      sql: `SELECT ID, COALESCE(ManualUploaded, 0) AS ManualUploaded FROM schedule WHERE ID IN (${idsPlaceholder})`,
+      args: uniqueIds
+    })
+  ]);
   const allRows = rowsRes.rows;
+  const manualUploadedById = {};
+  for (const s of existingSchedRes.rows) {
+    if (s.ID) {
+      manualUploadedById[s.ID] = Number(s.ManualUploaded) === 1 ? 1 : 0;
+    }
+  }
 
   const rowsById = {};
   for (const r of allRows) {
@@ -78,14 +90,16 @@ async function syncGroupsByIds(ids) {
     }
 
     let maxKpi = 3;
-    let isCompleted = 0;
+    let hasUrl = 0;
     for (const r of groupRows) {
       const kpiVal = parseInt(r["KPI Score"]) || 0;
       if (kpiVal > maxKpi) maxKpi = kpiVal;
       if (String(r.URL || '').trim() !== '') {
-        isCompleted = 1;
+        hasUrl = 1;
       }
     }
+    const isManualUploaded = manualUploadedById[id] === 1 ? 1 : 0;
+    const isCompleted = (hasUrl || isManualUploaded) ? 1 : 0;
 
     batchQueries.push({
       sql: 'UPDATE laporan SET "KPI Summary" = ? WHERE ID = ?',
@@ -102,18 +116,19 @@ async function syncGroupsByIds(ids) {
     const month = getIndonesianMonth(dateStr);
 
     batchQueries.push({
-      sql: `INSERT INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month, AssignedUserId, series_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      sql: `INSERT INTO schedule (ID, Date, PIC, "Content Title", Category, Status, Month, AssignedUserId, series_id, ManualUploaded)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(ID) DO UPDATE SET
               Date = excluded.Date,
               PIC = excluded.PIC,
               "Content Title" = excluded."Content Title",
               Category = excluded.Category,
-              Status = excluded.Status,
+              Status = CASE WHEN COALESCE(schedule.ManualUploaded, 0) = 1 OR excluded.Status = 1 THEN 1 ELSE 0 END,
               Month = excluded.Month,
               AssignedUserId = excluded.AssignedUserId,
-              series_id = COALESCE(NULLIF(excluded.series_id, ''), schedule.series_id)`,
-      args: [id, dateStr, pic, title, category, isCompleted, month, assignedUserId, seriesId]
+              series_id = COALESCE(NULLIF(excluded.series_id, ''), schedule.series_id),
+              ManualUploaded = COALESCE(schedule.ManualUploaded, 0)`,
+      args: [id, dateStr, pic, title, category, isCompleted, month, assignedUserId, seriesId, isManualUploaded]
     });
   }
 
@@ -214,7 +229,8 @@ export async function POST(request) {
           Month TEXT NOT NULL,
           AssignedUserId TEXT,
           series_id TEXT,
-          recurrence_rule TEXT
+          recurrence_rule TEXT,
+          ManualUploaded INTEGER NOT NULL DEFAULT 0
         )`,
         `CREATE TABLE IF NOT EXISTS scripts (
           Title TEXT PRIMARY KEY,
@@ -328,6 +344,7 @@ export async function POST(request) {
         'ALTER TABLE schedule ADD COLUMN AssignedUserId TEXT',
         'ALTER TABLE schedule ADD COLUMN series_id TEXT',
         'ALTER TABLE schedule ADD COLUMN recurrence_rule TEXT',
+        'ALTER TABLE schedule ADD COLUMN ManualUploaded INTEGER DEFAULT 0',
         "ALTER TABLE scripts ADD COLUMN Origin TEXT DEFAULT 'legacy'",
         'ALTER TABLE laporan ADD COLUMN AssignedUserId TEXT',
         'ALTER TABLE laporan ADD COLUMN series_id TEXT',
@@ -713,7 +730,8 @@ export async function POST(request) {
           db.execute(`SELECT schedule.ID, schedule.Date, schedule.PIC,
             schedule."Content Title", schedule.Category, schedule.Month,
             schedule.AssignedUserId, schedule.series_id, schedule.recurrence_rule,
-            CASE WHEN EXISTS (
+            COALESCE(schedule.ManualUploaded, 0) AS ManualUploaded,
+            CASE WHEN COALESCE(schedule.ManualUploaded, 0) = 1 OR EXISTS (
               SELECT 1 FROM laporan
               WHERE laporan.ID = schedule.ID
                 AND TRIM(COALESCE(laporan.URL, '')) <> ''
@@ -780,7 +798,8 @@ export async function POST(request) {
           db.execute(`SELECT schedule.ID, schedule.Date, schedule.PIC,
             schedule."Content Title", schedule.Category, schedule.Month,
             schedule.AssignedUserId, schedule.series_id, schedule.recurrence_rule,
-            CASE WHEN EXISTS (
+            COALESCE(schedule.ManualUploaded, 0) AS ManualUploaded,
+            CASE WHEN COALESCE(schedule.ManualUploaded, 0) = 1 OR EXISTS (
               SELECT 1 FROM laporan
               WHERE laporan.ID = schedule.ID
                 AND TRIM(COALESCE(laporan.URL, '')) <> ''
@@ -1595,6 +1614,59 @@ export async function POST(request) {
         });
         await writeAudit(db, auth, 'deleted', 'task', id, {});
         result = { success: true, message: 'Schedule deleted successfully' };
+        break;
+      }
+
+      case 'toggle_schedule_upload': {
+        const id = String(params.ID || params.id || '').trim();
+        if (!id) {
+          return NextResponse.json({ success: false, error: 'Task ID is required.' }, { status: 400 });
+        }
+
+        const taskRes = await db.execute({
+          sql: `SELECT ID, "Content Title", COALESCE(ManualUploaded, 0) AS ManualUploaded FROM schedule WHERE ID = ? LIMIT 1`,
+          args: [id]
+        });
+        if (taskRes.rows.length === 0) {
+          return NextResponse.json({ success: false, error: 'Scheduled task not found.' }, { status: 404 });
+        }
+
+        const urlRes = await db.execute({
+          sql: `SELECT 1 FROM laporan WHERE ID = ? AND TRIM(COALESCE(URL, '')) <> '' LIMIT 1`,
+          args: [id]
+        });
+        const hasUrl = urlRes.rows.length > 0;
+        const requestedManual = Boolean(params.manualUploaded ?? params.ManualUploaded);
+
+        if (hasUrl && !requestedManual) {
+          return NextResponse.json(
+            { success: false, error: 'This task is already verified via a Post URL. Clear the URL in Dashboard first to mark it as not uploaded.' },
+            { status: 409 }
+          );
+        }
+
+        const nextManual = requestedManual ? 1 : 0;
+        const nextStatus = (hasUrl || nextManual === 1) ? 1 : 0;
+
+        await db.execute({
+          sql: `UPDATE schedule SET ManualUploaded = ?, Status = ? WHERE ID = ?`,
+          args: [nextManual, nextStatus, id]
+        });
+
+        await writeAudit(db, auth, nextManual === 1 ? 'marked_uploaded' : 'unmarked_uploaded', 'task', id, {
+          title: taskRes.rows[0]['Content Title'] || '',
+          manualUploaded: Boolean(nextManual),
+          hasUrl
+        });
+
+        result = {
+          success: true,
+          id,
+          manualUploaded: Boolean(nextManual),
+          hasUrl,
+          status: Boolean(nextStatus),
+          message: nextManual === 1 ? 'Task marked as uploaded' : 'Task upload status cleared'
+        };
         break;
       }
 

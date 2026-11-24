@@ -200,10 +200,38 @@ export function getLocalDateInputValue() {
     return localISOTime;
 }
 
+export function isFlagTruthy(value) {
+    return value === true
+        || Number(value) === 1
+        || String(value).toLowerCase() === 'true';
+}
+
+export function isTaskManuallyUploaded(task) {
+    if (!task) return false;
+    return isFlagTruthy(task.ManualUploaded ?? task.manualUploaded);
+}
+
+export function hasTaskUploadedUrl(taskId, currentData = []) {
+    if (!taskId) return false;
+    const targetId = String(taskId);
+    return (currentData || []).some(
+        (row) => String(row?.ID || '') === targetId && Boolean(row?.URL && String(row.URL).trim() !== '')
+    );
+}
+
+export function getTaskUploadState(task, currentData = []) {
+    const taskId = task?.ID ?? task?.id ?? '';
+    const hasUrl = hasTaskUploadedUrl(taskId, currentData);
+    const isManualUploaded = isTaskManuallyUploaded(task);
+    return {
+        hasUrl,
+        isManualUploaded,
+        isUploaded: hasUrl || isManualUploaded
+    };
+}
+
 export function getTaskCalculatedStatus(task) {
-    const isDone = task.Status === true
-        || Number(task.Status) === 1
-        || String(task.Status).toLowerCase() === 'true';
+    const isDone = isFlagTruthy(task.Status) || isTaskManuallyUploaded(task);
     if (isDone) return 'Done';
 
     if (!task.Date) return 'On Progress';

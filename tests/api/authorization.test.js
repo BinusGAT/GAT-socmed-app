@@ -42,7 +42,7 @@ describe('API authorization policy', () => {
   });
 
   it('reserves administrative mutations for admins', () => {
-    for (const action of ['create', 'update', 'delete', 'save_member', 'delete_schedule', 'delete_script', 'save_meeting', 'delete_meeting', 'delete_ga_item']) {
+    for (const action of ['create', 'update', 'delete', 'save_member', 'delete_schedule', 'toggle_schedule_upload', 'delete_script', 'save_meeting', 'delete_meeting', 'delete_ga_item']) {
       expect(getAllowedRoles(action)).toEqual([ROLES.ADMIN]);
       expect(isRoleAllowed(action, ROLES.ADMIN)).toBe(true);
       expect(isRoleAllowed(action, ROLES.CREATOR)).toBe(false);

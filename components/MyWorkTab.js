@@ -3,7 +3,7 @@
 import React from 'react';
 import { useDashboard } from './DashboardContext';
 import EmptyState from './EmptyState';
-import { getTaskCalculatedStatus, parseDate } from '../utils/helpers';
+import { getTaskCalculatedStatus, getTaskUploadState, parseDate } from '../utils/helpers';
 
 function getDueState(dateValue, completed) {
     if (completed) return { label: 'Completed', className: 'bg-emerald-500/10 text-emerald-500' };
@@ -22,7 +22,7 @@ function getDueState(dateValue, completed) {
 }
 
 export default function MyWorkTab() {
-    const { scheduleData, userId, userName, isInitialLoading, setCurrentView, setSelectedTaskId } = useDashboard();
+    const { scheduleData, currentData, userId, userName, isInitialLoading, setCurrentView, setSelectedTaskId } = useDashboard();
 
     const openTask = (taskId) => {
         setSelectedTaskId(taskId);
@@ -38,7 +38,10 @@ export default function MyWorkTab() {
             return normalizedPic === normalizedUserName || normalizedPic.split(/\s+/)[0] === userFirstName;
         })
         .sort((a, b) => String(a.Date || '').localeCompare(String(b.Date || '')));
-    const taskStatuses = tasks.map((task) => getTaskCalculatedStatus(task));
+    const taskStatuses = tasks.map((task) => getTaskCalculatedStatus({
+        ...task,
+        Status: getTaskUploadState(task, currentData).isUploaded
+    }));
     const openCount = taskStatuses.filter((status) => status !== 'Done').length;
     const overdueCount = taskStatuses.filter((status) => status === 'Overdue').length;
 
@@ -76,7 +79,8 @@ export default function MyWorkTab() {
                 ) : (
                     <div className="space-y-2 sm:divide-y sm:divide-outline-variant/15 sm:space-y-0">
                         {tasks.map((task) => {
-                            const dueState = getDueState(task.Date, getTaskCalculatedStatus(task) === 'Done');
+                            const { isUploaded } = getTaskUploadState(task, currentData);
+                            const dueState = getDueState(task.Date, getTaskCalculatedStatus({ ...task, Status: isUploaded }) === 'Done');
                             return (
                                 <button key={task.ID} type="button" onClick={() => openTask(task.ID)} aria-label={`Open task ${task['Content Title'] || task.ID}`} className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-outline-variant/25 bg-surface-container px-4 py-3.5 text-left transition-colors hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:rounded-none sm:border-0 sm:bg-transparent sm:px-5 sm:py-4 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-3">
                                     <div className="min-w-0">

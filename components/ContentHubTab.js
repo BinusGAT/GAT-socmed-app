@@ -14,7 +14,8 @@ import {
     normalizePicName,
     getPicDisplayName,
     parseDate,
-    getPicBadgeClasses
+    getPicBadgeClasses,
+    getTaskUploadState
 } from '../utils/helpers';
 
 export default function ContentHubTab() {
@@ -137,9 +138,7 @@ export default function ContentHubTab() {
             String(t['Content Title'] || '').trim().toLowerCase() === title.trim().toLowerCase()
         );
         if (!task) return null;
-        const isUploaded = (currentData || []).some(row =>
-            row.ID === task.ID && row.URL && String(row.URL).trim() !== ''
-        );
+        const { isUploaded } = getTaskUploadState(task, currentData);
         return { pic: task.PIC, date: task.Date, isUploaded };
     };
 

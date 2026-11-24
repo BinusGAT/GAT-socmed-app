@@ -21,7 +21,8 @@ import {
     formatDisplayDate,
     resolveMemberName,
     formatDate,
-    getPicBadgeClasses
+    getPicBadgeClasses,
+    getTaskUploadState
 } from '../utils/helpers';
 
 export default function TaskListTab({ onOpenDatePicker }) {
@@ -90,9 +91,7 @@ export default function TaskListTab({ onOpenDatePicker }) {
         const list = [];
         (scheduleData || []).forEach(task => {
             const parsedDate = parseDate(task.Date);
-            const isUploaded = currentData.some(row => 
-                row.ID === task.ID && row.URL && String(row.URL).trim() !== ''
-            );
+            const { hasUrl, isManualUploaded, isUploaded } = getTaskUploadState(task, currentData);
 
             const calculatedStatus = getTaskCalculatedStatus({
                 ...task,
@@ -107,6 +106,8 @@ export default function TaskListTab({ onOpenDatePicker }) {
                 contentTitle: task['Content Title'] || '',
                 category: task.Category,
                 status: isUploaded,
+                hasUrl,
+                manualUploaded: isManualUploaded,
                 calculatedStatus: calculatedStatus,
                 assignedUserId: task.AssignedUserId || '',
                 series_id: task.series_id || '',
@@ -306,7 +307,8 @@ export default function TaskListTab({ onOpenDatePicker }) {
             PIC: modalPic,
             Category: modalCategory,
             'Content Title': modalTitle.trim() || 'Untitled',
-            Status: modalStatus
+            Status: modalStatus,
+            ManualUploaded: modalTaskId ? (currentEditingTask?.ManualUploaded ?? 0) : 0
         };
 
         if (!modalTaskId && isRecurring) {

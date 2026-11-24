@@ -15,7 +15,9 @@ import {
     getTaskCalculatedStatus,
     formatDisplayDate,
     getContentGroupKey,
-    isSafeUrl
+    isSafeUrl,
+    getTaskUploadState,
+    isTaskManuallyUploaded
 } from '../utils/helpers';
 import PlatformBadge from './PlatformBadge.jsx';
 import SortableTableHeader from './SortableTableHeader';
@@ -829,7 +831,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
         const uploadedIds = new Set();
         (currentData || []).forEach(row => {
             if (row.ID && row.URL && String(row.URL).trim() !== '') {
-                uploadedIds.add(row.ID);
+                uploadedIds.add(String(row.ID));
             }
         });
 
@@ -837,7 +839,7 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
             if (!task.Date || !task.PIC || !task.Category) return;
             const parsedDate = parseDate(task.Date);
             if (parsedDate) {
-                const isUploaded = uploadedIds.has(task.ID);
+                const isUploaded = uploadedIds.has(String(task.ID)) || isTaskManuallyUploaded(task);
 
                 tasks.push({
                     id: task.ID,
@@ -1362,21 +1364,24 @@ export default function DashboardTab({ onOpenDatePicker, chartReady = false, onC
                                     <p>No uploads scheduled for this date.</p>
                                 </div>
                             ) : (
-                                scheduledTimeline.map((task) => (
-                                    <div key={task.ID} className="flex gap-3 items-start relative group">
-                                        <div className="flex flex-col items-center pt-1.5">
-                                            <span className="w-2.5 h-2.5 rounded-full bg-primary"></span>
-                                            <span className="w-[1.5px] bg-outline-variant/30 flex-1 my-1 min-h-[40px]"></span>
+                                scheduledTimeline.map((task) => {
+                                    const { isUploaded } = getTaskUploadState(task, currentData);
+                                    return (
+                                        <div key={task.ID} className="flex gap-3 items-start relative group">
+                                            <div className="flex flex-col items-center pt-1.5">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-primary"></span>
+                                                <span className="w-[1.5px] bg-outline-variant/30 flex-1 my-1 min-h-[40px]"></span>
+                                            </div>
+                                            <div className="flex-1 bg-surface-container-low border border-outline-variant/20 rounded-lg p-2.5 space-y-1">
+                                                <p className="text-[9.5px] text-primary uppercase font-bold tracking-wider">Upload: {task.Category}</p>
+                                                <p className="text-xs font-semibold text-on-surface leading-snug line-clamp-2">{task['Content Title']}</p>
+                                                <p className="text-[10px] text-on-surface-variant/80">
+                                                    PIC: <span className="font-semibold">{getPicDisplayName(task.PIC)}</span> | {isUploaded ? 'Published' : 'Pending'}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="flex-1 bg-surface-container-low border border-outline-variant/20 rounded-lg p-2.5 space-y-1">
-                                            <p className="text-[9.5px] text-primary uppercase font-bold tracking-wider">Upload: {task.Category}</p>
-                                            <p className="text-xs font-semibold text-on-surface leading-snug line-clamp-2">{task['Content Title']}</p>
-                                            <p className="text-[10px] text-on-surface-variant/80">
-                                                PIC: <span className="font-semibold">{getPicDisplayName(task.PIC)}</span> | {task.Status ? 'Published' : 'Pending'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
                     </div>

@@ -48,4 +48,19 @@ describe('API request validation', () => {
     })).not.toThrow();
     expect(sanitizeUserAgent('x'.repeat(1_000))).toHaveLength(MAX_USER_AGENT_LENGTH);
   });
+
+  it('validates toggle_schedule_upload payloads and bounds task ID length', () => {
+    expect(validatePayload({
+      action: 'toggle_schedule_upload',
+      params: { ID: 'CT42', manualUploaded: true },
+    })).toEqual({
+      action: 'toggle_schedule_upload',
+      params: { ID: 'CT42', manualUploaded: true },
+    });
+
+    expect(() => validatePayload({
+      action: 'toggle_schedule_upload',
+      params: { ID: 'x'.repeat(65), manualUploaded: true },
+    })).toThrow(/ID must contain at most 64 characters/);
+  });
 });

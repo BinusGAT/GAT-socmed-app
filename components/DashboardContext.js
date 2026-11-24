@@ -8,7 +8,9 @@ import {
     getLocalDateInputValue, 
     parseDate,
     getContentGroupKey,
-    calculateRecurringDates
+    calculateRecurringDates,
+    hasTaskUploadedUrl,
+    isTaskManuallyUploaded
 } from '../utils/helpers';
 
 const DashboardContext = createContext();
@@ -810,10 +812,11 @@ export function DashboardProvider({ children }) {
 
     const updateLaporanRow = async (row, rowIndex) => {
         const prevData = currentData;
+        const prevSchedule = scheduleData;
         const assignedIntern = internListData.find((intern) => intern.name === row.PIC);
         const payload = { ...row, rowIndex, AssignedUserId: row.AssignedUserId || assignedIntern?.id || '' };
 
-        setCurrentData((prev) => prev.map((item, idx) => {
+        const nextData = prevData.map((item, idx) => {
             const isExactMatch = (rowIndex !== undefined && rowIndex !== null && rowIndex >= 0 && idx === rowIndex) ||
                 (item.ID && row.ID && String(item.ID) === String(row.ID) && String(item.Platform || '').toLowerCase() === String(row.Platform || '').toLowerCase());
 
@@ -835,7 +838,17 @@ export function DashboardProvider({ children }) {
             }
 
             return item;
-        }));
+        });
+
+        setCurrentData(nextData);
+        if (row.ID) {
+            const hasUrlAfterUpdate = hasTaskUploadedUrl(row.ID, nextData);
+            setScheduleData((prev) => prev.map((task) => {
+                if (String(task.ID) !== String(row.ID)) return task;
+                const nextStatus = (hasUrlAfterUpdate || isTaskManuallyUploaded(task)) ? 1 : 0;
+                return { ...task, Status: nextStatus };
+            }));
+        }
         showAlert('💾 Record updated successfully!', 'success');
 
         (async () => {
@@ -846,6 +859,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setCurrentData(prevData);
+                setScheduleData(prevSchedule);
                 showAlert(`❌ Failed to update: ${error.message}`, 'error');
             }
         })();
@@ -921,6 +935,7 @@ export function DashboardProvider({ children }) {
                 Category: payload.Category || payload.category || '',
                 'Content Title': payload['Content Title'] || payload.contentTitle || '',
                 Status: false,
+                ManualUploaded: 0,
                 AssignedUserId: payload.AssignedUserId || '',
                 series_id: tempSeriesId,
                 recurrence_rule: JSON.stringify(recurrence)
@@ -1004,13 +1019,22 @@ export function DashboardProvider({ children }) {
             }
         }
 
+        const targetTaskId = payload.ID || payload.id || `CT${Date.now()}`;
+        const existingTask = scheduleData.find(t => String(t.ID) === String(targetTaskId));
+        const hasManualFlag = payload.ManualUploaded !== undefined || payload.manualUploaded !== undefined;
+        const manualUploaded = hasManualFlag
+            ? (Boolean(payload.ManualUploaded ?? payload.manualUploaded) ? 1 : 0)
+            : (isTaskManuallyUploaded(existingTask) ? 1 : 0);
+        const hasUrl = hasTaskUploadedUrl(targetTaskId, currentData);
+
         const normalizedTask = {
-            ID: payload.ID || payload.id || `CT${Date.now()}`,
+            ID: targetTaskId,
             Date: payload.Date || payload.date || '',
             PIC: payload.PIC || payload.pic || '',
             Category: payload.Category || payload.category || '',
             'Content Title': payload['Content Title'] || payload.contentTitle || '',
-            Status: Boolean(payload.Status ?? payload.status),
+            ManualUploaded: manualUploaded,
+            Status: hasUrl || manualUploaded === 1 || Boolean(existingTask?.Status),
             AssignedUserId: payload.AssignedUserId || '',
             series_id: payload.series_id || undefined,
             recurrence_rule: payload.recurrence_rule || undefined
@@ -1081,6 +1105,60 @@ export function DashboardProvider({ children }) {
             Date: newDate,
             date: newDate
         });
+    };
+
+    const toggleScheduleUpload = async (taskId, manualUploaded) => {
+        if (!isUnlocked) {
+            showAlert('🔒 Workspace is locked. Sign in to make changes.', 'error');
+            return false;
+        }
+        if (userRole !== 'Admin') {
+            showAlert('⛔ Forbidden: Only Admins can update upload status.', 'error');
+            return false;
+        }
+
+        const task = scheduleData.find(t => String(t.ID) === String(taskId));
+        if (!task) {
+            showAlert('Task not found.', 'error');
+            return false;
+        }
+
+        const hasUrl = hasTaskUploadedUrl(taskId, currentData);
+        const nextManual = manualUploaded ? 1 : 0;
+        if (hasUrl && nextManual === 0) {
+            showAlert('Uploaded via Post URL — clear the URL in Dashboard to untick.', 'info');
+            return false;
+        }
+
+        const prevSchedule = scheduleData;
+        const nextStatus = (hasUrl || nextManual === 1) ? 1 : 0;
+
+        setScheduleData((prev) => prev.map((item) => (
+            String(item.ID) === String(taskId)
+                ? { ...item, ManualUploaded: nextManual, Status: nextStatus }
+                : item
+        )));
+        showAlert(
+            nextManual === 1 ? '✅ Task marked as uploaded!' : 'Task upload mark cleared.',
+            'success'
+        );
+
+        (async () => {
+            try {
+                const result = await callSheetsAPI('toggle_schedule_upload', {
+                    ID: taskId,
+                    manualUploaded: Boolean(nextManual)
+                });
+                if (!result || !result.success) {
+                    throw new Error(result?.error || 'Failed to update upload status');
+                }
+            } catch (error) {
+                setScheduleData(prevSchedule);
+                showAlert(`❌ Failed to update upload status: ${error.message}`, 'error');
+            }
+        })();
+
+        return true;
     };
 
     const listSessions = async () => {
@@ -1593,6 +1671,7 @@ export function DashboardProvider({ children }) {
             deleteBatchLaporanRows,
             saveCalendarTask,
             rescheduleCalendarTask,
+            toggleScheduleUpload,
             deleteCalendarTask,
             saveScriptDraft,
             deleteScriptDraft,
