@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { callSheetsAPI } from '../utils/api';
 import { normalizeFeedbackMessage } from '../utils/feedback';
 import { 
@@ -34,6 +34,15 @@ const cacheDataWhenIdle = (entries) => {
         window.requestIdleCallback(write, { timeout: 2000 });
     } else {
         window.setTimeout(write, 0);
+    }
+};
+
+const persistLocalCache = (key, value) => {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+        console.warn(`Unable to persist ${key} to localStorage.`, error);
     }
 };
 
@@ -114,6 +123,7 @@ export function DashboardProvider({ children }) {
     const [categoriesData, setCategoriesData] = useState([]);
     const [dashboardMetrics, setDashboardMetrics] = useState(null);
     const [hasLoadedWorkspace, setHasLoadedWorkspace] = useState(false);
+    const hasHydratedOfflineRef = useRef(false);
 
     const setIsLoading = (active, phase = 'mutation') => {
         setIsLoadingState(active);
@@ -256,11 +266,16 @@ export function DashboardProvider({ children }) {
             setMeetingsData([]);
             setDashboardMetrics(null);
             setHasLoadedWorkspace(false);
+            hasHydratedOfflineRef.current = false;
             return;
         }
 
-        // Instantly populate UI from local cache
-        loadOfflineData(true);
+        // Populate UI from local cache only once on initial unlock so tab switches never
+        // overwrite live in-memory mutations with a stale cached snapshot.
+        if (!hasHydratedOfflineRef.current) {
+            loadOfflineData(true);
+            hasHydratedOfflineRef.current = true;
+        }
 
         const shouldLoadFull = currentView !== 'dashboard' && userRole !== 'Viewer';
         if (shouldLoadFull) {
@@ -672,6 +687,33 @@ export function DashboardProvider({ children }) {
         };
     }, [isUnlocked, isNewPostDrawerOpen, loadingPhase]);
 
+    // Sync schedule and laporan updates immediately across other open browser tabs
+    useEffect(() => {
+        if (!isUnlocked || typeof window === 'undefined') return;
+
+        const handleStorageSync = (event) => {
+            if (!event || !event.key || event.newValue === null) return;
+            if (event.key === 'schedule_data_local') {
+                try {
+                    const parsed = JSON.parse(event.newValue);
+                    if (Array.isArray(parsed)) {
+                        setScheduleData(parsed);
+                    }
+                } catch (e) {}
+            } else if (event.key === 'laporan_data_local') {
+                try {
+                    const parsed = JSON.parse(event.newValue);
+                    if (Array.isArray(parsed)) {
+                        setCurrentData(preprocessLaporanData(parsed));
+                    }
+                } catch (e) {}
+            }
+        };
+
+        window.addEventListener('storage', handleStorageSync);
+        return () => window.removeEventListener('storage', handleStorageSync);
+    }, [isUnlocked]);
+
     // Check lockdown conditions
     const getLockdownTimeRemaining = () => {
         const lockUntil = Number.parseInt(localStorage.getItem('login_lock_until') || '0', 10);
@@ -791,8 +833,10 @@ export function DashboardProvider({ children }) {
         const prevData = currentData;
         const assignedIntern = internListData.find((intern) => intern.name === row.PIC);
         const newRow = { ...row, AssignedUserId: assignedIntern?.id || '' };
+        const nextData = [newRow, ...prevData];
         
-        setCurrentData((prev) => [newRow, ...prev]);
+        setCurrentData(nextData);
+        persistLocalCache('laporan_data_local', nextData);
         showAlert('💾 Record added successfully!', 'success');
 
         (async () => {
@@ -803,6 +847,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setCurrentData(prevData);
+                persistLocalCache('laporan_data_local', prevData);
                 showAlert(`❌ Failed to save: ${error.message}`, 'error');
             }
         })();
@@ -841,13 +886,16 @@ export function DashboardProvider({ children }) {
         });
 
         setCurrentData(nextData);
+        persistLocalCache('laporan_data_local', nextData);
         if (row.ID) {
             const hasUrlAfterUpdate = hasTaskUploadedUrl(row.ID, nextData);
-            setScheduleData((prev) => prev.map((task) => {
+            const nextSchedule = prevSchedule.map((task) => {
                 if (String(task.ID) !== String(row.ID)) return task;
                 const nextStatus = (hasUrlAfterUpdate || isTaskManuallyUploaded(task)) ? 1 : 0;
                 return { ...task, Status: nextStatus };
-            }));
+            });
+            setScheduleData(nextSchedule);
+            persistLocalCache('schedule_data_local', nextSchedule);
         }
         showAlert('💾 Record updated successfully!', 'success');
 
@@ -859,7 +907,9 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setCurrentData(prevData);
+                persistLocalCache('laporan_data_local', prevData);
                 setScheduleData(prevSchedule);
+                persistLocalCache('schedule_data_local', prevSchedule);
                 showAlert(`❌ Failed to update: ${error.message}`, 'error');
             }
         })();
@@ -869,8 +919,10 @@ export function DashboardProvider({ children }) {
 
     const deleteLaporanRow = async (id, rowIndex) => {
         const prevData = currentData;
+        const nextData = prevData.filter((item, idx) => (id ? String(item.ID) !== String(id) : idx !== rowIndex));
 
-        setCurrentData((prev) => prev.filter((item, idx) => (id ? String(item.ID) !== String(id) : idx !== rowIndex)));
+        setCurrentData(nextData);
+        persistLocalCache('laporan_data_local', nextData);
         showAlert('🗑️ Record deleted successfully!', 'success');
 
         (async () => {
@@ -881,6 +933,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setCurrentData(prevData);
+                persistLocalCache('laporan_data_local', prevData);
                 showAlert(`❌ Failed to delete: ${error.message}`, 'error');
             }
         })();
@@ -892,8 +945,10 @@ export function DashboardProvider({ children }) {
         const prevData = currentData;
         const idsToDelete = new Set((rows || []).map(r => r.ID || r.id).filter(Boolean).map(String));
         const indexesToDelete = new Set((rows || []).map(r => r.rowIndex).filter(i => i !== undefined));
+        const nextData = prevData.filter((item, idx) => !idsToDelete.has(String(item.ID)) && !indexesToDelete.has(idx));
 
-        setCurrentData(prev => prev.filter((item, idx) => !idsToDelete.has(String(item.ID)) && !indexesToDelete.has(idx)));
+        setCurrentData(nextData);
+        persistLocalCache('laporan_data_local', nextData);
         showAlert(`🗑️ Batch deleted ${rows.length} records!`, 'success');
 
         (async () => {
@@ -904,6 +959,7 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setCurrentData(prevData);
+                persistLocalCache('laporan_data_local', prevData);
                 showAlert(`❌ Failed batch delete: ${error.message}`, 'error');
             }
         })();
@@ -1040,27 +1096,28 @@ export function DashboardProvider({ children }) {
             recurrence_rule: payload.recurrence_rule || undefined
         };
 
-        setScheduleData((prev) => {
-            const exists = prev.some(t => String(t.ID) === String(normalizedTask.ID));
-            return exists 
-                ? prev.map(t => String(t.ID) === String(normalizedTask.ID) ? { ...t, ...normalizedTask } : t)
-                : [normalizedTask, ...prev];
-        });
+        const exists = prevSchedule.some(t => String(t.ID) === String(normalizedTask.ID));
+        const nextSchedule = exists
+            ? prevSchedule.map(t => String(t.ID) === String(normalizedTask.ID) ? { ...t, ...normalizedTask } : t)
+            : [normalizedTask, ...prevSchedule];
+        const nextCurrentData = prevCurrentData.map(row => String(row.ID) === String(normalizedTask.ID)
+            ? {
+                ...row,
+                Date: normalizedTask.Date,
+                'Content Title': normalizedTask['Content Title'],
+                PIC: normalizedTask.PIC,
+                Category: normalizedTask.Category,
+                AssignedUserId: normalizedTask.AssignedUserId
+            }
+            : row
+        );
+
+        setScheduleData(nextSchedule);
+        persistLocalCache('schedule_data_local', nextSchedule);
 
         // Optimistically sync shared columns in currentData if rows with this ID exist
-        setCurrentData((prev) =>
-            prev.map(row => String(row.ID) === String(normalizedTask.ID)
-                ? {
-                    ...row,
-                    Date: normalizedTask.Date,
-                    'Content Title': normalizedTask['Content Title'],
-                    PIC: normalizedTask.PIC,
-                    Category: normalizedTask.Category,
-                    AssignedUserId: normalizedTask.AssignedUserId
-                }
-                : row
-            )
-        );
+        setCurrentData(nextCurrentData);
+        persistLocalCache('laporan_data_local', nextCurrentData);
 
         showAlert('💾 Task scheduled successfully!', 'success');
 
@@ -1071,12 +1128,18 @@ export function DashboardProvider({ children }) {
                     throw new Error(result?.error || 'Failed to save task');
                 }
                 if (result.id && String(result.id) !== String(normalizedTask.ID)) {
-                    setScheduleData((prev) => prev.map(t => String(t.ID) === String(normalizedTask.ID) ? { ...t, ID: result.id } : t));
-                    setCurrentData((prev) => prev.map(row => String(row.ID) === String(normalizedTask.ID) ? { ...row, ID: result.id } : row));
+                    const reconciledSchedule = nextSchedule.map(t => String(t.ID) === String(normalizedTask.ID) ? { ...t, ID: result.id } : t);
+                    const reconciledCurrentData = nextCurrentData.map(row => String(row.ID) === String(normalizedTask.ID) ? { ...row, ID: result.id } : row);
+                    setScheduleData(reconciledSchedule);
+                    persistLocalCache('schedule_data_local', reconciledSchedule);
+                    setCurrentData(reconciledCurrentData);
+                    persistLocalCache('laporan_data_local', reconciledCurrentData);
                 }
             } catch (error) {
                 setScheduleData(prevSchedule);
+                persistLocalCache('schedule_data_local', prevSchedule);
                 setCurrentData(prevCurrentData);
+                persistLocalCache('laporan_data_local', prevCurrentData);
                 showAlert(`❌ Failed to save task: ${error.message}`, 'error');
             }
         })();
@@ -1130,14 +1193,16 @@ export function DashboardProvider({ children }) {
             return false;
         }
 
-        const prevSchedule = scheduleData;
+        const prevTaskSnapshot = { ...task };
         const nextStatus = (hasUrl || nextManual === 1) ? 1 : 0;
-
-        setScheduleData((prev) => prev.map((item) => (
+        const nextSchedule = scheduleData.map((item) => (
             String(item.ID) === String(taskId)
                 ? { ...item, ManualUploaded: nextManual, Status: nextStatus }
                 : item
-        )));
+        ));
+
+        setScheduleData(nextSchedule);
+        persistLocalCache('schedule_data_local', nextSchedule);
         showAlert(
             nextManual === 1 ? '✅ Task marked as uploaded!' : 'Task upload mark cleared.',
             'success'
@@ -1153,7 +1218,13 @@ export function DashboardProvider({ children }) {
                     throw new Error(result?.error || 'Failed to update upload status');
                 }
             } catch (error) {
-                setScheduleData(prevSchedule);
+                setScheduleData((prev) => {
+                    const rolledBack = prev.map((item) => (
+                        String(item.ID) === String(taskId) ? prevTaskSnapshot : item
+                    ));
+                    persistLocalCache('schedule_data_local', rolledBack);
+                    return rolledBack;
+                });
                 showAlert(`❌ Failed to update upload status: ${error.message}`, 'error');
             }
         })();
@@ -1203,23 +1274,33 @@ export function DashboardProvider({ children }) {
         const targetSeriesId = targetTask?.series_id;
         const targetDate = targetTask?.Date;
 
+        let nextSchedule;
+        let nextCurrentData;
         if ((scope === 'future' || scope === 'all') && targetSeriesId) {
-            setScheduleData(prev => prev.filter(t => {
+            nextSchedule = prevSchedule.filter(t => {
                 if (scope === 'future') {
                     return !(t.series_id === targetSeriesId && t.Date >= targetDate);
                 }
                 return t.series_id !== targetSeriesId;
-            }));
-            setCurrentData(prev => prev.filter(r => {
+            });
+            nextCurrentData = prevCurrentData.filter(r => {
                 if (scope === 'future') {
                     return !(r.series_id === targetSeriesId && r.Date >= targetDate);
                 }
                 return r.series_id !== targetSeriesId;
-            }));
+            });
+            setScheduleData(nextSchedule);
+            persistLocalCache('schedule_data_local', nextSchedule);
+            setCurrentData(nextCurrentData);
+            persistLocalCache('laporan_data_local', nextCurrentData);
             showAlert(scope === 'future' ? '🗑️ Removed future tasks in series!' : '🗑️ Removed entire recurring series!', 'success');
         } else {
-            setScheduleData(prev => prev.filter(t => String(t.ID) !== String(id)));
-            setCurrentData(prev => prev.filter(r => String(r.ID) !== String(id)));
+            nextSchedule = prevSchedule.filter(t => String(t.ID) !== String(id));
+            nextCurrentData = prevCurrentData.filter(r => String(r.ID) !== String(id));
+            setScheduleData(nextSchedule);
+            persistLocalCache('schedule_data_local', nextSchedule);
+            setCurrentData(nextCurrentData);
+            persistLocalCache('laporan_data_local', nextCurrentData);
             showAlert('🗑️ Task removed from schedule!', 'success');
         }
 
@@ -1231,7 +1312,9 @@ export function DashboardProvider({ children }) {
                 }
             } catch (error) {
                 setScheduleData(prevSchedule);
+                persistLocalCache('schedule_data_local', prevSchedule);
                 setCurrentData(prevCurrentData);
+                persistLocalCache('laporan_data_local', prevCurrentData);
                 showAlert(`❌ Failed to remove task: ${error.message}`, 'error');
             }
         })();

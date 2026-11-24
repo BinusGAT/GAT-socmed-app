@@ -600,3 +600,46 @@ test('hides the Calendar upload tick button from Creator accounts', async ({ pag
   await expect(page.getByText('Campus highlights')).toBeVisible();
   await expect(page.getByRole('button', { name: /Mark .* as uploaded|Unmark .* as uploaded|Uploaded via Post URL/ })).toHaveCount(0);
 });
+
+test('immediately propagates Calendar upload ticks to Task List and other browser tabs without stale cache rollback', async ({ page }) => {
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const dashboardData = {
+    ...seededData,
+    laporan: {
+      data: [
+        { Date: todayIso, ID: 'TASK-001', 'Content Title': 'Campus highlights', PIC: 'Alya', Category: 'Story Telling', Platform: 'Instagram', Views: '0', 'Total Engagement': '0', 'KPI Summary': '3', URL: '' }
+      ]
+    },
+    schedule: {
+      data: [
+        { Date: todayIso, ID: 'TASK-001', 'Content Title': 'Campus highlights', PIC: 'Alya', Category: 'Story Telling', AssignedUserId: 'e2e-admin', Status: 0, ManualUploaded: 0 }
+      ]
+    }
+  };
+
+  await openAuthenticatedDashboard(page, { dashboardData, role: 'Admin' });
+  await openAuthenticatedView(page, { mobileName: /Planner/, desktopName: /Calendar/ });
+
+  // Wait for initial idle cache write so localStorage has the stale unticked snapshot first
+  await page.waitForTimeout(150);
+
+  // Tick the task in Calendar
+  await page.getByRole('button', { name: 'Mark Campus highlights as uploaded' }).click();
+  await expect(page.getByRole('button', { name: 'Unmark Campus highlights as uploaded' })).toHaveAttribute('aria-pressed', 'true');
+
+  // Switch immediately to Task List — must reflect Uploaded & Done without reverting to stale localStorage
+  await openAuthenticatedView(page, { mobileName: /Tasks/, desktopName: /Task List/, secondary: true });
+  await expect(page.getByRole('button', { name: /Uploaded/ }).first()).toBeVisible();
+
+  // Simulate another browser tab clearing ManualUploaded via storage event and verify instant sync
+  await page.evaluate((date) => {
+    const updated = [{ Date: date, ID: 'TASK-001', 'Content Title': 'Campus highlights', PIC: 'Alya', Category: 'Story Telling', AssignedUserId: 'e2e-admin', Status: 0, ManualUploaded: 0 }];
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'schedule_data_local',
+      newValue: JSON.stringify(updated),
+      storageArea: window.localStorage,
+    }));
+  }, todayIso);
+  await expect(page.getByRole('button', { name: /Uploaded/ })).toHaveCount(0);
+});
